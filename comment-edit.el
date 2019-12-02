@@ -1,4 +1,4 @@
-;;; commentdown.el --- Code block in comment or docstring -*- lexical-binding: t; -*-
+;;; comment-edit.el --- Code block in comment or docstring -*- lexical-binding: t; -*-
 
 ;; Copyright (C) 2019 Gong Qijian <gongqijian@gmail.com>
 
@@ -6,7 +6,7 @@
 ;; Created: 2019/04/06
 ;; Version: 0.1.0
 ;; Package-Requires: ((emacs "24.4") (dash "2.0") (edit-indirect "0.1.5"))
-;; URL: https://github.com/twlz0ne/commentdown.el
+;; URL: https://github.com/twlz0ne/comment-edit.el
 ;; Keywords: tools languages docs
 
 ;; This program is free software; you can redistribute it and/or modify
@@ -27,8 +27,8 @@
 ;; ## Configuration:
 ;;
 ;; ```
-;; (require 'commentdown)
-;; (define-key prog-mode-map (kbd "C-c '") #'commentdown-edit)
+;; (require 'comment-edit)
+;; (define-key prog-mode-map (kbd "C-c '") #'comment-edit)
 ;; ```
 
 ;;; Change Log:
@@ -40,14 +40,14 @@
 (require 'dash)
 (require 'edit-indirect)
 
-(defcustom commentdown-edit-code-block-default-mode 'normal-mode
+(defcustom comment-edit-code-block-default-mode 'normal-mode
   "Default mode to use for editing code blocks.
 This mode is used when automatic detection fails, such as for GFM
 code blocks with no language specified."
-  :group 'commentdown
+  :group 'comment-edit
   :type '(choice function (const :tag "None" nil)))
 
-(defcustom commentdown-code-lang-modes
+(defcustom comment-edit-code-lang-modes
 '(("C"         . c-mode)                ("C++"   . c++-mode)
   ("asymptote" . asy-mode)              ("bash"  . sh-mode)
   ("calc"      . fundamental-mode)      ("cpp"   . c++-mode)
@@ -57,23 +57,23 @@ code blocks with no language specified."
   ("sqlite"    . sql-mode))
   "Alist mapping languages to their major mode.
 Taken from `markdown-code-lang-modes'."
-  :group 'commentdown
+  :group 'comment-edit
   :type '(repeat
           (cons
            (string "Language name")
            (symbol "Major mode"))))
 
-(defcustom commentdown-comment-regexp-alist
+(defcustom comment-edit-comment-regexp-alist
   '((emacs-lisp-mode    . (";+"))
     (c-mode             . ("//+" "\\*+"))
     (c++-mode           . c-mode)
     (python-mode        . ("#+"))
     (ruby-mode          . ("#+")))
   "Alist of comment regexp."
-  :group 'commentdown
+  :group 'comment-edit
   :type 'alist)
 
-(defcustom commentdown-block-regexp-plist
+(defcustom comment-edit-block-regexp-plist
   '(;; Example:
     ;; ```
     ;; (message "hello, world")
@@ -85,22 +85,22 @@ Taken from `markdown-code-lang-modes'."
     ;; `---
     (:beginning ",---+\s?\\(\\w*\\)$" :middle "|\s?" :end "`---+$"))
   "Alist of block regexp."
-  :group 'commentdown
+  :group 'comment-edit
   :type 'alist)
 
-(defvar commentdown--line-starter nil "Line starter of each editing line.")
+(defvar comment-edit--line-starter nil "Line starter of each editing line.")
 
-(defvar commentdown-debug-p nil)
+(defvar comment-edit-debug-p nil)
 
 ;;; Utils
 
-(defun commentdown-toggle-debug (&optional debug-p)
+(defun comment-edit-toggle-debug (&optional debug-p)
   (interactive)
-  (setq commentdown-debug-p (or debug-p (not commentdown-debug-p)))
-  (commentdown--log "commentdown-debug-p => %s" commentdown-debug-p))
+  (setq comment-edit-debug-p (or debug-p (not comment-edit-debug-p)))
+  (comment-edit--log "comment-edit-debug-p => %s" comment-edit-debug-p))
 
-(defun commentdown--log (format-string &rest args)
-  (when commentdown-debug-p
+(defun comment-edit--log (format-string &rest args)
+  (when comment-edit-debug-p
      (if noninteractive
          (funcall 'message format-string args)
        (with-current-buffer (get-buffer-create "*comment-log*")
@@ -111,7 +111,7 @@ Taken from `markdown-code-lang-modes'."
            (insert (apply 'format (cons format-string args))
                    "\n"))))))
 
-(defun commentdown--end-of-previous-line (&optional pos)
+(defun comment-edit--end-of-previous-line (&optional pos)
   "Move cursor to the end of prevous line of the given point POS.
 
 Return nil if reached the beginning of the buffer."
@@ -123,7 +123,7 @@ Return nil if reached the beginning of the buffer."
   (end-of-line)
   t)
 
-(defun commentdown--beginning-of-next-line (&optional pos)
+(defun comment-edit--beginning-of-next-line (&optional pos)
   "Move cursor to the beginning of next line of the given point POS.
 
 Return nil if reached the end of the buffer."
@@ -137,7 +137,7 @@ Return nil if reached the end of the buffer."
 
 ;;; Docstring funcitons
 
-(defun commentdown--point-at-string (&optional pos)
+(defun comment-edit--point-at-string (&optional pos)
   "Determine if point POS at string or not."
   (let* ((prop-value (get-text-property (or pos (point)) 'face))
          (testfn (if (listp prop-value) 'memq 'eq)))
@@ -146,54 +146,54 @@ Return nil if reached the end of the buffer."
              (funcall testfn 'font-lock-constant-face prop-value))
          t)))
 
-(defun commentdown--string-beginning (&optional pos)
+(defun comment-edit--string-beginning (&optional pos)
   "Return beginning of string at point POS"
   (let ((pos (or pos (point)))
         (new-pos))
-    (when (commentdown--point-at-string pos)
+    (when (comment-edit--point-at-string pos)
       (catch 'break
         (while t
           (setq new-pos (previous-single-property-change pos 'face))
           (cond ((not new-pos) (throw 'break (point-max)))
-                ((not (commentdown--point-at-string new-pos)) (throw 'break pos))
+                ((not (comment-edit--point-at-string new-pos)) (throw 'break pos))
                 (t (setq pos new-pos))))))))
 
-(defun commentdown--string-end (&optional pos)
+(defun comment-edit--string-end (&optional pos)
   "Return end of string at point POS"
   (let ((pos (or pos (point)))
         (new-pos))
-    (when (commentdown--point-at-string pos)
+    (when (comment-edit--point-at-string pos)
       (catch 'break
         (while t
           (setq new-pos (next-single-property-change pos 'face))
           (cond ((not new-pos) (throw 'break (point-max)))
-                ((not (commentdown--point-at-string (1- new-pos))) (throw 'break pos))
+                ((not (comment-edit--point-at-string (1- new-pos))) (throw 'break pos))
                 (t (setq pos new-pos))))))))
 
-(defun commentdown--string-region (&optional pos)
+(defun comment-edit--string-region (&optional pos)
   "Return region of string at point POS"
   (let ((pos (or pos (point))))
-    (if (commentdown--point-at-string pos)
-        (let ((fbeg (commentdown--string-beginning pos))
-              (fend (commentdown--string-end       pos)))
+    (if (comment-edit--point-at-string pos)
+        (let ((fbeg (comment-edit--string-beginning pos))
+              (fend (comment-edit--string-end       pos)))
           (list (1+ (or fbeg (point-min)))
                 (1- (or fend (point-max)))))
       (user-error "Not inside a string"))))
 
 ;;; Comment functions
 
-(defun commentdown--comment-starter-regexp (&optional mode)
+(defun comment-edit--comment-starter-regexp (&optional mode)
   "Return comment starter regex of MODE."
   (let* ((mode (or mode major-mode))
-         (def (or (assoc mode commentdown-comment-regexp-alist)
-                  (assoc (get mode 'derived-mode-parent) commentdown-comment-regexp-alist))))
+         (def (or (assoc mode comment-edit-comment-regexp-alist)
+                  (assoc (get mode 'derived-mode-parent) comment-edit-comment-regexp-alist))))
     (if (symbolp (cdr def))
-        (commentdown--comment-starter-regexp (cdr def))
+        (comment-edit--comment-starter-regexp (cdr def))
       (concat "^\s*\\(?:"
               (mapconcat 'identity (cdr def) "\\|")
               "\\)\s?"))))
 
-(defun commentdown--point-at-comment (&optional pos)
+(defun comment-edit--point-at-comment (&optional pos)
   "Determine if point POS at comment, or at the leading blank front of comment.
 
 style 1:
@@ -220,8 +220,8 @@ style 2:
   (let* ((pos (min (or pos (point)) (1- (point-max)))) ;; there is no text properties at point-max
          (prop-value (get-text-property pos 'face))
          (testfn (if (listp prop-value) 'memq 'eq)))
-    (commentdown--log
-     "==> [commentdown--point-at-comment] %S"
+    (comment-edit--log
+     "==> [comment-edit--point-at-comment] %S"
      (list :point pos
            :char (char-to-string (char-before pos))
            :props (text-properties-at pos)))
@@ -233,9 +233,9 @@ style 2:
                (end-of-line)
                (point))))
         (unless (or (eq pos eol) (eq pos (1- (point-max))))
-          (commentdown--point-at-comment eol))))))
+          (comment-edit--point-at-comment eol))))))
 
-(defun commentdown--comment-beginning (&optional pos)
+(defun comment-edit--comment-beginning (&optional pos)
   "Look at the first line of comment from point POS.
 
 Example:
@@ -250,7 +250,7 @@ Example:
 "
   (let ((pos (or pos (point)))
         (new-pos))
-    (when (commentdown--point-at-comment pos)
+    (when (comment-edit--point-at-comment pos)
       (save-excursion
         (setq new-pos
               (catch 'break
@@ -259,14 +259,14 @@ Example:
                   (end-of-line)
                   (setq new-pos (point))
                   (cond ((eq pos new-pos) (throw 'break new-pos))
-                        ((commentdown--point-at-comment new-pos) (setq pos new-pos))
+                        ((comment-edit--point-at-comment new-pos) (setq pos new-pos))
                         (t (throw 'break pos))))))
         (when new-pos
           (goto-char new-pos)
           (beginning-of-line)
           (point))))))
 
-(defun commentdown--comment-end (&optional pos)
+(defun comment-edit--comment-end (&optional pos)
   "Look at the last line of comment from point POS.
 
 Example:
@@ -281,7 +281,7 @@ Example:
 "
   (let ((pos (or pos (point)))
         (new-pos))
-    (when (commentdown--point-at-comment pos)
+    (when (comment-edit--point-at-comment pos)
       (save-excursion
         (setq new-pos
               (catch 'break
@@ -290,14 +290,14 @@ Example:
                   (end-of-line)
                   (setq new-pos (point))
                   (cond ((eq pos new-pos) (throw 'break new-pos))
-                        ((commentdown--point-at-comment new-pos) (setq pos new-pos))
+                        ((comment-edit--point-at-comment new-pos) (setq pos new-pos))
                         (t (throw 'break pos))))))
         (when new-pos
           (goto-char new-pos)
           (end-of-line)
           (point))))))
 
-(defun commentdown--comment-region (&optional pos)
+(defun comment-edit--comment-region (&optional pos)
   "Return the region of continuous comments.
 
            .- beginning
@@ -311,27 +311,27 @@ Example:
                         end -`
 "
   (let ((pos (or pos (point))))
-    (commentdown--log "==> [commentdown--comment-region] pos: %s" pos)
-    ;; (commentdown--log "==> [commentdown--comment-region] buffer string: %S"
+    (comment-edit--log "==> [comment-edit--comment-region] pos: %s" pos)
+    ;; (comment-edit--log "==> [comment-edit--comment-region] buffer string: %S"
     ;;          (buffer-substring-no-properties (point-min) (point-max)))
-    (if (commentdown--point-at-comment pos)
-        (let ((fbeg (commentdown--comment-beginning pos))
-              (fend (commentdown--comment-end       pos)))
+    (if (comment-edit--point-at-comment pos)
+        (let ((fbeg (comment-edit--comment-beginning pos))
+              (fend (comment-edit--comment-end       pos)))
           (list (save-excursion
                   ;; Skip `/*' for C/C++
                   (goto-char (or fbeg (point-min)))
-                  (re-search-forward (commentdown--comment-starter-regexp))
+                  (re-search-forward (comment-edit--comment-starter-regexp))
                   (match-beginning 0))
                 (save-excursion
                   (goto-char (or fend (point-max)))
                   ;; Skip `*/' for C/C++
-                  (re-search-backward (commentdown--comment-starter-regexp))
+                  (re-search-backward (comment-edit--comment-starter-regexp))
                   (point-at-eol))))
       (user-error "Not inside a comment"))))
 
 ;;; Code block functions
 
-(defun commentdown--code-block-beginning (&optional comment-starter)
+(defun comment-edit--code-block-beginning (&optional comment-starter)
   "Return code block info contains :beginning."
   (let ((regexp-group
          (concat
@@ -340,18 +340,18 @@ Example:
           (mapconcat
            (lambda (it)
              (plist-get it :beginning))
-           commentdown-block-regexp-plist
+           comment-edit-block-regexp-plist
            "\\|")
           "\\)")))
     (catch 'break
       (save-excursion
-        (commentdown--log "==> [code-block-beginning] comment-starter: %S" comment-starter)
-        (commentdown--log "==> [code-block-beginning] regexp-group: %S" regexp-group)
+        (comment-edit--log "==> [code-block-beginning] comment-starter: %S" comment-starter)
+        (comment-edit--log "==> [code-block-beginning] regexp-group: %S" regexp-group)
         (when (re-search-backward regexp-group nil t)
           (save-match-data
-            (commentdown--log "==> [code-block-beginning] matched1: %s" (match-string-no-properties 1))
-            (commentdown--log "==> [code-block-beginning] language: %s" (car (rassoc major-mode commentdown-code-lang-modes))))
-          (commentdown--beginning-of-next-line)
+            (comment-edit--log "==> [code-block-beginning] matched1: %s" (match-string-no-properties 1))
+            (comment-edit--log "==> [code-block-beginning] language: %s" (car (rassoc major-mode comment-edit-code-lang-modes))))
+          (comment-edit--beginning-of-next-line)
           (throw 'break
                  (list
                   :beginning (point-at-bol)
@@ -359,7 +359,7 @@ Example:
                   (or (let ((lang (match-string-no-properties 1)))
                         (unless (string= "" lang)
                           lang))
-                      (car (rassoc major-mode commentdown-code-lang-modes)))
+                      (car (rassoc major-mode comment-edit-code-lang-modes)))
                   :regexps
                   (car
                    (-non-nil
@@ -367,9 +367,9 @@ Example:
                                   (plist-get it :beginning)
                                   (match-string-no-properties 0))
                              it)
-                           commentdown-block-regexp-plist))))))))))
+                           comment-edit-block-regexp-plist))))))))))
 
-(defun commentdown--code-block-end (code-info &optional comment-starter)
+(defun comment-edit--code-block-end (code-info &optional comment-starter)
   "Return CODE-INFO with :end added."
   (save-excursion
     (let ((regexp (concat comment-starter
@@ -377,21 +377,21 @@ Example:
                            (plist-get code-info :regexps)
                            :end))))
       (when (re-search-forward regexp nil t)
-        (commentdown--end-of-previous-line)
+        (comment-edit--end-of-previous-line)
         (plist-put code-info
                    :end (point-at-eol))))))
 
-(defun commentdown-get-lang-mode (lang)
+(defun comment-edit-get-lang-mode (lang)
   "Return major mode that should be used for LANG.
 LANG is a string, and the returned major mode is a symbol."
   (cl-find-if
    'fboundp
-   (list (cdr (assoc lang commentdown-code-lang-modes))
-         (cdr (assoc (downcase lang) commentdown-code-lang-modes))
+   (list (cdr (assoc lang comment-edit-code-lang-modes))
+         (cdr (assoc (downcase lang) comment-edit-code-lang-modes))
          (intern (concat lang "-mode"))
          (intern (concat (downcase lang) "-mode")))))
 
-(defun commentdown--block-info ()
+(defun comment-edit--block-info ()
   "Return block info at point.
 
 Block info example:
@@ -404,15 +404,15 @@ Block info example:
 
 :regexps        not nil means point at a code block.
 :in-str-p       is t means point at a string block otherwish a comment block."
-  (let ((strp (commentdown--point-at-string)))
+  (let ((strp (comment-edit--point-at-string)))
     (save-restriction
         (apply 'narrow-to-region
                (if strp
-                   (commentdown--string-region)
-                 (commentdown--comment-region)))
-      (let* ((starter (unless strp (commentdown--comment-starter-regexp)))
-             (code-info (commentdown--code-block-end
-                         (commentdown--code-block-beginning starter)
+                   (comment-edit--string-region)
+                 (comment-edit--comment-region)))
+      (let* ((starter (unless strp (comment-edit--comment-starter-regexp)))
+             (code-info (comment-edit--code-block-end
+                         (comment-edit--code-block-beginning starter)
                          starter)))
         (if (and (plist-get code-info :beginning) (plist-get code-info :end))
             (plist-put code-info :in-str-p strp)
@@ -422,10 +422,10 @@ Block info example:
             :end (point-max))
            :in-str-p strp))))))
 
-;;; commentdown-mode
+;;; comment-edit-mode
 
-(defun commentdown--remove-comment-starter (regexp)
-  "Remove comment starter of each line by REGEXP when entering commentdown-mode."
+(defun comment-edit--remove-comment-starter (regexp)
+  "Remove comment starter of each line by REGEXP when entering comment-edit-mode."
   (let ((line-starter)
         (inhibit-read-only t))
     (save-excursion
@@ -440,45 +440,45 @@ Block info example:
           (backward-char))))
     line-starter))
 
-(defun commentdown--restore-comment-starter (beg end)
+(defun comment-edit--restore-comment-starter (beg end)
   "Restore comment starter of each line between BEG to END when returning from comemntdown-mode."
-  (commentdown--log "==> [commentdown--restore-comment-starter] line starter: %s"
-              commentdown--line-starter)
+  (comment-edit--log "==> [comment-edit--restore-comment-starter] line starter: %s"
+              comment-edit--line-starter)
   (when (and (string-prefix-p "*edit-indirect " (buffer-name))
-             commentdown--line-starter)
+             comment-edit--line-starter)
     (save-excursion
       (goto-char beg)
       (while (re-search-forward "^.*$" nil t)
-        (replace-match (concat commentdown--line-starter
+        (replace-match (concat comment-edit--line-starter
                                (match-string 0)))))))
 
-(defun commentdown--remove-escape ()
+(defun comment-edit--remove-escape ()
   "Remove escape when editing docstring."
   (goto-char (point-max))
   (while (re-search-backward "\\\\\"" nil t)
     (replace-match "\"")))
 
-(defun commentdown--restore-escape ()
+(defun comment-edit--restore-escape ()
   "Restore escape when finished edting docstring."
   (goto-char (point-min))
   (while (re-search-forward "\"" nil t)
     (replace-match "\\\\\"")))
 
-(defvar commentdown-mode-map (make-sparse-keymap) "Keymap for `commentdown-mode'.")
+(defvar comment-edit-mode-map (make-sparse-keymap) "Keymap for `comment-edit-mode'.")
 
-(define-minor-mode commentdown-mode
-  "Minor mode for enable edit code block in comment.\\{commentdown-mode-map}"
+(define-minor-mode comment-edit-mode
+  "Minor mode for enable edit code block in comment.\\{comment-edit-mode-map}"
   :init-value nil
-  :group 'commentdown
+  :group 'comment-edit
   :global nil
-  :keymap 'commentdown-mode-map
+  :keymap 'comment-edit-mode-map
   )
 
 ;;;###autoload
-(defun commentdown-edit ()
+(defun comment-edit ()
   "Edit comment or docstring or code block in them."
   (interactive)
-  (let* ((block (commentdown--block-info))
+  (let* ((block (comment-edit--block-info))
          (beg (plist-get block :beginning))
          (end (plist-get block :end))
          (lang (plist-get block :lang))
@@ -486,31 +486,31 @@ Block info example:
          (commentp (not strp))
          (codep (and (plist-get block :regexps) t))
          (starter-regexp (concat (if strp "^\s*"
-                                     (commentdown--comment-starter-regexp))
+                                     (comment-edit--comment-starter-regexp))
                                  (plist-get (plist-get block :regexps) :middle))))
-    (commentdown--log "==> block-info: %S" block)
-    ;; (commentdown--log "==> block: %S" (buffer-substring-no-properties beg end))
+    (comment-edit--log "==> block-info: %S" block)
+    ;; (comment-edit--log "==> block: %S" (buffer-substring-no-properties beg end))
     (if block
-        (let* ((mode (if codep (and lang (commentdown-get-lang-mode lang))
-                         commentdown-edit-code-block-default-mode)))
+        (let* ((mode (if codep (and lang (comment-edit-get-lang-mode lang))
+                         comment-edit-code-block-default-mode)))
           (setq-local edit-indirect-guess-mode-function
                       `(lambda (_parent-buffer _beg _end)
-                         (let ((line-starter (and (or ,codep ,commentp) (commentdown--remove-comment-starter ,starter-regexp))))
+                         (let ((line-starter (and (or ,codep ,commentp) (comment-edit--remove-comment-starter ,starter-regexp))))
                            (when ,strp
-                             (commentdown--remove-escape))
+                             (comment-edit--remove-escape))
                            (funcall ',mode)
-                           ;; (commentdown--log "==> block(edit buffer): %S"
+                           ;; (comment-edit--log "==> block(edit buffer): %S"
                            ;;                   (buffer-substring-no-properties (point-min) (point-max)))
-                           (set (make-local-variable 'commentdown--line-starter) line-starter)
+                           (set (make-local-variable 'comment-edit--line-starter) line-starter)
                            (set (make-local-variable 'edit-indirect-before-commit-hook)
                                 (append '((lambda ()
-                                            (commentdown--restore-comment-starter (point-min) (point-max))
+                                            (comment-edit--restore-comment-starter (point-min) (point-max))
                                             (when ,strp
-                                              (commentdown--restore-escape))))
+                                              (comment-edit--restore-escape))))
                                         edit-indirect-before-commit-hook)))))
           (edit-indirect-region beg end 'display-buffer))
       (user-error "Not inside a code block"))))
 
-(provide 'commentdown)
+(provide 'comment-edit)
 
-;;; commentdown.el ends here
+;;; comment-edit.el ends here

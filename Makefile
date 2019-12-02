@@ -1,7 +1,7 @@
 EMACS ?= emacs
-ELS = commentdown.el
-ELCS = commentdown.elc
-TEST_ELS = cask-bootstrap.el test/test-helper.el test/test-commentdown.el
+ELS = comment-edit.el
+ELCS = comment-edit.elc
+TEST_ELS = cask-bootstrap.el comment-edit-test-helper.el comment-edit-test.el
 
 # If the first argument is "test"...
 ifeq (test, $(firstword $(MAKECMDGOALS)))

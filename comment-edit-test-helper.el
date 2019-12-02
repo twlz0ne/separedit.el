@@ -58,7 +58,7 @@
 
 ;;;
 
-(defun test-commentdown--execute-block-edit (init-mode key-sequnce init-data expected-data)
+(defun comment-edit-test--execute-block-edit (init-mode key-sequnce init-data expected-data)
   (let ((buf (generate-new-buffer "*init*")))
     (switch-to-buffer buf)
     (insert init-data)
@@ -69,13 +69,13 @@
       (font-lock-ensure))
     (goto-char (point-min))
     (re-search-forward "<|>")
-    (commentdown-edit)
+    (comment-edit)
     (test-with nil key-sequnce)
     (should
      (equal expected-data
             (buffer-substring-no-properties (point-min) (point-max))))))
 
-(defun test-commentdown--append-to-code-block (mode string append)
+(defun comment-edit-test--append-to-code-block (mode string append)
   "Insert APPEND into the tail of code block in comment of STRING.
 
 Example:
@@ -100,31 +100,31 @@ Example:
       (font-lock-ensure))
     (goto-char (point-min))
     (re-search-forward "<|>")
-    (let ((block (commentdown--block-info)))
+    (let ((block (comment-edit--block-info)))
       (goto-char (plist-get block :end))
       (insert append)
       (buffer-substring-no-properties (point-min) (point-max)))))
 
-(defun test-commentdown--indent (mode string &optional indent-fn)
+(defun comment-edit-test--indent (mode string &optional indent-fn)
   (with-current-buffer (generate-new-buffer "*indent*")
     (insert string)
     (funcall mode)
     (funcall (or indent-fn 'indent-region) (point-min) (point-max))
     (buffer-substring-no-properties (point-min) (point-max))))
 
-(defun test-commentdown--indent-c (string)
-  (test-commentdown--indent 'c-mode string))
+(defun comment-edit-test--indent-c (string)
+  (comment-edit-test--indent 'c-mode string))
 
-(defun test-commentdown--indent-sh (string)
-  (test-commentdown--indent 'shell-script-mode string 'indent-region-line-by-line))
+(defun comment-edit-test--indent-sh (string)
+  (comment-edit-test--indent 'shell-script-mode string 'indent-region-line-by-line))
 
-(defun test-commentdown--indent-el (string)
-  (test-commentdown--indent 'emacs-lisp-mode string))
+(defun comment-edit-test--indent-el (string)
+  (comment-edit-test--indent 'emacs-lisp-mode string))
 
-(defun test-commentdown--indent-py (string)
-  (test-commentdown--indent 'python-mode string))
+(defun comment-edit-test--indent-py (string)
+  (comment-edit-test--indent 'python-mode string))
 
-(defun test-commentdown--indent-rb (string)
-  (test-commentdown--indent 'ruby-mode string))
+(defun comment-edit-test--indent-rb (string)
+  (comment-edit-test--indent 'ruby-mode string))
 
 ;;; test-helper.el ends here

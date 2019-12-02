@@ -1,4 +1,4 @@
-;;; test-commentdown.el --- Test commentdown -*- lexical-binding: t; -*-
+;;; comment-edit-test.el --- Test comment-edit -*- lexical-binding: t; -*-
 
 ;; Copyright (C) 2019 Gong Qijian <gongqijian@gmail.com>
 
@@ -20,21 +20,21 @@
 (require 'ert)
 ;; (setq ert-batch-backtrace-right-margin nil)
 
-(require 'commentdown)
-;; (commentdown-toggle-debug t)
+(require 'comment-edit)
+;; (comment-edit-toggle-debug t)
 
 (when noninteractive
   (transient-mark-mode))
 
 ;;; Function test
 
-(ert-deftest test-commentdown-comment-starter-regexp-el ()
+(ert-deftest comment-edit-test-comment-starter-regexp-el ()
   (mapc
    (lambda (it)
      (should
       (equal (cdr it)
              (replace-regexp-in-string
-              (commentdown--comment-starter-regexp 'emacs-lisp-mode) "" (car it)))))
+              (comment-edit--comment-starter-regexp 'emacs-lisp-mode) "" (car it)))))
    '((";foo"     . "foo")
      ("; foo"    . "foo")
      (";  foo"   . " foo")
@@ -47,13 +47,13 @@
      (";;; foo"  . "foo")
      (";;;  foo" . " foo"))))
 
-(ert-deftest test-commentdown-comment-starter-regexp-py ()
+(ert-deftest comment-edit-test-comment-starter-regexp-py ()
   (mapc
    (lambda (it)
      (should
       (equal (cdr it)
              (replace-regexp-in-string
-              (commentdown--comment-starter-regexp 'python-mode) "" (car it)))))
+              (comment-edit--comment-starter-regexp 'python-mode) "" (car it)))))
    '(("#foo"     . "foo")
      ("# foo"    . "foo")
      ("#  foo"   . " foo")
@@ -66,13 +66,13 @@
      ("### foo"  . "foo")
      ("###  foo" . " foo"))))
 
-(ert-deftest test-commentdown-comment-starter-regexp-c1 ()
+(ert-deftest comment-edit-test-comment-starter-regexp-c1 ()
   (mapc
    (lambda (it)
      (should
       (equal (cdr it)
              (replace-regexp-in-string
-              (commentdown--comment-starter-regexp 'c-mode) "" (car it)))))
+              (comment-edit--comment-starter-regexp 'c-mode) "" (car it)))))
    '(("*foo"     . "foo")
      ("* foo"    . "foo")
      ("*  foo"   . " foo")
@@ -85,13 +85,13 @@
      ("*** foo"  . "foo")
      ("***  foo" . " foo"))))
 
-(ert-deftest test-commentdown-comment-starter-regexp-c2 ()
+(ert-deftest comment-edit-test-comment-starter-regexp-c2 ()
   (mapc
    (lambda (it)
      (should
       (equal (cdr it)
              (replace-regexp-in-string
-              (commentdown--comment-starter-regexp 'c-mode) "" (car it)))))
+              (comment-edit--comment-starter-regexp 'c-mode) "" (car it)))))
    '(("/foo"     . "/foo")
      ("/ foo"    . "/ foo")
      ("/  foo"   . "/  foo")
@@ -106,9 +106,9 @@
 
 ;;; Interaction test
 
-(ert-deftest test-commentdown-el-in-el ()
+(ert-deftest comment-edit-test-el-in-el ()
   (let ((code-with-comment
-         (test-commentdown--indent-el
+         (comment-edit-test--indent-el
           "(defun sum (&rest nums)
              (funcall '+ nums))
            ;; ```elisp
@@ -116,17 +116,17 @@
            ;; ;; => 6
            ;;```"))
         (code-in-editing
-         (test-commentdown--indent-el
+         (comment-edit-test--indent-el
           "(sum '(1 2 3)) ;; <|>
            ;; => 6")))
-    (test-commentdown--execute-block-edit 'emacs-lisp-mode ""           code-with-comment code-in-editing)
-    (test-commentdown--execute-block-edit 'emacs-lisp-mode "C-c '"      code-with-comment code-with-comment)
-    (test-commentdown--execute-block-edit 'emacs-lisp-mode "aaa C-c '"  code-with-comment (test-commentdown--append-to-code-block
+    (comment-edit-test--execute-block-edit 'emacs-lisp-mode ""           code-with-comment code-in-editing)
+    (comment-edit-test--execute-block-edit 'emacs-lisp-mode "C-c '"      code-with-comment code-with-comment)
+    (comment-edit-test--execute-block-edit 'emacs-lisp-mode "aaa C-c '"  code-with-comment (comment-edit-test--append-to-code-block
                                                                                            'emacs-lisp-mode code-with-comment "aaa"))))
 
-(ert-deftest test-commentdown-py-in-py ()
+(ert-deftest comment-edit-test-py-in-py ()
   (let ((code-with-comment
-         (test-commentdown--indent-py
+         (comment-edit-test--indent-py
           "def sum(*nums):
                sum = 0
                for n in nums:
@@ -137,17 +137,17 @@
            # # => 6
            # ```"))
         (code-in-comment
-         (test-commentdown--indent-py
+         (comment-edit-test--indent-py
           "sum(1, 2, 3) # <|>
            # => 6")))
-    (test-commentdown--execute-block-edit 'python-mode ""          code-with-comment code-in-comment)
-    (test-commentdown--execute-block-edit 'python-mode "C-c '"     code-with-comment code-with-comment)
-    (test-commentdown--execute-block-edit 'python-mode "aaa C-c '" code-with-comment (test-commentdown--append-to-code-block
+    (comment-edit-test--execute-block-edit 'python-mode ""          code-with-comment code-in-comment)
+    (comment-edit-test--execute-block-edit 'python-mode "C-c '"     code-with-comment code-with-comment)
+    (comment-edit-test--execute-block-edit 'python-mode "aaa C-c '" code-with-comment (comment-edit-test--append-to-code-block
                                                                                        'python-mode code-with-comment "aaa"))))
 
-(ert-deftest test-commentdown-rb-in-rb ()
+(ert-deftest comment-edit-test-rb-in-rb ()
   (let ((code-with-comment
-         (test-commentdown--indent-rb
+         (comment-edit-test--indent-rb
           "def sum(*nums):
              nums.inject(0) {|sum,x| sum + x }
            # ```ruby
@@ -155,17 +155,17 @@
            # # => 6
            # ```"))
         (code-in-comment
-         (test-commentdown--indent-sh
+         (comment-edit-test--indent-sh
           "sum 1, 2, 3 # <|>
            # => 6")))
-    (test-commentdown--execute-block-edit 'ruby-mode ""          code-with-comment code-in-comment)
-    (test-commentdown--execute-block-edit 'ruby-mode "C-c '"     code-with-comment code-with-comment)
-    (test-commentdown--execute-block-edit 'ruby-mode "aaa C-c '" code-with-comment (test-commentdown--append-to-code-block
+    (comment-edit-test--execute-block-edit 'ruby-mode ""          code-with-comment code-in-comment)
+    (comment-edit-test--execute-block-edit 'ruby-mode "C-c '"     code-with-comment code-with-comment)
+    (comment-edit-test--execute-block-edit 'ruby-mode "aaa C-c '" code-with-comment (comment-edit-test--append-to-code-block
                                                                                        'ruby-mode code-with-comment "aaa"))))
 
-(ert-deftest test-commentdown-sh-in-c1 ()
+(ert-deftest comment-edit-test-sh-in-c1 ()
   (let ((code-with-comment
-         (test-commentdown--indent-c
+         (comment-edit-test--indent-c
           "int main()
            {
              printf(\"Hellow, world!\");
@@ -178,17 +178,17 @@
             * ```
             */"))
         (code-in-comment
-         (test-commentdown--indent-sh
+         (comment-edit-test--indent-sh
           "# build <|>
            make -k")))
-    (test-commentdown--execute-block-edit 'c-mode ""           code-with-comment code-in-comment)
-    (test-commentdown--execute-block-edit 'c-mode "C-c '"      code-with-comment code-with-comment)
-    (test-commentdown--execute-block-edit 'c-mode "aaa C-c '"  code-with-comment (test-commentdown--append-to-code-block
+    (comment-edit-test--execute-block-edit 'c-mode ""           code-with-comment code-in-comment)
+    (comment-edit-test--execute-block-edit 'c-mode "C-c '"      code-with-comment code-with-comment)
+    (comment-edit-test--execute-block-edit 'c-mode "aaa C-c '"  code-with-comment (comment-edit-test--append-to-code-block
                                                                                   'c-mode code-with-comment "aaa"))))
 
-(ert-deftest test-commentdown-sh-in-c2 ()
+(ert-deftest comment-edit-test-sh-in-c2 ()
   (let ((code-with-comment
-         (test-commentdown--indent-c
+         (comment-edit-test--indent-c
           "int main()
            {
              printf(\"Hellow, world!\");
@@ -201,15 +201,15 @@
            // ```
            //"))
         (code-in-comment
-         (test-commentdown--indent-sh
+         (comment-edit-test--indent-sh
           "# build <|>
            make -k")))
-    (test-commentdown--execute-block-edit 'c-mode ""           code-with-comment code-in-comment)
-    (test-commentdown--execute-block-edit 'c-mode "C-c '"      code-with-comment code-with-comment)
-    (test-commentdown--execute-block-edit 'c-mode "aaa C-c '"  code-with-comment (test-commentdown--append-to-code-block
+    (comment-edit-test--execute-block-edit 'c-mode ""           code-with-comment code-in-comment)
+    (comment-edit-test--execute-block-edit 'c-mode "C-c '"      code-with-comment code-with-comment)
+    (comment-edit-test--execute-block-edit 'c-mode "aaa C-c '"  code-with-comment (comment-edit-test--append-to-code-block
                                                                                   'c-mode code-with-comment "aaa"))))
 
-(ert-deftest test-commentdown-code-in-doc-1 ()
+(ert-deftest comment-edit-test-code-in-doc-1 ()
   (let ((init-data "(defun hello (name)
   \"Greet a person.
 
@@ -220,12 +220,12 @@ Usage:
     ```\"
   (message \"hello, %s\" name))")
         (code-in-doc "(hello \"foo\") ;; <|>"))
-    (test-commentdown--execute-block-edit 'emacs-lisp-mode ""       init-data code-in-doc)
-    (test-commentdown--execute-block-edit 'emacs-lisp-mode "C-c '"  init-data init-data)
-    (test-commentdown--execute-block-edit 'emacs-lisp-mode "M-> aaa C-c '"  init-data (test-commentdown--append-to-code-block
+    (comment-edit-test--execute-block-edit 'emacs-lisp-mode ""       init-data code-in-doc)
+    (comment-edit-test--execute-block-edit 'emacs-lisp-mode "C-c '"  init-data init-data)
+    (comment-edit-test--execute-block-edit 'emacs-lisp-mode "M-> aaa C-c '"  init-data (comment-edit-test--append-to-code-block
                                                                                            'emacs-lisp-mode init-data "aaa"))))
 
-(ert-deftest test-commentdown-code-in-doc-2 ()
+(ert-deftest comment-edit-test-code-in-doc-2 ()
   (let ((init-data "(defun hello (name)
   \"Greet a person.
 
@@ -236,12 +236,12 @@ Usage:
     `---\"
   (message \"hello, %s\" name))")
         (code-in-doc "(hello \"foo\") ;; <|>"))
-    (test-commentdown--execute-block-edit 'emacs-lisp-mode ""       init-data code-in-doc)
-    (test-commentdown--execute-block-edit 'emacs-lisp-mode "C-c '"  init-data init-data)
-    (test-commentdown--execute-block-edit 'emacs-lisp-mode "M-> aaa C-c '"  init-data (test-commentdown--append-to-code-block
+    (comment-edit-test--execute-block-edit 'emacs-lisp-mode ""       init-data code-in-doc)
+    (comment-edit-test--execute-block-edit 'emacs-lisp-mode "C-c '"  init-data init-data)
+    (comment-edit-test--execute-block-edit 'emacs-lisp-mode "M-> aaa C-c '"  init-data (comment-edit-test--append-to-code-block
                                                                                            'emacs-lisp-mode init-data "aaa"))))
 
-(ert-deftest test-commentdown-code-in-doc-3 ()
+(ert-deftest comment-edit-test-code-in-doc-3 ()
   (let ((init-data "(defun hello (name)
   \"Greet a person.
 
@@ -258,11 +258,11 @@ Usage:<|>
     ```elisp
     (hello \"foo\")
     ```"))
-    (test-commentdown--execute-block-edit 'emacs-lisp-mode ""       init-data code-in-doc)
-    (test-commentdown--execute-block-edit 'emacs-lisp-mode "C-c '"  init-data init-data)
-    (test-commentdown--execute-block-edit 'emacs-lisp-mode "M-> aaa C-c '"  init-data (test-commentdown--append-to-code-block
+    (comment-edit-test--execute-block-edit 'emacs-lisp-mode ""       init-data code-in-doc)
+    (comment-edit-test--execute-block-edit 'emacs-lisp-mode "C-c '"  init-data init-data)
+    (comment-edit-test--execute-block-edit 'emacs-lisp-mode "M-> aaa C-c '"  init-data (comment-edit-test--append-to-code-block
                                                                                        'emacs-lisp-mode init-data "aaa"))))
 
-(provide 'test-commentdown)
+(provide 'comment-edit-test)
 
-;;; test-commentdown.el ends here
+;;; comment-edit-test.el ends here
