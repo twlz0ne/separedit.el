@@ -100,7 +100,7 @@ Example:
       (font-lock-ensure))
     (goto-char (point-min))
     (re-search-forward "<|>")
-    (let ((block (commentdown-editing-block)))
+    (let ((block (commentdown--block-info)))
       (goto-char (plist-get block :end))
       (insert append)
       (buffer-substring-no-properties (point-min) (point-max)))))

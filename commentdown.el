@@ -92,6 +92,8 @@ Taken from `markdown-code-lang-modes'."
 
 (defvar commentdown-debug-p nil)
 
+;;; Utils
+
 (defun commentdown-toggle-debug (&optional debug-p)
   (interactive)
   (setq commentdown-debug-p (or debug-p (not commentdown-debug-p)))
@@ -108,56 +110,6 @@ Taken from `markdown-code-lang-modes'."
            (goto-char (point-max))
            (insert (apply 'format (cons format-string args))
                    "\n"))))))
-
-(defun commentdown--comment-starter-regexp (&optional mode)
-  (let* ((mode (or mode major-mode))
-         (def (or (assoc mode commentdown-comment-regexp-alist)
-                  (assoc (get mode 'derived-mode-parent) commentdown-comment-regexp-alist))))
-    (if (symbolp (cdr def))
-        (commentdown--comment-starter-regexp (cdr def))
-      (concat "^\s*\\(?:"
-              (mapconcat 'identity (cdr def) "\\|")
-              "\\)\s?"))))
-
-(defun commentdown--point-at-string (&optional pos)
-  "Determine if point POS at string or not."
-  (let* ((prop-value (get-text-property (or pos (point)) 'face))
-         (testfn (if (listp prop-value) 'memq 'eq)))
-    (and (or (funcall testfn 'font-lock-string-face prop-value)
-             (funcall testfn 'font-lock-doc-face prop-value)
-             (funcall testfn 'font-lock-constant-face prop-value))
-         t)))
-
-(defun commentdown--string-beginning (&optional pos)
-  (let ((pos (or pos (point)))
-        (new-pos))
-    (when (commentdown--point-at-string pos)
-      (catch 'break
-        (while t
-          (setq new-pos (previous-single-property-change pos 'face))
-          (cond ((not new-pos) (throw 'break (point-max)))
-                ((not (commentdown--point-at-string new-pos)) (throw 'break pos))
-                (t (setq pos new-pos))))))))
-
-(defun commentdown--string-end (&optional pos)
-  (let ((pos (or pos (point)))
-        (new-pos))
-    (when (commentdown--point-at-string pos)
-      (catch 'break
-        (while t
-          (setq new-pos (next-single-property-change pos 'face))
-          (cond ((not new-pos) (throw 'break (point-max)))
-                ((not (commentdown--point-at-string (1- new-pos))) (throw 'break pos))
-                (t (setq pos new-pos))))))))
-
-(defun commentdown--string-region (&optional pos)
-  (let ((pos (or pos (point))))
-    (if (commentdown--point-at-string pos)
-        (let ((fbeg (commentdown--string-beginning pos))
-              (fend (commentdown--string-end       pos)))
-          (list (1+ (or fbeg (point-min)))
-                (1- (or fend (point-max)))))
-      (user-error "Not inside a string"))))
 
 (defun commentdown--end-of-previous-line (&optional pos)
   "Move cursor to the end of prevous line of the given point POS.
@@ -183,54 +135,63 @@ Return nil if reached the end of the buffer."
   (beginning-of-line)
   t)
 
-(defun commentdown--code-block-beginning (&optional comment-starter)
-  "Looking at the code block beginning."
-  (let ((regexp-group
-         (concat
-          comment-starter
-          "\\(?:"
-          (mapconcat
-           (lambda (it)
-             (plist-get it :beginning))
-           commentdown-block-regexp-plist
-           "\\|")
-          "\\)")))
-    (catch 'break
-      (save-excursion
-        (commentdown--log "==> [code-block-beginning] comment-starter: %S" comment-starter)
-        (commentdown--log "==> [code-block-beginning] regexp-group: %S" regexp-group)
-        (when (re-search-backward regexp-group nil t)
-          (save-match-data
-            (commentdown--log "==> [code-block-beginning] matched1: %s" (match-string-no-properties 1))
-            (commentdown--log "==> [code-block-beginning] language: %s" (car (rassoc major-mode commentdown-code-lang-modes))))
-          (commentdown--beginning-of-next-line)
-          (throw 'break
-                 (list
-                  :beginning (point-at-bol)
-                  :lang
-                  (or (let ((lang (match-string-no-properties 1)))
-                        (unless (string= "" lang)
-                          lang))
-                      (car (rassoc major-mode commentdown-code-lang-modes)))
-                  :regexps
-                  (car
-                   (-non-nil
-                    (--map (when (string-match-p
-                                  (plist-get it :beginning)
-                                  (match-string-no-properties 0))
-                             it)
-                           commentdown-block-regexp-plist))))))))))
+;;; Docstring funcitons
 
-(defun commentdown--code-block-end (code-info &optional comment-starter)
-  (save-excursion
-    (let ((regexp (concat comment-starter
-                          (plist-get
-                           (plist-get code-info :regexps)
-                           :end))))
-      (when (re-search-forward regexp nil t)
-        (commentdown--end-of-previous-line)
-        (plist-put code-info
-                   :end (point-at-eol))))))
+(defun commentdown--point-at-string (&optional pos)
+  "Determine if point POS at string or not."
+  (let* ((prop-value (get-text-property (or pos (point)) 'face))
+         (testfn (if (listp prop-value) 'memq 'eq)))
+    (and (or (funcall testfn 'font-lock-string-face prop-value)
+             (funcall testfn 'font-lock-doc-face prop-value)
+             (funcall testfn 'font-lock-constant-face prop-value))
+         t)))
+
+(defun commentdown--string-beginning (&optional pos)
+  "Return beginning of string at point POS"
+  (let ((pos (or pos (point)))
+        (new-pos))
+    (when (commentdown--point-at-string pos)
+      (catch 'break
+        (while t
+          (setq new-pos (previous-single-property-change pos 'face))
+          (cond ((not new-pos) (throw 'break (point-max)))
+                ((not (commentdown--point-at-string new-pos)) (throw 'break pos))
+                (t (setq pos new-pos))))))))
+
+(defun commentdown--string-end (&optional pos)
+  "Return end of string at point POS"
+  (let ((pos (or pos (point)))
+        (new-pos))
+    (when (commentdown--point-at-string pos)
+      (catch 'break
+        (while t
+          (setq new-pos (next-single-property-change pos 'face))
+          (cond ((not new-pos) (throw 'break (point-max)))
+                ((not (commentdown--point-at-string (1- new-pos))) (throw 'break pos))
+                (t (setq pos new-pos))))))))
+
+(defun commentdown--string-region (&optional pos)
+  "Return region of string at point POS"
+  (let ((pos (or pos (point))))
+    (if (commentdown--point-at-string pos)
+        (let ((fbeg (commentdown--string-beginning pos))
+              (fend (commentdown--string-end       pos)))
+          (list (1+ (or fbeg (point-min)))
+                (1- (or fend (point-max)))))
+      (user-error "Not inside a string"))))
+
+;;; Comment functions
+
+(defun commentdown--comment-starter-regexp (&optional mode)
+  "Return comment starter regex of MODE."
+  (let* ((mode (or mode major-mode))
+         (def (or (assoc mode commentdown-comment-regexp-alist)
+                  (assoc (get mode 'derived-mode-parent) commentdown-comment-regexp-alist))))
+    (if (symbolp (cdr def))
+        (commentdown--comment-starter-regexp (cdr def))
+      (concat "^\s*\\(?:"
+              (mapconcat 'identity (cdr def) "\\|")
+              "\\)\s?"))))
 
 (defun commentdown--point-at-comment (&optional pos)
   "Determine if point POS at comment, or at the leading blank front of comment.
@@ -368,7 +329,69 @@ Example:
                   (point-at-eol))))
       (user-error "Not inside a comment"))))
 
-(defun commentdown-editing-block ()
+;;; Code block functions
+
+(defun commentdown--code-block-beginning (&optional comment-starter)
+  "Return code block info contains :beginning."
+  (let ((regexp-group
+         (concat
+          comment-starter
+          "\\(?:"
+          (mapconcat
+           (lambda (it)
+             (plist-get it :beginning))
+           commentdown-block-regexp-plist
+           "\\|")
+          "\\)")))
+    (catch 'break
+      (save-excursion
+        (commentdown--log "==> [code-block-beginning] comment-starter: %S" comment-starter)
+        (commentdown--log "==> [code-block-beginning] regexp-group: %S" regexp-group)
+        (when (re-search-backward regexp-group nil t)
+          (save-match-data
+            (commentdown--log "==> [code-block-beginning] matched1: %s" (match-string-no-properties 1))
+            (commentdown--log "==> [code-block-beginning] language: %s" (car (rassoc major-mode commentdown-code-lang-modes))))
+          (commentdown--beginning-of-next-line)
+          (throw 'break
+                 (list
+                  :beginning (point-at-bol)
+                  :lang
+                  (or (let ((lang (match-string-no-properties 1)))
+                        (unless (string= "" lang)
+                          lang))
+                      (car (rassoc major-mode commentdown-code-lang-modes)))
+                  :regexps
+                  (car
+                   (-non-nil
+                    (--map (when (string-match-p
+                                  (plist-get it :beginning)
+                                  (match-string-no-properties 0))
+                             it)
+                           commentdown-block-regexp-plist))))))))))
+
+(defun commentdown--code-block-end (code-info &optional comment-starter)
+  "Return CODE-INFO with :end added."
+  (save-excursion
+    (let ((regexp (concat comment-starter
+                          (plist-get
+                           (plist-get code-info :regexps)
+                           :end))))
+      (when (re-search-forward regexp nil t)
+        (commentdown--end-of-previous-line)
+        (plist-put code-info
+                   :end (point-at-eol))))))
+
+(defun commentdown-get-lang-mode (lang)
+  "Return major mode that should be used for LANG.
+LANG is a string, and the returned major mode is a symbol."
+  (cl-find-if
+   'fboundp
+   (list (cdr (assoc lang commentdown-code-lang-modes))
+         (cdr (assoc (downcase lang) commentdown-code-lang-modes))
+         (intern (concat lang "-mode"))
+         (intern (concat (downcase lang) "-mode")))))
+
+(defun commentdown--block-info ()
   "Return block info at point.
 
 Block info example:
@@ -399,17 +422,10 @@ Block info example:
             :end (point-max))
            :in-str-p strp))))))
 
-(defun commentdown-get-lang-mode (lang)
-  "Return major mode that should be used for LANG.
-LANG is a string, and the returned major mode is a symbol."
-  (cl-find-if
-   'fboundp
-   (list (cdr (assoc lang commentdown-code-lang-modes))
-         (cdr (assoc (downcase lang) commentdown-code-lang-modes))
-         (intern (concat lang "-mode"))
-         (intern (concat (downcase lang) "-mode")))))
+;;; commentdown-mode
 
 (defun commentdown--remove-comment-starter (regexp)
+  "Remove comment starter of each line by REGEXP when entering commentdown-mode."
   (let ((line-starter)
         (inhibit-read-only t))
     (save-excursion
@@ -425,6 +441,7 @@ LANG is a string, and the returned major mode is a symbol."
     line-starter))
 
 (defun commentdown--restore-comment-starter (beg end)
+  "Restore comment starter of each line between BEG to END when returning from comemntdown-mode."
   (commentdown--log "==> [commentdown--restore-comment-starter] line starter: %s"
               commentdown--line-starter)
   (when (and (string-prefix-p "*edit-indirect " (buffer-name))
@@ -436,18 +453,32 @@ LANG is a string, and the returned major mode is a symbol."
                                (match-string 0)))))))
 
 (defun commentdown--remove-escape ()
+  "Remove escape when editing docstring."
   (goto-char (point-max))
   (while (re-search-backward "\\\\\"" nil t)
     (replace-match "\"")))
 
 (defun commentdown--restore-escape ()
+  "Restore escape when finished edting docstring."
   (goto-char (point-min))
   (while (re-search-forward "\"" nil t)
     (replace-match "\\\\\"")))
 
+(defvar commentdown-mode-map (make-sparse-keymap) "Keymap for `commentdown-mode'.")
+
+(define-minor-mode commentdown-mode
+  "Minor mode for enable edit code block in comment.\\{commentdown-mode-map}"
+  :init-value nil
+  :group 'commentdown
+  :global nil
+  :keymap 'commentdown-mode-map
+  )
+
+;;;###autoload
 (defun commentdown-edit ()
+  "Edit comment or docstring or code block in them."
   (interactive)
-  (let* ((block (commentdown-editing-block))
+  (let* ((block (commentdown--block-info))
          (beg (plist-get block :beginning))
          (end (plist-get block :end))
          (lang (plist-get block :lang))
@@ -479,16 +510,6 @@ LANG is a string, and the returned major mode is a symbol."
                                         edit-indirect-before-commit-hook)))))
           (edit-indirect-region beg end 'display-buffer))
       (user-error "Not inside a code block"))))
-
-(defvar commentdown-mode-map (make-sparse-keymap) "Keymap for `commentdown-mode'.")
-
-(define-minor-mode commentdown-mode
-  "Minor mode for enable edit code block in comment.\\{commentdown-mode-map}"
-  :init-value nil
-  :group 'commentdown
-  :global nil
-  :keymap 'commentdown-mode-map
-  )
 
 (provide 'commentdown)
 
