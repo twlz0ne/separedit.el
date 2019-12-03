@@ -1,3 +1,5 @@
+[![Build Status](https://travis-ci.com/twlz0ne/comment-edit.el.svg?branch=master)](https://travis-ci.com/twlz0ne/comment-edit.el)
+
 # comment-edit.el
 
 Edit comment or docstring or code blocks inside them in separate buffers.
