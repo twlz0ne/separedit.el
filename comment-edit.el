@@ -154,8 +154,10 @@ Return nil if reached the end of the buffer."
       (catch 'break
         (while t
           (setq new-pos (previous-single-property-change pos 'face))
-          (cond ((not new-pos) (throw 'break (point-max)))
-                ((not (comment-edit--point-at-string new-pos)) (throw 'break pos))
+          (cond ((and (not new-pos)
+                      (comment-edit--point-at-string pos)) (throw 'break (point-min)))
+                ((and new-pos
+                      (not (comment-edit--point-at-string (1- new-pos)))) (throw 'break new-pos))
                 (t (setq pos new-pos))))))))
 
 (defun comment-edit--string-end (&optional pos)
@@ -166,8 +168,10 @@ Return nil if reached the end of the buffer."
       (catch 'break
         (while t
           (setq new-pos (next-single-property-change pos 'face))
-          (cond ((not new-pos) (throw 'break (point-max)))
-                ((not (comment-edit--point-at-string (1- new-pos))) (throw 'break pos))
+          (cond ((and (not new-pos)
+                      (comment-edit--point-at-string pos)) (throw 'break (point-max)))
+                ((and new-pos
+                      (not (comment-edit--point-at-string new-pos))) (throw 'break new-pos))
                 (t (setq pos new-pos))))))))
 
 (defun comment-edit--string-region (&optional pos)
