@@ -104,6 +104,30 @@
      ("/// foo"  . "foo")
      ("///  foo" . " foo"))))
 
+(ert-deftest comment-edit-test-string-region ()
+  (let* ((content-string (format "%S" "string `symbol'\n\n(function \"arg\")"))
+         (expected-string (substring content-string 1 (1- (length content-string)))))
+    (should (string= expected-string
+                     (comment-edit-test--with-buffer-el
+                      content-string
+                      (apply #'buffer-substring-no-properties (comment-edit--string-region 20)))))
+    (should (string= expected-string
+                     (comment-edit-test--with-buffer-el
+                      (concat "(" content-string ")")
+                      (apply #'buffer-substring-no-properties (comment-edit--string-region 20)))))
+    (should (string= expected-string
+                     (comment-edit-test--with-buffer-el
+                      (concat "(foo " content-string ")")
+                      (apply #'buffer-substring-no-properties (comment-edit--string-region 20)))))
+    (should (string= expected-string
+                     (comment-edit-test--with-buffer-el
+                      (concat "(defun foo () " content-string ")")
+                      (apply #'buffer-substring-no-properties (comment-edit--string-region 20)))))
+    (should (string= expected-string
+                     (comment-edit-test--with-buffer-el
+                      (concat "(defun foo () " content-string ")\n(foo)")
+                      (apply #'buffer-substring-no-properties (comment-edit--string-region 20)))))))
+
 ;;; Interaction test
 
 (ert-deftest comment-edit-test-el-in-el ()

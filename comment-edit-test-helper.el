@@ -127,4 +127,17 @@ Example:
 (defun comment-edit-test--indent-rb (string)
   (comment-edit-test--indent 'ruby-mode string))
 
+(defmacro comment-edit-test--with-buffer-el (content &rest body)
+  `(let ((buf (generate-new-buffer "*comment-edit-test*")))
+     (unwind-protect
+         (with-current-buffer buf
+           (insert ,content)
+           (emacs-lisp-mode)
+           (let ((noninteractive nil))
+             (font-lock-mode 1)
+             (font-lock-set-defaults)
+             (jit-lock-fontify-now (point-min) (point-max)))
+           ,@body)
+       (kill-buffer buf))))
+
 ;;; test-helper.el ends here
