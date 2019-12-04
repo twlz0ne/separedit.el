@@ -314,6 +314,20 @@ Usage:<|>
     (comment-edit-test--execute-block-edit 'emacs-lisp-mode "M-> aaa C-c '"  init-data (comment-edit-test--append-to-code-block
                                                                                        'emacs-lisp-mode init-data "aaa"))))
 
+(ert-deftest comment-edit-test-string-escape-js ()
+  (let* ((initial-string "'\"single quotes wrap<|> double quotes.\"'")
+         (expected-string (substring initial-string 1 (- (length initial-string) 1))))
+    (comment-edit-test--execute-block-edit 'javascript-mode ""       initial-string expected-string)
+    (comment-edit-test--execute-block-edit 'javascript-mode "C-c '"  initial-string initial-string))
+  (let* ((initial-string "'\\'single quotes wrap<|> single quotes.\\''")
+         (expected-string   "'single quotes wrap<|> single quotes.'"))
+    (comment-edit-test--execute-block-edit 'javascript-mode ""       initial-string expected-string)
+    (comment-edit-test--execute-block-edit 'javascript-mode "C-c '"  initial-string initial-string))
+(let* ((initial-string "\"'double quotes wrap<|> single quotes.'\"")
+       (expected-string  "'double quotes wrap<|> single quotes.'"))
+    (comment-edit-test--execute-block-edit 'javascript-mode ""       initial-string expected-string)
+    (comment-edit-test--execute-block-edit 'javascript-mode "C-c '"  initial-string initial-string)))
+
 (provide 'comment-edit-test)
 
 ;;; comment-edit-test.el ends here

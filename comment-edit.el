@@ -415,13 +415,16 @@ Block info example:
      :in-str-p nil)
 
 :regexps        not nil means point at a code block.
-:in-str-p       is t means point at a string block otherwish a comment block."
+:in-str-p       not nil means point at a string block otherwish a comment block."
   (let ((strp (comment-edit--point-at-string)))
     (save-restriction
-        (apply 'narrow-to-region
-               (if strp
-                   (comment-edit--string-region)
-                 (comment-edit--comment-region)))
+      (apply 'narrow-to-region
+             (if strp
+                 (let ((region (comment-edit--string-region)))
+                   (setq strp (comment-edit--string-quotes
+                               (comment-edit--string-beginning)))
+                   region)
+               (comment-edit--comment-region)))
       (let* ((starter (unless strp (comment-edit--comment-starter-regexp)))
              (code-info (comment-edit--code-block-end
                          (comment-edit--code-block-beginning starter)
@@ -464,17 +467,25 @@ Block info example:
         (replace-match (concat comment-edit--line-starter
                                (match-string 0)))))))
 
-(defun comment-edit--remove-escape ()
+(defun comment-edit--remove-escape (quotes-char)
   "Remove escape when editing docstring."
   (goto-char (point-max))
-  (while (re-search-backward "\\\\\"" nil t)
-    (replace-match "\"")))
+  (cond ((string= quotes-char "\"")
+         (while (re-search-backward "\\\\\"" nil t)
+           (replace-match "\"")))
+        ((string= quotes-char "'")
+         (while (re-search-backward "\\\\'" nil t)
+           (replace-match "'")))))
 
-(defun comment-edit--restore-escape ()
+(defun comment-edit--restore-escape (quotes-char)
   "Restore escape when finished edting docstring."
   (goto-char (point-min))
-  (while (re-search-forward "\"" nil t)
-    (replace-match "\\\\\"")))
+  (cond ((string= quotes-char "\"")
+         (while (re-search-forward "\"" nil t)
+           (replace-match "\\\\\"")))
+        ((string= quotes-char "'")
+         (while (re-search-forward "'" nil t)
+           (replace-match "\\\\'")))))
 
 (defvar comment-edit-mode-map (make-sparse-keymap) "Keymap for `comment-edit-mode'.")
 
@@ -509,7 +520,7 @@ Block info example:
                       `(lambda (_parent-buffer _beg _end)
                          (let ((line-starter (and (or ,codep ,commentp) (comment-edit--remove-comment-starter ,starter-regexp))))
                            (when ,strp
-                             (comment-edit--remove-escape))
+                             (comment-edit--remove-escape (substring ,strp 0 1)))
                            (funcall ',mode)
                            ;; (comment-edit--log "==> block(edit buffer): %S"
                            ;;                   (buffer-substring-no-properties (point-min) (point-max)))
@@ -518,7 +529,7 @@ Block info example:
                                 (append '((lambda ()
                                             (comment-edit--restore-comment-starter (point-min) (point-max))
                                             (when ,strp
-                                              (comment-edit--restore-escape))))
+                                              (comment-edit--restore-escape (substring ,strp 0 1)))))
                                         edit-indirect-before-commit-hook)))))
           (edit-indirect-region beg end 'display-buffer))
       (user-error "Not inside a code block"))))
