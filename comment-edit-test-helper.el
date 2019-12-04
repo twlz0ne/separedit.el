@@ -152,12 +152,13 @@ Version 2016-07-04"
           'face (list :background (match-string-no-properties 0)))))))
   (font-lock-fontify-buffer))
 
-(defmacro comment-edit-test--with-buffer-el (content &rest body)
+(defmacro comment-edit-test--with-buffer (mode content &rest body)
+  (declare (indent 1) (debug t))
   `(let ((buf (generate-new-buffer "*comment-edit-test*")))
      (unwind-protect
          (with-current-buffer buf
            (insert ,content)
-           (emacs-lisp-mode)
+           (funcall ,mode)
            (xah-syntax-color-hex)
            (let ((noninteractive nil))
              (font-lock-mode 1)

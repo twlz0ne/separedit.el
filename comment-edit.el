@@ -137,6 +137,16 @@ Return nil if reached the end of the buffer."
 
 ;;; Docstring funcitons
 
+(defcustom comment-edit-string-quotes-alist
+  '((python-mode     . ("\"\"\"" "'''" "\"" "'"))
+    (javascript-mode . ("\"" "'"))
+    (js-mode         . javascript-mode)
+    (js2-mode        . javascript-mode)
+    (t               . ("\"")))
+  "Alist of string quotes."
+  :group 'comment-edit
+  :type 'alist)
+
 (defun comment-edit--point-at-string ()
   "Determine if point at string or not."
   (nth 3 (syntax-ppss)))
@@ -153,16 +163,33 @@ Return nil if reached the end of the buffer."
     (while (comment-edit--point-at-string) (forward-char))
     (point)))
 
+(defun comment-edit--string-quotes (pos &optional backwardp mode)
+  (let* ((mode (or mode major-mode))
+         (looking-fn (if backwardp 'looking-back 'looking-at))
+         (quotes
+          (let ((aval (assoc-default mode comment-edit-string-quotes-alist)))
+            (cond ((symbolp aval) (assoc-default (or aval t) comment-edit-string-quotes-alist))
+                  (t aval)))))
+    (save-excursion
+      (when pos
+        (goto-char pos))
+      (catch 'break
+        (while quotes
+          (let ((s (pop quotes)))
+            (when (funcall looking-fn s)
+              (throw 'break s))))))))
+
 (defun comment-edit--string-region (&optional pos)
   "Return region of string at point POS"
   (let ((pos (or pos (point))))
     (save-excursion
       (goto-char pos)
       (if (comment-edit--point-at-string)
-          (let ((fbeg (comment-edit--string-beginning))
-                (fend (comment-edit--string-end)))
-            (list (1+ (or fbeg (point-min)))
-                  (1- (or fend (point-max)))))
+          (let* ((fbeg (comment-edit--string-beginning))
+                 (fend (comment-edit--string-end))
+                 (quotes-len (length (comment-edit--string-quotes fbeg))))
+            (list (+ (or fbeg (point-min)) quotes-len)
+                  (- (or fend (point-max)) quotes-len)))
         (user-error "Not inside a string")))))
 
 ;;; Comment functions

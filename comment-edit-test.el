@@ -104,29 +104,56 @@
      ("/// foo"  . "foo")
      ("///  foo" . " foo"))))
 
-(ert-deftest comment-edit-test-string-region ()
+(ert-deftest comment-edit-test-string-region-el ()
   (let* ((content-string (format "%S" "string `symbol'\n#ffffff\n(function \"arg\")"))
          (expected-string (substring content-string 1 (1- (length content-string)))))
     (should (string= expected-string
-                     (comment-edit-test--with-buffer-el
+                     (comment-edit-test--with-buffer 'emacs-lisp-mode
                       content-string
                       (apply #'buffer-substring-no-properties (comment-edit--string-region 20)))))
     (should (string= expected-string
-                     (comment-edit-test--with-buffer-el
+                     (comment-edit-test--with-buffer 'emacs-lisp-mode
                       (concat "(" content-string ")")
                       (apply #'buffer-substring-no-properties (comment-edit--string-region 20)))))
     (should (string= expected-string
-                     (comment-edit-test--with-buffer-el
+                     (comment-edit-test--with-buffer 'emacs-lisp-mode
                       (concat "(foo " content-string ")")
                       (apply #'buffer-substring-no-properties (comment-edit--string-region 20)))))
     (should (string= expected-string
-                     (comment-edit-test--with-buffer-el
+                     (comment-edit-test--with-buffer 'emacs-lisp-mode
                       (concat "(defun foo () " content-string ")")
                       (apply #'buffer-substring-no-properties (comment-edit--string-region 20)))))
     (should (string= expected-string
-                     (comment-edit-test--with-buffer-el
+                     (comment-edit-test--with-buffer 'emacs-lisp-mode
                       (concat "(defun foo () " content-string ")\n(foo)")
                       (apply #'buffer-substring-no-properties (comment-edit--string-region 20)))))))
+
+(ert-deftest comment-edit-test-string-region-py ()
+  (let* ((content-string "\"\"\"docstring & double quotes\"\"\"")
+         (expected-string (substring content-string 3 (- (length content-string) 3))))
+    (should (string= expected-string
+                     (comment-edit-test--with-buffer 'python-mode
+                      content-string
+                      (apply #'buffer-substring-no-properties (comment-edit--string-region 20))))))
+  (let* ((content-string "'''docstring & single quotes'''")
+         (expected-string (substring content-string 3 (- (length content-string) 3))))
+    (should (string= expected-string
+                     (comment-edit-test--with-buffer 'python-mode
+                      content-string
+                      (apply #'buffer-substring-no-properties (comment-edit--string-region 20))))))
+  (let* ((content-string "\"docstring & double quotes\"")
+         (expected-string (substring content-string 1 (- (length content-string) 1))))
+    (should (string= expected-string
+                     (comment-edit-test--with-buffer 'python-mode
+                      content-string
+                      (apply #'buffer-substring-no-properties (comment-edit--string-region 20))))))
+  (let* ((content-string "'docstring & single quotes'")
+         (expected-string (substring content-string 1 (- (length content-string) 1))))
+    (should (string= expected-string
+                     (comment-edit-test--with-buffer 'python-mode
+                      content-string
+                      (apply #'buffer-substring-no-properties (comment-edit--string-region 20))))))
+  )
 
 ;;; Interaction test
 
