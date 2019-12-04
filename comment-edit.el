@@ -520,7 +520,7 @@ Block info example:
                       `(lambda (_parent-buffer _beg _end)
                          (let ((line-starter (and (or ,codep ,commentp) (comment-edit--remove-comment-starter ,starter-regexp))))
                            (when ,strp
-                             (comment-edit--remove-escape (substring ,strp 0 1)))
+                             (comment-edit--remove-escape ,strp))
                            (funcall ',mode)
                            ;; (comment-edit--log "==> block(edit buffer): %S"
                            ;;                   (buffer-substring-no-properties (point-min) (point-max)))
@@ -529,7 +529,7 @@ Block info example:
                                 (append '((lambda ()
                                             (comment-edit--restore-comment-starter (point-min) (point-max))
                                             (when ,strp
-                                              (comment-edit--restore-escape (substring ,strp 0 1)))))
+                                              (comment-edit--restore-escape ,strp))))
                                         edit-indirect-before-commit-hook)))))
           (edit-indirect-region beg end 'display-buffer))
       (user-error "Not inside a code block"))))
