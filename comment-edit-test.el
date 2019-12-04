@@ -105,7 +105,7 @@
      ("///  foo" . " foo"))))
 
 (ert-deftest comment-edit-test-string-region ()
-  (let* ((content-string (format "%S" "string `symbol'\n\n(function \"arg\")"))
+  (let* ((content-string (format "%S" "string `symbol'\n#ffffff\n(function \"arg\")"))
          (expected-string (substring content-string 1 (1- (length content-string)))))
     (should (string= expected-string
                      (comment-edit-test--with-buffer-el

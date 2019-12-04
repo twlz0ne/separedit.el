@@ -137,52 +137,33 @@ Return nil if reached the end of the buffer."
 
 ;;; Docstring funcitons
 
-(defun comment-edit--point-at-string (&optional pos)
-  "Determine if point POS at string or not."
-  (let* ((prop-value (get-text-property (or pos (point)) 'face))
-         (testfn (if (listp prop-value) 'memq 'eq)))
-    (and (or (funcall testfn 'font-lock-string-face prop-value)
-             (funcall testfn 'font-lock-doc-face prop-value)
-             (funcall testfn 'font-lock-constant-face prop-value))
-         t)))
+(defun comment-edit--point-at-string ()
+  "Determine if point at string or not."
+  (nth 3 (syntax-ppss)))
 
-(defun comment-edit--string-beginning (&optional pos)
-  "Return beginning of string at point POS"
-  (let ((pos (or pos (point)))
-        (new-pos))
-    (when (comment-edit--point-at-string pos)
-      (catch 'break
-        (while t
-          (setq new-pos (previous-single-property-change pos 'face))
-          (cond ((and (not new-pos)
-                      (comment-edit--point-at-string pos)) (throw 'break (point-min)))
-                ((and new-pos
-                      (not (comment-edit--point-at-string (1- new-pos)))) (throw 'break new-pos))
-                (t (setq pos new-pos))))))))
+(defun comment-edit--string-beginning ()
+  "Return beginning of string at point."
+  (save-excursion
+    (while (comment-edit--point-at-string) (backward-char))
+    (point)))
 
-(defun comment-edit--string-end (&optional pos)
-  "Return end of string at point POS"
-  (let ((pos (or pos (point)))
-        (new-pos))
-    (when (comment-edit--point-at-string pos)
-      (catch 'break
-        (while t
-          (setq new-pos (next-single-property-change pos 'face))
-          (cond ((and (not new-pos)
-                      (comment-edit--point-at-string pos)) (throw 'break (point-max)))
-                ((and new-pos
-                      (not (comment-edit--point-at-string new-pos))) (throw 'break new-pos))
-                (t (setq pos new-pos))))))))
+(defun comment-edit--string-end ()
+  "Return end of string at point."
+  (save-excursion
+    (while (comment-edit--point-at-string) (forward-char))
+    (point)))
 
 (defun comment-edit--string-region (&optional pos)
   "Return region of string at point POS"
   (let ((pos (or pos (point))))
-    (if (comment-edit--point-at-string pos)
-        (let ((fbeg (comment-edit--string-beginning pos))
-              (fend (comment-edit--string-end       pos)))
-          (list (1+ (or fbeg (point-min)))
-                (1- (or fend (point-max)))))
-      (user-error "Not inside a string"))))
+    (save-excursion
+      (goto-char pos)
+      (if (comment-edit--point-at-string)
+          (let ((fbeg (comment-edit--string-beginning))
+                (fend (comment-edit--string-end)))
+            (list (1+ (or fbeg (point-min)))
+                  (1- (or fend (point-max)))))
+        (user-error "Not inside a string")))))
 
 ;;; Comment functions
 
