@@ -536,6 +536,8 @@ Block info example:
                              (comment-edit--remove-escape ,strp))
                            (comment-edit--log "==> mode(edit buffer): %S" ',mode)
                            (funcall ',mode)
+                           (set (make-local-variable 'header-line-format)
+                                (substitute-command-keys "Edit, then exit with `\\[edit-indirect-commit]' or abort with `\\[edit-indirect-abort]'"))
                            (set (make-local-variable 'comment-edit--line-starter) line-starter)
                            (set (make-local-variable 'edit-indirect-before-commit-hook)
                                 (append '((lambda ()
