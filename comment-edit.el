@@ -370,12 +370,9 @@ Example:
           (throw 'break
                  (list
                   :beginning (point-at-bol)
-                  :lang
-                  (or (let ((lang (match-string-no-properties 1)))
-                        (unless (string= "" lang)
-                          lang))
-                      (or (comment-edit-get-mode-lang major-mode)
-                          (user-error "Can't determine language for current mode: %s" major-mode)))
+                  :lang-mode
+                  (or (comment-edit-get-lang-mode (or (match-string-no-properties 1) ""))
+                      major-mode)
                   :regexps
                   (car
                    (-non-nil
@@ -424,7 +421,7 @@ LANG is a string, and the returned major mode is a symbol."
 Block info example:
 
     (:beginning 10
-     :lang \"elisp\"
+     :lang-mode emacs-lisp-mode
      :regexps (:beginning \"``` ?\\(\\w*\\)$\" :middle nil :end \"```$\")
      :end 12
      :in-str-p nil)
@@ -519,7 +516,7 @@ Block info example:
   (let* ((block (comment-edit--block-info))
          (beg (plist-get block :beginning))
          (end (plist-get block :end))
-         (lang (plist-get block :lang))
+         (lang-mode (plist-get block :lang-mode))
          (strp (plist-get block :in-str-p))
          (commentp (not strp))
          (codep (and (plist-get block :regexps) t))
@@ -529,8 +526,7 @@ Block info example:
     (comment-edit--log "==> block-info: %S" block)
     ;; (comment-edit--log "==> block: %S" (buffer-substring-no-properties beg end))
     (if block
-        (let* ((mode (if codep (and lang (comment-edit-get-lang-mode lang))
-                         comment-edit-code-block-default-mode)))
+        (let* ((mode (or lang-mode comment-edit-code-block-default-mode)))
           (setq-local edit-indirect-guess-mode-function
                       `(lambda (_parent-buffer _beg _end)
                          (let ((line-starter (and (or ,codep ,commentp) (comment-edit--remove-comment-starter ,starter-regexp))))
@@ -548,7 +544,7 @@ Block info example:
                                               (comment-edit--restore-escape ,strp))))
                                         edit-indirect-before-commit-hook)))))
           (edit-indirect-region beg end 'display-buffer))
-      (user-error "Not inside a code block"))))
+      (user-error "Not inside a edit block"))))
 
 (provide 'comment-edit)
 
