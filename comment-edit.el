@@ -48,20 +48,23 @@ code blocks with no language specified."
   :type '(choice function (const :tag "None" nil)))
 
 (defcustom comment-edit-code-lang-modes
-'(("C"         . c-mode)                ("C++"   . c++-mode)
-  ("asymptote" . asy-mode)              ("bash"  . sh-mode)
-  ("calc"      . fundamental-mode)      ("cpp"   . c++-mode)
-  ("ditaa"     . artist-mode)           ("dot"   . fundamental-mode)
-  ("elisp"     . emacs-lisp-mode)       ("ocaml" . tuareg-mode)
-  ("screen"    . shell-script-mode)     ("shell" . sh-mode)
-  ("sqlite"    . sql-mode))
+  '(("C"                . c-mode)
+    ("C++"              . c++-mode)
+    ("asymptote"        . asy-mode)
+    ("bash"             . sh-mode)
+    ("calc"             . fundamental-mode)
+    ("cpp"              . c++-mode)
+    ("ditaa"            . artist-mode)
+    ("dot"              . fundamental-mode)
+    ("elisp"            . (emacs-lisp-mode lisp-interaction-mode))
+    ("ocaml"            . tuareg-mode)
+    ("screen"           . shell-script-mode)
+    ("shell"            . sh-mode)
+    ("sqlite"           . sql-mode))
   "Alist mapping languages to their major mode.
 Taken from `markdown-code-lang-modes'."
   :group 'comment-edit
-  :type '(repeat
-          (cons
-           (string "Language name")
-           (symbol "Major mode"))))
+  :type 'alist)
 
 (defcustom comment-edit-comment-regexp-alist
   '((emacs-lisp-mode    . (";+"))
@@ -362,7 +365,7 @@ Example:
         (when (re-search-backward regexp-group nil t)
           (save-match-data
             (comment-edit--log "==> [code-block-beginning] matched1: %s" (match-string-no-properties 1))
-            (comment-edit--log "==> [code-block-beginning] language: %s" (car (rassoc major-mode comment-edit-code-lang-modes))))
+            (comment-edit--log "==> [code-block-beginning] language: %s" (comment-edit-get-mode-lang major-mode)))
           (comment-edit--beginning-of-next-line)
           (throw 'break
                  (list
@@ -371,7 +374,8 @@ Example:
                   (or (let ((lang (match-string-no-properties 1)))
                         (unless (string= "" lang)
                           lang))
-                      (car (rassoc major-mode comment-edit-code-lang-modes)))
+                      (or (comment-edit-get-mode-lang major-mode)
+                          (user-error "Can't determine language for current mode: %s" major-mode)))
                   :regexps
                   (car
                    (-non-nil
@@ -398,10 +402,21 @@ Example:
 LANG is a string, and the returned major mode is a symbol."
   (cl-find-if
    'fboundp
-   (list (cdr (assoc lang comment-edit-code-lang-modes))
-         (cdr (assoc (downcase lang) comment-edit-code-lang-modes))
-         (intern (concat lang "-mode"))
-         (intern (concat (downcase lang) "-mode")))))
+   (-flatten
+    (list (cdr (assoc lang comment-edit-code-lang-modes))
+          (cdr (assoc (downcase lang) comment-edit-code-lang-modes))
+          (intern (concat lang "-mode"))
+          (intern (concat (downcase lang) "-mode"))))))
+
+(defun comment-edit-get-mode-lang (mode)
+  "Return language of mode MODE."
+  (car (cl-rassoc mode
+                  comment-edit-code-lang-modes
+                  :test
+                  (lambda (mode it)
+                    (if (listp it)
+                        (memq mode it)
+                      (eq it mode))))))
 
 (defun comment-edit--block-info ()
   "Return block info at point.
@@ -519,11 +534,12 @@ Block info example:
           (setq-local edit-indirect-guess-mode-function
                       `(lambda (_parent-buffer _beg _end)
                          (let ((line-starter (and (or ,codep ,commentp) (comment-edit--remove-comment-starter ,starter-regexp))))
+                           (comment-edit--log "==> block(edit buffer): %S" (buffer-substring-no-properties (point-min) (point-max)))
                            (when ,strp
+                             (comment-edit--log "==> quotes(edit buffer): %S" ,strp)
                              (comment-edit--remove-escape ,strp))
+                           (comment-edit--log "==> mode(edit buffer): %S" ',mode)
                            (funcall ',mode)
-                           ;; (comment-edit--log "==> block(edit buffer): %S"
-                           ;;                   (buffer-substring-no-properties (point-min) (point-max)))
                            (set (make-local-variable 'comment-edit--line-starter) line-starter)
                            (set (make-local-variable 'edit-indirect-before-commit-hook)
                                 (append '((lambda ()
