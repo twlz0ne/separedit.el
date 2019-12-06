@@ -202,11 +202,12 @@ Return nil if reached the end of the buffer."
   (let* ((mode (or mode major-mode))
          (def (or (assoc mode comment-edit-comment-regexp-alist)
                   (assoc (get mode 'derived-mode-parent) comment-edit-comment-regexp-alist))))
-    (if (symbolp (cdr def))
-        (comment-edit--comment-starter-regexp (cdr def))
-      (concat "^\s*\\(?:"
-              (mapconcat 'identity (cdr def) "\\|")
-              "\\)\s?"))))
+    (when def
+      (if (symbolp (cdr def))
+          (comment-edit--comment-starter-regexp (cdr def))
+        (concat "^\s*\\(?:"
+                (mapconcat 'identity (cdr def) "\\|")
+                "\\)\s?")))))
 
 (defun comment-edit--point-at-comment (&optional pos)
   "Determine if point POS at comment, or at the leading blank front of comment.
