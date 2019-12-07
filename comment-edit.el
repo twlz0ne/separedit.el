@@ -39,6 +39,7 @@
 
 (require 'dash)
 (require 'edit-indirect)
+(require 'calc-misc)
 
 (defcustom comment-edit-code-block-default-mode 'normal-mode
   "Default mode to use for editing code blocks.
@@ -145,6 +146,8 @@ Return nil if reached the end of the buffer."
     (javascript-mode . ("\"" "'"))
     (js-mode         . javascript-mode)
     (js2-mode        . javascript-mode)
+    (comment-edit-double-quote-string-mode . t)
+    (comment-edit-single-quote-string-mode . ("'"))
     (t               . ("\"")))
   "Alist of string quotes."
   :group 'comment-edit
@@ -169,10 +172,7 @@ Return nil if reached the end of the buffer."
 (defun comment-edit--string-quotes (pos &optional backwardp mode)
   (let* ((mode (or mode major-mode))
          (looking-fn (if backwardp 'looking-back 'looking-at))
-         (quotes
-          (let ((aval (assoc-default mode comment-edit-string-quotes-alist)))
-            (cond ((symbolp aval) (assoc-default (or aval t) comment-edit-string-quotes-alist))
-                  (t aval)))))
+         (quotes (comment-edit-get-mode-quotes mode)))
     (save-excursion
       (when pos
         (goto-char pos))
@@ -416,6 +416,11 @@ LANG is a string, and the returned major mode is a symbol."
                         (memq mode it)
                       (eq it mode))))))
 
+(defun comment-edit-get-mode-quotes (mode)
+  (let ((aval (assoc-default mode comment-edit-string-quotes-alist)))
+    (cond ((symbolp aval) (assoc-default (or aval t) comment-edit-string-quotes-alist))
+          (t aval))))
+
 (defun comment-edit--block-info ()
   "Return block info at point.
 
@@ -480,25 +485,65 @@ Block info example:
         (replace-match (concat comment-edit--line-starter
                                (match-string 0)))))))
 
+(defun comment-edit--remove-nested-escape ()
+  (catch 'break
+    (dolist (num (number-sequence 1 9))
+      (let ((match-len (1- (math-pow 2 num))))
+        (when (and (< 0 match-len)
+                   (looking-back (eval `(rx (not (any "\\")) (= ,match-len "\\"))) 1))
+          (let ((del-len (- match-len (1- (math-pow 2 (1- num))))))
+            (backward-delete-char del-len)
+            (throw 'break nil)))))))
+
+(defun comment-edit--remove-nested-escape-sq ()
+  (catch 'break
+    (dolist (num (number-sequence 1 9))
+      (let ((match-len (- (math-pow 2 num) 2)))
+        (when (and (< 0 match-len)
+               (looking-back (eval `(rx (not (any "\\")) (= ,match-len "\\"))) 1))
+          (let ((del-len (- match-len (1- (math-pow 2 (1- num))))))
+            (backward-delete-char del-len)
+            (throw 'break nil)))))))
+
 (defun comment-edit--remove-escape (quotes-char)
   "Remove escape when editing docstring."
-  (goto-char (point-max))
+  (goto-char (point-min))
   (cond ((string= quotes-char "\"")
-         (while (re-search-backward "\\\\\"" nil t)
-           (replace-match "\"")))
+         (while (re-search-forward "\\\"" nil t)
+           (replace-match "")
+           (comment-edit--remove-nested-escape)
+           (insert "\"")))
         ((string= quotes-char "'")
-         (while (re-search-backward "\\\\'" nil t)
-           (replace-match "'")))))
+         (while (search-forward "\\'" nil t)
+           (replace-match "")
+           (comment-edit--remove-nested-escape-sq)
+           (insert "'")))))
+
+(defun comment-edit--restore-nested-escape ()
+  (catch 'break
+    (dolist (num (number-sequence 1 9))
+      (let ((match-len (1- (math-pow 2 (1- num)))))
+        (when (and (< 0 match-len)
+                   (looking-back (eval `(rx (not (any "\\")) (= ,match-len "\\"))) 1))
+          (let ((pad-len (- (1- (math-pow 2 num)) match-len 1)))
+            (dotimes (_ pad-len)
+              (princ "\\")
+              (insert "\\"))
+            (throw 'break nil)))))))
 
 (defun comment-edit--restore-escape (quotes-char)
   "Restore escape when finished edting docstring."
   (goto-char (point-min))
   (cond ((string= quotes-char "\"")
-         (while (re-search-forward "\"" nil t)
-           (replace-match "\\\\\"")))
+         (while (search-forward "\"" nil t)
+           (replace-match "")
+           (comment-edit--restore-nested-escape)
+           (insert "\\\"")))
         ((string= quotes-char "'")
-         (while (re-search-forward "'" nil t)
-           (replace-match "\\\\'")))))
+         (while (search-forward "'" nil t)
+           (replace-match "")
+           (comment-edit--restore-nested-escape)
+           (insert "\\'")))))
 
 (defvar comment-edit-mode-map (make-sparse-keymap) "Keymap for `comment-edit-mode'.")
 
@@ -509,6 +554,32 @@ Block info example:
   :global nil
   :keymap 'comment-edit-mode-map
   )
+
+(defvar comment-edit-double-quote-string-mode-map
+  (let ((map (make-sparse-keymap)))
+    (define-key map (kbd "C-c C-e") #'comment-edit)
+    map)
+  "Keymap for `comment-edit-double-quote-string-mode'.")
+
+(define-generic-mode 'comment-edit-double-quote-string-mode
+  nil nil nil nil
+  '((lambda ()
+      (modify-syntax-entry ?' "\"")
+      (use-local-map comment-edit-double-quote-string-mode-map)))
+  "Major mode for editing double-quoted string.")
+
+(defvar comment-edit-single-quote-string-mode-map
+  (let ((map (make-sparse-keymap)))
+    (define-key map (kbd "C-c C-e") #'comment-edit)
+    map)
+  "Keymap for `comment-edit-single-quote-string-mode'.")
+
+(define-generic-mode 'comment-edit-single-quote-string-mode
+  nil nil nil nil
+  '((lambda ()
+      (modify-syntax-entry ?' "\"")
+      (use-local-map comment-edit-single-quote-string-mode-map)))
+  "Major mode for editing single-quoted string.")
 
 ;;;###autoload
 (defun comment-edit ()
@@ -527,7 +598,10 @@ Block info example:
     (comment-edit--log "==> block-info: %S" block)
     ;; (comment-edit--log "==> block: %S" (buffer-substring-no-properties beg end))
     (if block
-        (let* ((mode (or lang-mode comment-edit-code-block-default-mode)))
+        (let* ((mode (or lang-mode
+                         (cond ((and (stringp strp) (string= "'" strp)) 'comment-edit-single-quote-string-mode)
+                               ((and (stringp strp) (string= "\"" strp)) 'comment-edit-double-quote-string-mode)
+                               (t comment-edit-code-block-default-mode)))))
           (setq-local edit-indirect-guess-mode-function
                       `(lambda (_parent-buffer _beg _end)
                          (let ((line-starter (and (or ,codep ,commentp) (comment-edit--remove-comment-starter ,starter-regexp))))
@@ -538,7 +612,7 @@ Block info example:
                            (comment-edit--log "==> mode(edit buffer): %S" ',mode)
                            (funcall ',mode)
                            (set (make-local-variable 'header-line-format)
-                                (substitute-command-keys "Edit, then exit with `\\[edit-indirect-commit]' or abort with `\\[edit-indirect-abort]'"))
+                                (substitute-command-keys "*EDIT* Exit: \\[edit-indirect-commit] Abort: \\[edit-indirect-abort], Recursive-entry: \\[comment-edit]"))
                            (set (make-local-variable 'comment-edit--line-starter) line-starter)
                            (set (make-local-variable 'edit-indirect-before-commit-hook)
                                 (append '((lambda ()

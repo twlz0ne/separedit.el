@@ -85,9 +85,9 @@ Example:
     ;; ```elisp
     ;; (1+ 1)
     ;; ```
-    
+
     Output:
-    
+
     ;; ```elisp
     ;; (1+ 1)INSERT-APPEND-HERE
     ;; ```"
@@ -166,5 +166,85 @@ Version 2016-07-04"
              (jit-lock-fontify-now (point-min) (point-max)))
            ,@body)
        (kill-buffer buf))))
+
+(defun escape (&rest str-list)
+  "Nest escaping quoted strings in STR-LIST.
+\(fn s1 s2 s3 ...)
+=> (make-escape
+    (concat
+     s1
+     (make-escape
+      (concat
+       s2
+       (make-escape
+        (concat
+         s3
+         ...))))))"
+  (let ((s ""))
+    (mapc (lambda (it)
+            (setq s (format "%S" (concat it s))))
+          (reverse str-list))
+    s))
+
+;; Make sure `escape' correct before testing.
+(require 'cl-macs)
+(cl-assert (string= (escape "a" "b" "c" "d" "e") (format "%S" "a\"b\\\"c\\\\\\\"d\\\\\\\\\\\\\\\"e\\\\\\\\\\\\\\\"\\\\\\\"\\\"\"")))
+(cl-assert (string= (escape "b" "c" "d" "e")     (format "%S" "b\"c\\\"d\\\\\\\"e\\\\\\\"\\\"\"")))
+(cl-assert (string= (escape "c" "d" "e")         (format "%S" "c\"d\\\"e\\\"\"")))
+(cl-assert (string= (escape "d" "e")             (format "%S" "d\"e\"")))
+(cl-assert (string= (escape "e")                 (format "%S" "e")))
+
+(defun escape-sq (&rest str-list)
+  "Nest escaping single-quoted strings in STR-LIST.
+\(fn s1 s2 s3 ...)
+=> (make-escape
+    (concat
+     s1
+     (make-escape
+      (concat
+       s2
+       (make-escape
+        (concat
+         s3
+         ...))))))"
+  (replace-regexp-in-string "\"" "'" (apply #'escape str-list)))
+
+(defun nest-and-assert (curr &rest nexts)
+  ;;; remove escape
+  (save-restriction
+    (goto-char (point-min))
+    (search-forward "\"")
+    (apply 'narrow-to-region (comment-edit--string-region))
+    (comment-edit--remove-escape "\"")
+    (should (string= (car curr) (format "%S" (buffer-substring-no-properties (point-min) (point-max)))))
+    (when nexts
+      (apply #'nest-and-assert nexts))
+  ;;; restore escape
+    (comment-edit--restore-escape "\""))
+  (should (string= (cdr curr) (format "%S" (buffer-substring-no-properties (point-min) (point-max))))))
+
+(defun nest-and-assert-sq (curr &rest nexts)
+  ;;; remove escape
+  (save-restriction
+    (goto-char (point-min))
+    (search-forward "'")
+    (apply 'narrow-to-region (comment-edit--string-region))
+    (comment-edit--remove-escape "'")
+    (should (string= (car curr)
+                     (replace-regexp-in-string
+                      "\"" "'"
+                      (format "%S" (replace-regexp-in-string ;; Convert to double-quoted string, then \
+                                    "'" "\""                 ;; use `format' to add escape characters.
+                                    (buffer-substring-no-properties (point-min) (point-max)))))))
+    (when nexts
+      (apply #'nest-and-assert-sq nexts))
+  ;;; restore escape
+    (comment-edit--restore-escape "'"))
+  (should (string= (cdr curr)
+                     (replace-regexp-in-string
+                      "\"" "'"
+                      (format "%S" (replace-regexp-in-string ;; Convert to double-quoted string, then \
+                                    "'" "\""                 ;; use `format' to add escape characters.
+                                    (buffer-substring-no-properties (point-min) (point-max))))))))
 
 ;;; test-helper.el ends here

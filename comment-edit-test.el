@@ -152,8 +152,29 @@
     (should (string= expected-string
                      (comment-edit-test--with-buffer 'python-mode
                       content-string
-                      (apply #'buffer-substring-no-properties (comment-edit--string-region 20))))))
-  )
+                      (apply #'buffer-substring-no-properties (comment-edit--string-region 20)))))))
+
+(ert-deftest comment-edit-test-nested-escape ()
+  (with-temp-buffer
+    (comment-edit-double-quote-string-mode)
+    (insert (escape "a" "b" "c" "d" "e"))
+    (nest-and-assert
+       (cons (escape "a" "b" "c" "d" "e") (escape "" "a" "b" "c" "d" "e"))
+       (cons (escape "b" "c" "d" "e")     (escape "a" "b" "c" "d" "e"))
+       (cons (escape "c" "d" "e")         (escape "b" "c" "d" "e"))
+       (cons (escape "d" "e")             (escape "c" "d" "e"))
+       (cons (escape "e")                 (escape "d" "e")))))
+
+(ert-deftest comment-edit-test-nested-escape-sq ()
+  (with-temp-buffer
+    (comment-edit-single-quote-string-mode)
+    (insert (escape-sq "a" "b" "c" "d" "e"))
+    (nest-and-assert-sq
+       (cons (escape-sq "a" "b" "c" "d" "e") (escape-sq "" "a" "b" "c" "d" "e"))
+       (cons (escape-sq "b" "c" "d" "e")     (escape-sq "a" "b" "c" "d" "e"))
+       (cons (escape-sq "c" "d" "e")         (escape-sq "b" "c" "d" "e"))
+       (cons (escape-sq "d" "e")             (escape-sq "c" "d" "e"))
+       (cons (escape-sq "e")                 (escape-sq "d" "e")))))
 
 ;;; Interaction test
 
