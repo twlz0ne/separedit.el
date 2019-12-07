@@ -239,7 +239,7 @@ style 2:
     (comment-edit--log
      "==> [comment-edit--point-at-comment] %S"
      (list :point pos
-           :char (char-to-string (char-before pos))
+           :char (if (char-before pos) (char-to-string (char-before pos)))
            :props (text-properties-at pos)))
     (if (or (funcall testfn 'font-lock-comment-delimiter-face prop-value)
             (funcall testfn 'font-lock-comment-face prop-value))
