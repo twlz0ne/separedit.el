@@ -112,8 +112,8 @@ Example:
     (funcall (or indent-fn 'indent-region) (point-min) (point-max))
     (buffer-substring-no-properties (point-min) (point-max))))
 
-(defun comment-edit-test--indent-c (string)
-  (comment-edit-test--indent 'c-mode string))
+(defun comment-edit-test--indent-c (&rest strings)
+  (comment-edit-test--indent 'c-mode (apply #'concat strings)))
 
 (defun comment-edit-test--indent-sh (string)
   (comment-edit-test--indent 'shell-script-mode string 'indent-region-line-by-line))
@@ -159,6 +159,8 @@ Version 2016-07-04"
          (with-current-buffer buf
            (insert ,content)
            (funcall ,mode)
+           (goto-char (point-min))
+           (re-search-forward "<|>" nil t 1)
            (xah-syntax-color-hex)
            (let ((noninteractive nil))
              (font-lock-mode 1)

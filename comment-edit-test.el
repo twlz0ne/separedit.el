@@ -28,6 +28,414 @@
 
 ;;; Function test
 
+(ert-deftest comment-edit-test-beginning-of-comment-el ()
+  (comment-edit-test--with-buffer
+   'emacs-lisp-mode
+   (comment-edit-test--indent-el
+    ";; comment1
+     ;; comment2<|>
+     ;; comment3")
+   (should (eq (comment-edit--comment-beginning) (+ (point-min) 0))))
+
+  (comment-edit-test--with-buffer
+   'emacs-lisp-mode
+   (comment-edit-test--indent-el
+    "
+     ;; comment1
+     ;; comment2<|>
+     ;; comment3")
+   (should (eq (comment-edit--comment-beginning) (+ (point-min) 1))))
+
+  (comment-edit-test--with-buffer
+   'emacs-lisp-mode
+   (comment-edit-test--indent-el
+    "\n
+     ;; comment1
+     ;; comment2<|>
+     ;; comment3\n\n")
+   (should (eq (comment-edit--comment-beginning) (+ (point-min) 2))))
+
+  ;;;
+  
+  (comment-edit-test--with-buffer
+   'emacs-lisp-mode
+   (comment-edit-test--indent-el
+    "     ;; comment1
+          ;; comment2<|>
+          ;; comment3")
+   (should (eq (comment-edit--comment-beginning) (+ (point-min) 0))))
+
+  (comment-edit-test--with-buffer
+   'emacs-lisp-mode
+   (comment-edit-test--indent-el
+    "
+           ;; comment1
+           ;; comment2<|>
+           ;; comment3\n")
+   (should (eq (comment-edit--comment-beginning) (+ (point-min) 1))))
+  
+  (comment-edit-test--with-buffer
+   'emacs-lisp-mode
+   (comment-edit-test--indent-el
+    "\n
+         ;; comment1
+          ;; comment2<|>
+          ;; comment3\n\n")
+   (should (eq (comment-edit--comment-beginning) (+ (point-min) 2)))))
+
+(ert-deftest comment-edit-test-end-of-comment-el ()
+  (comment-edit-test--with-buffer
+   'emacs-lisp-mode
+   (comment-edit-test--indent-el
+    ";; comment1
+     ;; comment2<|>
+     ;; comment3")
+   (should (eq (comment-edit--comment-end) (- (point-max) 0))))
+
+  (comment-edit-test--with-buffer
+   'emacs-lisp-mode
+   (comment-edit-test--indent-el
+    ";; comment1
+     ;; comment2<|>
+     ;; comment3\n")
+   (should (eq (comment-edit--comment-end) (- (point-max) 1))))
+
+  (comment-edit-test--with-buffer
+   'emacs-lisp-mode
+   (comment-edit-test--indent-el
+    ";; comment1
+     ;; comment2<|>
+     ;; comment3\n\n")
+   (should (eq (comment-edit--comment-end) (- (point-max) 2))))
+
+  ;;;
+
+  (comment-edit-test--with-buffer
+   'emacs-lisp-mode
+   (comment-edit-test--indent-el
+    "     ;; comment1
+          ;; comment2<|>
+          ;; comment3")
+   (should (eq (comment-edit--comment-end) (- (point-max) 0))))
+
+  (comment-edit-test--with-buffer
+   'emacs-lisp-mode
+   (comment-edit-test--indent-el
+    "     ;; comment1
+          ;; comment2<|>
+          ;; comment3\n")
+   (should (eq (comment-edit--comment-end) (- (point-max) 1))))
+
+  (comment-edit-test--with-buffer
+   'emacs-lisp-mode
+   (comment-edit-test--indent-el
+    "     ;; comment1
+          ;; comment2<|>
+          ;; comment3\n\n")
+   (should (eq (comment-edit--comment-end) (- (point-max) 2)))))
+
+(ert-deftest comment-edit-test-region-of-comment-c1 ()
+  ;;; Without leading spaces
+  
+  ;; Without blank lines
+
+  (comment-edit-test--with-buffer
+   'c-mode
+   (comment-edit-test--indent-c
+    "// comment1
+     // comment2<|>
+     // comment3")
+   (should
+    (equal
+     (comment-edit--comment-region)
+     (list (point-min)
+           (point-max)))))
+
+  ;; Blank lines at the end
+  
+  (comment-edit-test--with-buffer
+   'c-mode
+   (comment-edit-test--indent-c
+    "// comment1
+     // comment2<|>
+     // comment3\n")
+   (should
+    (equal
+     (comment-edit--comment-region)
+     (list (point-min)
+           (- (point-max) 1)))))
+  
+  (comment-edit-test--with-buffer
+   'c-mode
+   (comment-edit-test--indent-c
+    "// comment1
+     // comment2<|>
+     // comment3\n\n")
+   (should
+    (equal
+     (comment-edit--comment-region)
+     (list (point-min)
+           (- (point-max) 2)))))
+
+  ;; Blank lines at the bebinning
+
+  (comment-edit-test--with-buffer
+   'c-mode
+   (comment-edit-test--indent-c
+    "\n"
+    "// comment1
+     // comment2<|>
+     // comment3")
+   (should
+    (equal
+     (comment-edit--comment-region)
+     (list (+ (point-min) 1)
+           (point-max)))))
+  
+  (comment-edit-test--with-buffer
+   'c-mode
+   (comment-edit-test--indent-c
+    "\n\n"
+    "// comment1
+     // comment2<|>
+     // comment3")
+   (should
+    (equal
+     (comment-edit--comment-region)
+     (list (+ (point-min) 2)
+           (point-max)))))
+
+  ;;; With leading spaces
+
+  ;; Without blank lines
+
+  (comment-edit-test--with-buffer
+   'c-mode
+   (comment-edit-test--indent-c
+    "   // comment1
+        // comment2<|>
+        // comment3")
+   (should
+    (equal
+     (comment-edit--comment-region)
+     (list (point-min)
+           (point-max)))))
+
+  ;; Blank lines at the end
+
+  (comment-edit-test--with-buffer
+   'c-mode
+   (comment-edit-test--indent-c
+    "   // comment1
+        // comment2<|>
+        // comment3\n")
+   (should
+    (equal
+     (comment-edit--comment-region)
+     (list (point-min)
+           (- (point-max) 1)))))
+
+  (comment-edit-test--with-buffer
+   'c-mode
+   (comment-edit-test--indent-c
+    "   // comment1
+        // comment2<|>
+        // comment3\n\n")
+   (should
+    (equal
+     (comment-edit--comment-region)
+     (list (point-min)
+           (- (point-max) 2)))))
+
+  ;; Blank lines at the end
+
+  (comment-edit-test--with-buffer
+   'c-mode
+   (comment-edit-test--indent-c
+    "\n"
+    "   // comment1
+        // comment2<|>
+        // comment3")
+   (should
+    (equal
+     (comment-edit--comment-region)
+     (list (+ (point-min) 1)
+           (point-max)))))
+
+  (comment-edit-test--with-buffer
+   'c-mode
+   (comment-edit-test--indent-c
+    "\n\n"
+    "   // comment1
+        // comment2<|>
+        // comment3")
+   (should
+    (equal
+     (comment-edit--comment-region)
+     (list (+ (point-min) 2)
+           (point-max))))))
+
+(ert-deftest comment-edit-test-region-of-comment-c2 ()
+  ;;; Without leading spaces
+
+  ;; Without blank lines
+  
+  (comment-edit-test--with-buffer
+   'c-mode
+   (comment-edit-test--indent-c
+    "/*
+      * comment1
+      * comment2<|>
+      * comment3
+      */")
+   (should
+    (equal
+     (comment-edit--comment-region)
+     (list (save-excursion (re-search-backward "^\\s-*\\* comment1$" nil t))
+           (save-excursion (re-search-forward "^\\s-*\\* comment3$" nil t))))))
+
+  ;; Blank lines at the end
+  
+  (comment-edit-test--with-buffer
+   'c-mode
+   (comment-edit-test--indent-c
+    "/*
+      * comment1
+      * comment2<|>
+      * comment3
+      */\n")
+   (should
+    (equal
+     (comment-edit--comment-region)
+     (list (save-excursion (re-search-backward "^\\s-*\\* comment1$" nil t))
+           (save-excursion (re-search-forward "^\\s-*\\* comment3$" nil t))))))
+  
+  (comment-edit-test--with-buffer
+   'c-mode
+   (comment-edit-test--indent-c
+    "/*
+      * comment1
+      * comment2<|>
+      * comment3
+      */\n\n")
+   (should
+    (equal
+     (comment-edit--comment-region)
+     (list (save-excursion (re-search-backward "^\\s-*\\* comment1$" nil t))
+           (save-excursion (re-search-forward "^\\s-*\\* comment3$" nil t))))))
+
+  ;; Blank lines at the beginning
+  
+  (comment-edit-test--with-buffer
+   'c-mode
+   (comment-edit-test--indent-c
+    "\n"
+    "/*
+      * comment1
+      * comment2<|>
+      * comment3
+      */")
+   (should
+    (equal
+     (comment-edit--comment-region)
+     (list (save-excursion (re-search-backward "^\\s-*\\* comment1$" nil t))
+           (save-excursion (re-search-forward "^\\s-*\\* comment3$" nil t))))))
+  
+  (comment-edit-test--with-buffer
+   'c-mode
+   (comment-edit-test--indent-c
+    "\n\n"
+    "/*
+      * comment1
+      * comment2<|>
+      * comment3
+      */")
+   (should
+    (equal
+     (comment-edit--comment-region)
+     (list (save-excursion (re-search-backward "^\\s-*\\* comment1$" nil t))
+           (save-excursion (re-search-forward "^\\s-*\\* comment3$" nil t))))))
+
+  ;;; With leading spaces
+
+  ;; Without blank lines
+
+  (comment-edit-test--with-buffer
+   'c-mode
+   (comment-edit-test--indent-c
+    "   /*
+         * comment1
+         * comment2<|>
+         * comment3
+         */")
+   (should
+    (equal
+     (comment-edit--comment-region)
+     (list (save-excursion (re-search-backward "^\\s-*\\* comment1$" nil t))
+           (save-excursion (re-search-forward "^\\s-*\\* comment3$" nil t))))))
+
+  ;; Blank lines at the end
+
+  (comment-edit-test--with-buffer
+   'c-mode
+   (comment-edit-test--indent-c
+    "   /*
+         * comment1
+         * comment2<|>
+         * comment3
+         */\n")
+   (should
+    (equal
+     (comment-edit--comment-region)
+     (list (save-excursion (re-search-backward "^\\s-*\\* comment1$" nil t))
+           (save-excursion (re-search-forward "^\\s-*\\* comment3$" nil t))))))
+
+  (comment-edit-test--with-buffer
+   'c-mode
+   (comment-edit-test--indent-c
+    "   /*
+         * comment1
+         * comment2<|>
+         * comment3
+         */\n\n")
+   (should
+    (equal
+     (comment-edit--comment-region)
+     (list (save-excursion (re-search-backward "^\\s-*\\* comment1$" nil t))
+           (save-excursion (re-search-forward "^\\s-*\\* comment3$" nil t))))))
+
+  ;; Blank lines at the beginning
+
+  (comment-edit-test--with-buffer
+   'c-mode
+   (comment-edit-test--indent-c
+    "\n"
+    "   /*
+         * comment1
+         * comment2<|>
+         * comment3
+         */")
+   (should
+    (equal
+     (comment-edit--comment-region)
+     (list (save-excursion (re-search-backward "^\\s-*\\* comment1$" nil t))
+           (save-excursion (re-search-forward "^\\s-*\\* comment3$" nil t))))))
+
+  (comment-edit-test--with-buffer
+   'c-mode
+   (comment-edit-test--indent-c
+    "\n\n"
+    "   /*
+         * comment1
+         * comment2<|>
+         * comment3
+         */")
+   (should
+    (equal
+     (comment-edit--comment-region)
+     (list (save-excursion (re-search-backward "^\\s-*\\* comment1$" nil t))
+           (save-excursion (re-search-forward "^\\s-*\\* comment3$" nil t)))))))
+
 (ert-deftest comment-edit-test-comment-starter-regexp-el ()
   (mapc
    (lambda (it)

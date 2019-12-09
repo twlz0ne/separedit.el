@@ -67,13 +67,50 @@ Taken from `markdown-code-lang-modes'."
   :group 'comment-edit
   :type 'alist)
 
-(defcustom comment-edit-comment-regexp-alist
-  '((emacs-lisp-mode    . (";+"))
-    (c-mode             . ("//+" "\\*+"))
-    (c++-mode           . c-mode)
-    (python-mode        . ("#+"))
-    (ruby-mode          . ("#+")))
-  "Alist of comment regexp."
+(defcustom comment-edit-comment-starter-alist
+  '((("//+" "\\*+")    . (c-mode
+                          c++mode
+                          csharp-mode
+                          css-mode
+                          go-mode
+                          java-mode
+                          js-mode
+                          objc-mode
+                          php-mode
+                          rust-mode
+                          swift-mode))
+    (("--")            . (applescript-mode haskell-mode lua-mode))
+    (("//+")           . (pascal-mode fsharp-mode))
+    ((";+")            . (emacs-lisp-mode
+                          lisp-interaction-mode
+                          common-lisp
+                          racket-mode
+                          scheme-mode))
+    (("#+")            . (python-mode ruby-mode)))
+  "Alist of comment starter regexp."
+  :group 'comment-edit
+  :type 'alist)
+
+(defcustom comment-edit-comment-encloser-modes
+  '((("/*" "*/")       . (c-mode
+                          c++mode
+                          csharp-mode
+                          css-mode
+                          go-mode
+                          java-mode
+                          js-mode
+                          objc-mode
+                          php-mode
+                          rust-mode
+                          swift-mode))
+    (("{-" "-}")       . haskell-mode)
+    (("{*" "*}")       . pascal-mode)
+    (("(*" "*)")       . (applescript-mode fsharp-mode ocaml-mode))
+    (("#|" "#|")       . (common-lisp racket-mode scheme-mode))
+    (("<!--" "-->")    . (html-mode xml-mode))
+    (("--[[" "--]]")   . lua-mode)
+    (("=begin" "=end") . ruby-mode))
+  "Alist mapping comment encloser to their major mode."
   :group 'comment-edit
   :type 'alist)
 
@@ -139,13 +176,26 @@ Return nil if reached the end of the buffer."
   (beginning-of-line)
   t)
 
+(defun comment-edit--rassoc (item list)
+  (cl-rassoc item
+             list
+             :test
+             (lambda (item it)
+               (if (listp it)
+                   (memq item it)
+                 (eq it item)))))
+
+(defun comment-edit--get-real-mode (&option mode)
+  (let ((mode (or mode major-mode)))
+    (or (and (symbolp (symbol-function mode))
+             (symbol-function mode))
+        mode)))
+
 ;;; Docstring funcitons
 
 (defcustom comment-edit-string-quotes-alist
   '((python-mode     . ("\"\"\"" "'''" "\"" "'"))
-    (javascript-mode . ("\"" "'"))
-    (js-mode         . javascript-mode)
-    (js2-mode        . javascript-mode)
+    (js-mode         . ("\"" "'"))
     (comment-edit-double-quote-string-mode . t)
     (comment-edit-single-quote-string-mode . ("'"))
     (t               . ("\"")))
@@ -200,56 +250,34 @@ Return nil if reached the end of the buffer."
 (defun comment-edit--comment-starter-regexp (&optional mode)
   "Return comment starter regex of MODE."
   (let* ((mode (or mode major-mode))
-         (def (or (assoc mode comment-edit-comment-regexp-alist)
-                  (assoc (get mode 'derived-mode-parent) comment-edit-comment-regexp-alist))))
+         (def (or (comment-edit--rassoc mode comment-edit-comment-starter-alist)
+                  (comment-edit--rassoc (get mode 'derived-mode-parent)
+                                        comment-edit-comment-starter-alist)
+                  (comment-edit--rassoc (comment-edit--get-real-mode mode)
+                                        comment-edit-comment-starter-alist))))
     (when def
-      (if (symbolp (cdr def))
-          (comment-edit--comment-starter-regexp (cdr def))
+      (if (symbolp (car def))
+          (comment-edit--comment-starter-regexp (car def))
         (concat "^\s*\\(?:"
-                (mapconcat 'identity (cdr def) "\\|")
+                (mapconcat 'identity (car def) "\\|")
                 "\\)\s?")))))
 
-(defun comment-edit--point-at-comment (&optional pos)
-  "Determine if point POS at comment, or at the leading blank front of comment.
+(defun comment-edit--point-at-comment-exclusive-one-line ()
+  "Determine if comment exclusive one line and return the comment face."
+  (save-excursion
+    (save-restriction
+      (narrow-to-region (point-at-bol) (point-at-eol))
+      (goto-char (point-min))
+      (and (re-search-forward "[^\s\t]" nil t 1)
+           (and (ignore-errors (forward-char 1) t)
+                (comment-edit--point-at-comment))))))
 
-style 1:
-
-         ,----------- face: nil
-         |    .------ face: font-lock-comment-delimiter-face
-         |   |   .--- face: font-lock-comment-face
-         |   |   |
-        +|---|---|----------.
-        |   ;; comment      |
-        `-------------------+
-
-style 2:
-          ,------- face: nil
-          |  ,---- face: font-lock-comment-delimiter-face
-          |  |  ,- face: font-lock-comment-face
-        +-|--|--|-----------,
-        |   /* comment      |
-        |    * comment      |
-        `-|--|--|-----------+
-          |  |  `- face: font-lock-comment-face
-          |  `---- face: font-lock-comment-face
-          `------- face: font-lock-comment-face"
-  (let* ((pos (min (or pos (point)) (1- (point-max)))) ;; there is no text properties at point-max
-         (prop-value (get-text-property pos 'face))
-         (testfn (if (listp prop-value) 'memq 'eq)))
-    (comment-edit--log
-     "==> [comment-edit--point-at-comment] %S"
-     (list :point pos
-           :char (if (char-before pos) (char-to-string (char-before pos)))
-           :props (text-properties-at pos)))
-    (if (or (funcall testfn 'font-lock-comment-delimiter-face prop-value)
-            (funcall testfn 'font-lock-comment-face prop-value))
-        t
-      (let ((eol (save-excursion
-               (goto-char pos)
-               (end-of-line)
-               (point))))
-        (unless (or (eq pos eol) (eq pos (1- (point-max))))
-          (comment-edit--point-at-comment eol))))))
+(defun comment-edit--point-at-comment (&optional point)
+  "Return the face if point at comment."
+  (let ((face (get-text-property (or point (point)) 'face)))
+    (or (memq face '(font-lock-comment-face font-lock-comment-delimiter-face))
+        (when (apply #'derived-mode-p '(c-mode js-mode))
+          (memq face '(font-lock-doc-face))))))
 
 (defun comment-edit--comment-beginning (&optional pos)
   "Look at the first line of comment from point POS.
@@ -264,23 +292,16 @@ Example:
         |       ;; comment      |
         '-----------------------+
 "
-  (let ((pos (or pos (point)))
-        (new-pos))
-    (when (comment-edit--point-at-comment pos)
-      (save-excursion
-        (setq new-pos
-              (catch 'break
-                (while t
-                  (forward-line -1)
-                  (end-of-line)
-                  (setq new-pos (point))
-                  (cond ((eq pos new-pos) (throw 'break new-pos))
-                        ((comment-edit--point-at-comment new-pos) (setq pos new-pos))
-                        (t (throw 'break pos))))))
-        (when new-pos
-          (goto-char new-pos)
-          (beginning-of-line)
-          (point))))))
+  (let ((point-at-comment-p nil)
+        (point-at-newline-p nil)))
+  (while (and (setq point-at-comment-p
+                    (or (comment-edit--point-at-comment)
+                        (comment-edit--point-at-comment-exclusive-one-line)))
+              (setq point-at-newline-p (ignore-errors (backward-char 1) t))))
+  (when (and (not point-at-comment-p)
+             point-at-newline-p)
+    (forward-char 1))
+  (point))
 
 (defun comment-edit--comment-end (&optional pos)
   "Look at the last line of comment from point POS.
@@ -295,55 +316,89 @@ Example:
                               /
                         end -`
 "
-  (let ((pos (or pos (point)))
-        (new-pos))
-    (when (comment-edit--point-at-comment pos)
-      (save-excursion
-        (setq new-pos
-              (catch 'break
-                (while t
-                  (forward-line 1)
-                  (end-of-line)
-                  (setq new-pos (point))
-                  (cond ((eq pos new-pos) (throw 'break new-pos))
-                        ((comment-edit--point-at-comment new-pos) (setq pos new-pos))
-                        (t (throw 'break pos))))))
-        (when new-pos
-          (goto-char new-pos)
-          (end-of-line)
-          (point))))))
+  (let ((point-at-comment-p nil)
+        (point-at-newline-p nil))
+    (while (and (setq point-at-comment-p
+                      (or (comment-edit--point-at-comment)
+                          (comment-edit--point-at-comment-exclusive-one-line)))
+                (setq point-at-newline-p (ignore-errors (forward-char 1) t))))
+    (when (and (not point-at-comment-p)
+               point-at-newline-p)
+      (backward-char 1))
+    (point)))
 
 (defun comment-edit--comment-region (&optional pos)
   "Return the region of continuous comments.
 
-           .- beginning
-          /
-        +|----------------------.
-        ||      ;; comment      |
-        |       ;; comment      |
-        |       ;; comment     ||
-        '----------------------|+
-                              /
-                        end -`
+Style 1:
+
+          .- beginning
+         /
+        +------------------------.
+        |       ;; comment       |
+        |       ;; comment ______.
+        |       ;; comment|      
+        '-----------------+      
+                         /
+                   end -`
+
+Style 2:
+
+          .- beginning
+         /      /*
+        +------------------------.
+        |        * comment       |
+        |        * comment ______.
+        |        * comment|      
+        '-----------------+      
+                 */      /
+                   end -`
 "
   (let ((pos (or pos (point))))
     (comment-edit--log "==> [comment-edit--comment-region] pos: %s" pos)
     ;; (comment-edit--log "==> [comment-edit--comment-region] buffer string: %S"
     ;;          (buffer-substring-no-properties (point-min) (point-max)))
     (if (comment-edit--point-at-comment pos)
-        (let ((fbeg (comment-edit--comment-beginning pos))
-              (fend (comment-edit--comment-end       pos)))
+        (let* ((fbeg (save-excursion (comment-edit--comment-beginning pos)))
+               (fend (save-excursion (comment-edit--comment-end       pos)))
+               (enclosed-p (comment-edit--enclosed-comment-p fbeg fend)))
           (list (save-excursion
-                  ;; Skip `/*' for C/C++
                   (goto-char (or fbeg (point-min)))
-                  (re-search-forward (comment-edit--comment-starter-regexp))
-                  (match-beginning 0))
+                  (if enclosed-p
+                      ;; Skip `/*' for C/C++
+                      (progn
+                        (re-search-forward (comment-edit--comment-starter-regexp) nil t)
+                        (goto-char (match-beginning 0))))
+                  (point))
                 (save-excursion
                   (goto-char (or fend (point-max)))
-                  ;; Skip `*/' for C/C++
-                  (re-search-backward (comment-edit--comment-starter-regexp))
-                  (point-at-eol))))
+                  (if enclosed-p
+                      ;; Skip `*/' for C/C++
+                      (progn
+                        (re-search-backward (comment-edit--comment-starter-regexp) nil t)
+                        (goto-char (1- (match-beginning 0)))))
+                  (point))))
       (user-error "Not inside a comment"))))
+
+(defun comment-edit--get-comment-encloser (&optional mode)
+  (comment-edit--rassoc (or mode major-mode)
+                        comment-edit-comment-encloser-modes))
+
+(defun comment-edit--enclosed-comment-p (&optional comment-beginning comment-end)
+  "Determine if the comment from COMMENT-BEGINNING to COMMENT-END is enclosed."
+  (-when-let (encloser (car (comment-edit--get-comment-encloser major-mode)))
+    (and (save-excursion
+           (if comment-beginning
+               (goto-char comment-beginning)
+             (comment-edit--comment-beginningning))
+           (search-forward (car encloser) nil t 1))
+         (save-excursion
+           (if comment-end
+               (goto-char comment-end)
+             (comment-edit--comment-end))
+           (forward-char 1)
+           (search-backward (cadr encloser) nil t 1))
+         t)))
 
 ;;; Code block functions
 
