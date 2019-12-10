@@ -138,19 +138,19 @@ Taken from `markdown-code-lang-modes'."
 (defun comment-edit-toggle-debug (&optional debug-p)
   (interactive)
   (setq comment-edit-debug-p (or debug-p (not comment-edit-debug-p)))
-  (comment-edit--log "comment-edit-debug-p => %s" comment-edit-debug-p))
+  (message "comment-edit-debug-p => %s" comment-edit-debug-p))
 
 (defun comment-edit--log (format-string &rest args)
   (when comment-edit-debug-p
-     (if noninteractive
-         (funcall 'message format-string args)
-       (with-current-buffer (get-buffer-create "*comment-log*")
-         (outline-mode)
-         (buffer-disable-undo)
-         (let ((inhibit-read-only t))
-           (goto-char (point-max))
-           (insert (apply 'format (cons format-string args))
-                   "\n"))))))
+    (if noninteractive
+        (funcall 'message format-string args)
+      (with-current-buffer (get-buffer-create "*comment-log*")
+        (outline-mode)
+        (buffer-disable-undo)
+        (let ((inhibit-read-only t))
+          (goto-char (point-max))
+          (insert (apply 'format (cons format-string args))
+                  "\n"))))))
 
 (defun comment-edit--end-of-previous-line (&optional pos)
   "Move cursor to the end of prevous line of the given point POS.
