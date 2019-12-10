@@ -67,7 +67,7 @@ Taken from `markdown-code-lang-modes'."
   :group 'comment-edit
   :type 'alist)
 
-(defcustom comment-edit-comment-starter-alist
+(defcustom comment-edit-comment-delimiter-alist
   '((("//+" "\\*+")    . (c-mode
                           c++mode
                           csharp-mode
@@ -87,7 +87,7 @@ Taken from `markdown-code-lang-modes'."
                           racket-mode
                           scheme-mode))
     (("#+")            . (python-mode ruby-mode)))
-  "Alist of comment starter regexp."
+  "Alist of comment delimiter regexp."
   :group 'comment-edit
   :type 'alist)
 
@@ -129,7 +129,7 @@ Taken from `markdown-code-lang-modes'."
   :group 'comment-edit
   :type 'alist)
 
-(defvar comment-edit--line-starter nil "Line starter of each editing line.")
+(defvar comment-edit--line-delimiter nil "Comment delimiter of each editing line.")
 
 (defvar comment-edit-debug-p nil)
 
@@ -247,17 +247,17 @@ Return nil if reached the end of the buffer."
 
 ;;; Comment functions
 
-(defun comment-edit--comment-starter-regexp (&optional mode)
-  "Return comment starter regex of MODE."
+(defun comment-edit--comment-delimiter-regexp (&optional mode)
+  "Return comment delimiter regex of MODE."
   (let* ((mode (or mode major-mode))
-         (def (or (comment-edit--rassoc mode comment-edit-comment-starter-alist)
+         (def (or (comment-edit--rassoc mode comment-edit-comment-delimiter-alist)
                   (comment-edit--rassoc (get mode 'derived-mode-parent)
-                                        comment-edit-comment-starter-alist)
+                                        comment-edit-comment-delimiter-alist)
                   (comment-edit--rassoc (comment-edit--get-real-mode mode)
-                                        comment-edit-comment-starter-alist))))
+                                        comment-edit-comment-delimiter-alist))))
     (when def
       (if (symbolp (car def))
-          (comment-edit--comment-starter-regexp (car def))
+          (comment-edit--comment-delimiter-regexp (car def))
         (concat "^\s*\\(?:"
                 (mapconcat 'identity (car def) "\\|")
                 "\\)\s?")))))
@@ -367,7 +367,7 @@ Style 2:
                   (if enclosed-p
                       ;; Skip `/*' for C/C++
                       (progn
-                        (re-search-forward (comment-edit--comment-starter-regexp) nil t)
+                        (re-search-forward (comment-edit--comment-delimiter-regexp) nil t)
                         (goto-char (match-beginning 0))))
                   (point))
                 (save-excursion
@@ -375,7 +375,7 @@ Style 2:
                   (if enclosed-p
                       ;; Skip `*/' for C/C++
                       (progn
-                        (re-search-backward (comment-edit--comment-starter-regexp) nil t)
+                        (re-search-backward (comment-edit--comment-delimiter-regexp) nil t)
                         (goto-char (1- (match-beginning 0)))))
                   (point))))
       (user-error "Not inside a comment"))))
@@ -402,11 +402,11 @@ Style 2:
 
 ;;; Code block functions
 
-(defun comment-edit--code-block-beginning (&optional comment-starter)
+(defun comment-edit--code-block-beginning (&optional comment-delimiter)
   "Return code block info contains :beginning."
   (let ((regexp-group
          (concat
-          comment-starter
+          comment-delimiter
           "\\(?:"
           (mapconcat
            (lambda (it)
@@ -416,7 +416,7 @@ Style 2:
           "\\)")))
     (catch 'break
       (save-excursion
-        (comment-edit--log "==> [code-block-beginning] comment-starter: %S" comment-starter)
+        (comment-edit--log "==> [code-block-beginning] comment-delimiter: %S" comment-delimiter)
         (comment-edit--log "==> [code-block-beginning] regexp-group: %S" regexp-group)
         (when (re-search-backward regexp-group nil t)
           (save-match-data
@@ -438,10 +438,10 @@ Style 2:
                              it)
                            comment-edit-block-regexp-plist))))))))))
 
-(defun comment-edit--code-block-end (code-info &optional comment-starter)
+(defun comment-edit--code-block-end (code-info &optional comment-delimiter)
   "Return CODE-INFO with :end added."
   (save-excursion
-    (let ((regexp (concat comment-starter
+    (let ((regexp (concat comment-delimiter
                           (plist-get
                            (plist-get code-info :regexps)
                            :end))))
@@ -498,10 +498,10 @@ Block info example:
                                (comment-edit--string-beginning)))
                    region)
                (comment-edit--comment-region)))
-      (let* ((starter (unless strp (comment-edit--comment-starter-regexp)))
+      (let* ((delimiter (unless strp (comment-edit--comment-delimiter-regexp)))
              (code-info (comment-edit--code-block-end
-                         (comment-edit--code-block-beginning starter)
-                         starter)))
+                         (comment-edit--code-block-beginning delimiter)
+                         delimiter)))
         (if (and (plist-get code-info :beginning) (plist-get code-info :end))
             (plist-put code-info :in-str-p strp)
           (plist-put
@@ -512,32 +512,32 @@ Block info example:
 
 ;;; comment-edit-mode
 
-(defun comment-edit--remove-comment-starter (regexp)
-  "Remove comment starter of each line by REGEXP when entering comment-edit-mode."
-  (let ((line-starter)
+(defun comment-edit--remove-comment-delimiter (regexp)
+  "Remove comment delimiter of each line by REGEXP when entering comment-edit-mode."
+  (let ((line-delimiter)
         (inhibit-read-only t))
     (save-excursion
       (goto-char (point-max))
       (catch 'break
         (while (and (< (point-min) (point)) (re-search-backward regexp nil t))
-          (unless line-starter
-            (setq line-starter (match-string 0)))
+          (unless line-delimiter
+            (setq line-delimiter (match-string 0)))
           (replace-match "")
           (when (eq (point) (point-min))
             (throw 'break nil))
           (backward-char))))
-    line-starter))
+    line-delimiter))
 
-(defun comment-edit--restore-comment-starter (beg end)
-  "Restore comment starter of each line between BEG to END when returning from comemntdown-mode."
-  (comment-edit--log "==> [comment-edit--restore-comment-starter] line starter: %s"
-              comment-edit--line-starter)
+(defun comment-edit--restore-comment-delimiter (beg end)
+  "Restore comment delimiter of each line between BEG to END when returning from comemntdown-mode."
+  (comment-edit--log "==> [comment-edit--restore-comment-delimiter] line delimiter: %s"
+                     comment-edit--line-delimiter)
   (when (and (string-prefix-p "*edit-indirect " (buffer-name))
-             comment-edit--line-starter)
+             comment-edit--line-delimiter)
     (save-excursion
       (goto-char beg)
       (while (re-search-forward "^.*$" nil t)
-        (replace-match (concat comment-edit--line-starter
+        (replace-match (concat comment-edit--line-delimiter
                                (match-string 0)))))))
 
 (defun comment-edit--remove-nested-escape ()
@@ -555,7 +555,7 @@ Block info example:
     (dolist (num (number-sequence 1 9))
       (let ((match-len (- (math-pow 2 num) 2)))
         (when (and (< 0 match-len)
-               (looking-back (eval `(rx (not (any "\\")) (= ,match-len "\\"))) 1))
+                   (looking-back (eval `(rx (not (any "\\")) (= ,match-len "\\"))) 1))
           (let ((del-len (- match-len (1- (math-pow 2 (1- num))))))
             (backward-delete-char del-len)
             (throw 'break nil)))))))
@@ -647,9 +647,9 @@ Block info example:
          (strp (plist-get block :in-str-p))
          (commentp (not strp))
          (codep (and (plist-get block :regexps) t))
-         (starter-regexp (concat (if strp "^\s*"
-                                     (comment-edit--comment-starter-regexp))
-                                 (plist-get (plist-get block :regexps) :middle))))
+         (delimiter-regexp (concat (if strp "^\s*"
+                                     (comment-edit--comment-delimiter-regexp))
+                                   (plist-get (plist-get block :regexps) :middle))))
     (comment-edit--log "==> block-info: %S" block)
     ;; (comment-edit--log "==> block: %S" (buffer-substring-no-properties beg end))
     (if block
@@ -659,7 +659,7 @@ Block info example:
                                (t comment-edit-code-block-default-mode)))))
           (setq-local edit-indirect-guess-mode-function
                       `(lambda (_parent-buffer _beg _end)
-                         (let ((line-starter (and (or ,codep ,commentp) (comment-edit--remove-comment-starter ,starter-regexp))))
+                         (let ((line-delimiter (and (or ,codep ,commentp) (comment-edit--remove-comment-delimiter ,delimiter-regexp))))
                            (comment-edit--log "==> block(edit buffer): %S" (buffer-substring-no-properties (point-min) (point-max)))
                            (when ,strp
                              (comment-edit--log "==> quotes(edit buffer): %S" ,strp)
@@ -668,10 +668,10 @@ Block info example:
                            (funcall ',mode)
                            (set (make-local-variable 'header-line-format)
                                 (substitute-command-keys "*EDIT* Exit: \\[edit-indirect-commit] Abort: \\[edit-indirect-abort], Recursive-entry: \\[comment-edit]"))
-                           (set (make-local-variable 'comment-edit--line-starter) line-starter)
+                           (set (make-local-variable 'comment-edit--line-delimiter) line-delimiter)
                            (set (make-local-variable 'edit-indirect-before-commit-hook)
                                 (append '((lambda ()
-                                            (comment-edit--restore-comment-starter (point-min) (point-max))
+                                            (comment-edit--restore-comment-delimiter (point-min) (point-max))
                                             (when ,strp
                                               (comment-edit--restore-escape ,strp))))
                                         edit-indirect-before-commit-hook)))))

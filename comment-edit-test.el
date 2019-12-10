@@ -436,13 +436,13 @@
      (list (save-excursion (re-search-backward "^\\s-*\\* comment1$" nil t))
            (save-excursion (re-search-forward "^\\s-*\\* comment3$" nil t)))))))
 
-(ert-deftest comment-edit-test-comment-starter-regexp-el ()
+(ert-deftest comment-edit-test-comment-delimiter-regexp-el ()
   (mapc
    (lambda (it)
      (should
       (equal (cdr it)
              (replace-regexp-in-string
-              (comment-edit--comment-starter-regexp 'emacs-lisp-mode) "" (car it)))))
+              (comment-edit--comment-delimiter-regexp 'emacs-lisp-mode) "" (car it)))))
    '((";foo"     . "foo")
      ("; foo"    . "foo")
      (";  foo"   . " foo")
@@ -455,13 +455,13 @@
      (";;; foo"  . "foo")
      (";;;  foo" . " foo"))))
 
-(ert-deftest comment-edit-test-comment-starter-regexp-py ()
+(ert-deftest comment-edit-test-comment-delimiter-regexp-py ()
   (mapc
    (lambda (it)
      (should
       (equal (cdr it)
              (replace-regexp-in-string
-              (comment-edit--comment-starter-regexp 'python-mode) "" (car it)))))
+              (comment-edit--comment-delimiter-regexp 'python-mode) "" (car it)))))
    '(("#foo"     . "foo")
      ("# foo"    . "foo")
      ("#  foo"   . " foo")
@@ -474,13 +474,13 @@
      ("### foo"  . "foo")
      ("###  foo" . " foo"))))
 
-(ert-deftest comment-edit-test-comment-starter-regexp-c1 ()
+(ert-deftest comment-edit-test-comment-delimiter-regexp-c1 ()
   (mapc
    (lambda (it)
      (should
       (equal (cdr it)
              (replace-regexp-in-string
-              (comment-edit--comment-starter-regexp 'c-mode) "" (car it)))))
+              (comment-edit--comment-delimiter-regexp 'c-mode) "" (car it)))))
    '(("*foo"     . "foo")
      ("* foo"    . "foo")
      ("*  foo"   . " foo")
@@ -493,13 +493,13 @@
      ("*** foo"  . "foo")
      ("***  foo" . " foo"))))
 
-(ert-deftest comment-edit-test-comment-starter-regexp-c2 ()
+(ert-deftest comment-edit-test-comment-delimiter-regexp-c2 ()
   (mapc
    (lambda (it)
      (should
       (equal (cdr it)
              (replace-regexp-in-string
-              (comment-edit--comment-starter-regexp 'c-mode) "" (car it)))))
+              (comment-edit--comment-delimiter-regexp 'c-mode) "" (car it)))))
    '(("/foo"     . "/foo")
      ("/ foo"    . "/ foo")
      ("/  foo"   . "/  foo")
