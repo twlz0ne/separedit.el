@@ -132,7 +132,36 @@
     "     ;; comment1
           ;; comment2<|>
           ;; comment3\n\n")
-   (should (eq (comment-edit--comment-end) (- (point-max) 2)))))
+   (should (eq (comment-edit--comment-end) (- (point-max) 2))))
+
+  ;;; With trailing empty comment line
+
+  (comment-edit-test--with-buffer
+   'emacs-lisp-mode
+   (comment-edit-test--indent-el
+    ";; comment1
+     ;; comment2<|>
+     ;; comment3
+     ;;")
+   (should (eq (comment-edit--comment-end) (- (point-max) 0))))
+
+  (comment-edit-test--with-buffer
+   'emacs-lisp-mode
+   (comment-edit-test--indent-el
+    ";; comment1
+     ;; comment2<|>
+     ;; comment3
+     ;; ")
+   (should (eq (comment-edit--comment-end) (- (point-max) 0))))
+
+  (comment-edit-test--with-buffer
+   'emacs-lisp-mode
+   (comment-edit-test--indent-el
+    ";; comment1
+     ;; comment2<|>
+     ;; comment3
+     ;;\n")
+   (should (eq (comment-edit--comment-end) (- (point-max) 1)))))
 
 (ert-deftest comment-edit-test-region-of-comment-c1 ()
   ;;; Without leading spaces
@@ -273,7 +302,48 @@
     (equal
      (comment-edit--comment-region)
      (list (+ (point-min) 2)
-           (point-max))))))
+           (point-max)))))
+
+  ;;; With trailing empty comment line
+
+  (comment-edit-test--with-buffer
+   'c-mode
+   (comment-edit-test--indent-c
+    "// comment1
+     // comment2<|>
+     // comment3
+     //")
+   (should
+    (equal
+     (comment-edit--comment-region)
+     (list (point-min)
+           (point-max)))))
+
+  (comment-edit-test--with-buffer
+   'c-mode
+   (comment-edit-test--indent-c
+    "// comment1
+     // comment2<|>
+     // comment3
+     // ")
+   (should
+    (equal
+     (comment-edit--comment-region)
+     (list (point-min)
+           (point-max)))))
+
+  (comment-edit-test--with-buffer
+   'c-mode
+   (comment-edit-test--indent-c
+    "// comment1
+     // comment2<|>
+     // comment3
+     //\n")
+   (should
+    (equal
+     (comment-edit--comment-region)
+     (list (point-min)
+           (- (point-max) 1))))))
 
 (ert-deftest comment-edit-test-region-of-comment-c2 ()
   ;;; Without leading spaces

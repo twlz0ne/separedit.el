@@ -321,9 +321,19 @@ Example:
     (while (and (setq point-at-comment-p
                       (or (comment-edit--point-at-comment)
                           (comment-edit--point-at-comment-exclusive-one-line)))
-                (setq point-at-newline-p (ignore-errors (forward-char 1) t))))
-    (when (and (not point-at-comment-p)
-               point-at-newline-p)
+                (setq point-at-newline-p
+                      (condition-case err
+                          (progn
+                            (forward-char 1)
+                            t)
+                        (error
+                         (setq point-at-comment-p
+                               (or (comment-edit--point-at-comment)
+                                   (comment-edit--point-at-comment-exclusive-one-line)))
+                         nil)))))
+    (when (and point-at-newline-p
+               (not point-at-comment-p)
+               (not (> (point) (point-at-bol))))
       (backward-char 1))
     (point)))
 
@@ -396,7 +406,7 @@ Style 2:
            (if comment-end
                (goto-char comment-end)
              (comment-edit--comment-end))
-           (forward-char 1)
+           (ignore-errors (forward-char 1))
            (search-backward (cadr encloser) nil t 1))
          t)))
 
