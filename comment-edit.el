@@ -40,6 +40,7 @@
 (require 'dash)
 (require 'edit-indirect)
 (require 'calc-misc)
+(require 'subr-x)
 
 (defcustom comment-edit-code-block-default-mode 'normal-mode
   "Default mode to use for editing code blocks.
@@ -544,11 +545,14 @@ Block info example:
                      comment-edit--line-delimiter)
   (when (and (string-prefix-p "*edit-indirect " (buffer-name))
              comment-edit--line-delimiter)
-    (save-excursion
-      (goto-char beg)
-      (while (re-search-forward "^.*$" nil t)
-        (replace-match (concat comment-edit--line-delimiter
-                               (match-string 0)))))))
+    (let ((delimiter (if (string-suffix-p " " comment-edit--line-delimiter)
+                         comment-edit--line-delimiter
+                       (concat comment-edit--line-delimiter " "))))
+      (save-excursion
+        (goto-char beg)
+        (while (re-search-forward "^.*$" nil t)
+          (replace-match (string-trim-right
+                          (concat delimiter (match-string 0)))))))))
 
 (defun comment-edit--remove-nested-escape ()
   (catch 'break
