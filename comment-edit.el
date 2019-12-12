@@ -277,7 +277,7 @@ Return nil if reached the end of the buffer."
   "Return the face if point at comment."
   (let ((face (get-text-property (or point (point)) 'face)))
     (or (memq face '(font-lock-comment-face font-lock-comment-delimiter-face))
-        (when (apply #'derived-mode-p '(c-mode js-mode))
+        (when (apply #'derived-mode-p '(c-mode c++-mode java-mode js-mode rust-mode))
           (memq face '(font-lock-doc-face))))))
 
 (defun comment-edit--comment-beginning (&optional pos)
