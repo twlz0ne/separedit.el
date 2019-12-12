@@ -506,6 +506,37 @@
      (list (save-excursion (re-search-backward "^\\s-*\\* comment1$" nil t))
            (save-excursion (re-search-forward "^\\s-*\\* comment3$" nil t)))))))
 
+(ert-deftest comment-edit-test-region-of-comment-c3 ()
+  (comment-edit-test--with-buffer
+   'c-mode
+   (comment-edit-test--indent-c
+    "/*
+        comment1
+        comment2<|>
+        comment3
+      */")
+   (should
+    (equal
+     (comment-edit--comment-region)
+     (list (save-excursion (re-search-backward "^\\s-* comment1$" nil t))
+           (save-excursion (re-search-forward "^\\s-* comment3$" nil t)))))))
+
+(ert-deftest comment-edit-test-region-of-comment-pascal ()
+  (comment-edit-test--with-buffer
+   'pascal-mode
+   (comment-edit-test--indent-pascal
+    "{
+     comment1
+     comment2<|>
+     comment3
+     }")
+   (should
+    (equal
+     (comment-edit--comment-region)
+     (list (save-excursion (re-search-backward "^\\s-*comment1$" nil t))
+           (save-excursion (re-search-forward "^\\s-*comment3$" nil t)))))
+   ))
+
 (ert-deftest comment-edit-test-comment-at-end-of-comment ()
   (comment-edit-test--with-buffer
    'emacs-lisp-mode

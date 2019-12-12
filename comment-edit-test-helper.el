@@ -127,6 +127,9 @@ Example:
 (defun comment-edit-test--indent-rb (string)
   (comment-edit-test--indent 'ruby-mode string))
 
+(defun comment-edit-test--indent-pascal (string)
+  (comment-edit-test--indent 'pascal-mode string))
+
 (defun xah-syntax-color-hex ()
   "Syntax color text of the form 「#ff1100」 and 「#abc」 in current buffer.
 URL `http://ergoemacs.org/emacs/emacs_CSS_colors.html'

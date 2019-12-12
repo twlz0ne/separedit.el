@@ -70,7 +70,7 @@ Taken from `markdown-code-lang-modes'."
 
 (defcustom comment-edit-comment-delimiter-alist
   '((("//+" "\\*+")    . (c-mode
-                          c++mode
+                          c++-mode
                           csharp-mode
                           css-mode
                           go-mode
@@ -94,7 +94,7 @@ Taken from `markdown-code-lang-modes'."
 
 (defcustom comment-edit-comment-encloser-modes
   '((("/*" "*/")       . (c-mode
-                          c++mode
+                          c++-mode
                           csharp-mode
                           css-mode
                           go-mode
@@ -105,7 +105,7 @@ Taken from `markdown-code-lang-modes'."
                           rust-mode
                           swift-mode))
     (("{-" "-}")       . haskell-mode)
-    (("{*" "*}")       . pascal-mode)
+    (("{" "}")         . pascal-mode)
     (("(*" "*)")       . (applescript-mode fsharp-mode ocaml-mode))
     (("#|" "#|")       . (common-lisp racket-mode scheme-mode))
     (("<!--" "-->")    . (html-mode xml-mode))
@@ -378,17 +378,21 @@ Style 2:
                   (goto-char (or fbeg (point-min)))
                   (if enclosed-p
                       ;; Skip `/*' for C/C++
-                      (progn
-                        (re-search-forward (comment-edit--comment-delimiter-regexp) nil t)
-                        (goto-char (match-beginning 0))))
+                      (re-search-forward
+                         (concat (regexp-quote
+                                  (caar (comment-edit--get-comment-encloser)))
+                                 "[\t\s]*\n")
+                         nil t))
                   (point))
                 (save-excursion
                   (goto-char (or fend (point-max)))
                   (if enclosed-p
                       ;; Skip `*/' for C/C++
-                      (progn
-                        (re-search-backward (comment-edit--comment-delimiter-regexp) nil t)
-                        (goto-char (1- (match-beginning 0)))))
+                      (re-search-backward
+                         (concat "\n[\t\s]*"
+                                 (regexp-quote
+                                  (cadar (comment-edit--get-comment-encloser))))
+                         nil t))
                   (point))))
       (user-error "Not inside a comment"))))
 
