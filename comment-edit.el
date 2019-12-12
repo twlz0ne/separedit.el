@@ -401,7 +401,7 @@ Style 2:
     (and (save-excursion
            (if comment-beginning
                (goto-char comment-beginning)
-             (comment-edit--comment-beginningning))
+             (comment-edit--comment-beginning))
            (search-forward (car encloser) nil t 1))
          (save-excursion
            (if comment-end
