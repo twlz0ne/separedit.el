@@ -506,6 +506,17 @@
      (list (save-excursion (re-search-backward "^\\s-*\\* comment1$" nil t))
            (save-excursion (re-search-forward "^\\s-*\\* comment3$" nil t)))))))
 
+(ert-deftest comment-edit-test-comment-at-end-of-comment ()
+  (comment-edit-test--with-buffer
+   'emacs-lisp-mode
+   ";; comment-without-trailing-spaces"
+   (should (not (comment-edit--point-at-comment (point-max)))))
+
+  (comment-edit-test--with-buffer
+   'emacs-lisp-mode
+   ";; comment-with-trailing-spaces "
+   (should (not (comment-edit--point-at-comment (point-max))))))
+
 (ert-deftest comment-edit-test-comment-delimiter-regexp-el ()
   (mapc
    (lambda (it)

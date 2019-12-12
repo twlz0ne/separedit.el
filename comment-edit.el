@@ -369,7 +369,8 @@ Style 2:
     (comment-edit--log "==> [comment-edit--comment-region] pos: %s" pos)
     ;; (comment-edit--log "==> [comment-edit--comment-region] buffer string: %S"
     ;;          (buffer-substring-no-properties (point-min) (point-max)))
-    (if (comment-edit--point-at-comment pos)
+    (if (or (comment-edit--point-at-comment pos)
+            (comment-edit--point-at-comment-exclusive-one-line))
         (let* ((fbeg (save-excursion (comment-edit--comment-beginning pos)))
                (fend (save-excursion (comment-edit--comment-end       pos)))
                (enclosed-p (comment-edit--enclosed-comment-p fbeg fend)))
