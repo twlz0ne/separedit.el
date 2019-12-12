@@ -594,28 +594,31 @@
      ("///  foo" . " foo"))))
 
 (ert-deftest comment-edit-test-string-region-el ()
-  (let* ((content-string (format "%S" "string `symbol'\n#ffffff\n(function \"arg\")"))
-         (expected-string (substring content-string 1 (1- (length content-string)))))
-    (should (string= expected-string
-                     (comment-edit-test--with-buffer 'emacs-lisp-mode
-                      content-string
-                      (apply #'buffer-substring-no-properties (comment-edit--string-region 20)))))
-    (should (string= expected-string
-                     (comment-edit-test--with-buffer 'emacs-lisp-mode
-                      (concat "(" content-string ")")
-                      (apply #'buffer-substring-no-properties (comment-edit--string-region 20)))))
-    (should (string= expected-string
-                     (comment-edit-test--with-buffer 'emacs-lisp-mode
-                      (concat "(foo " content-string ")")
-                      (apply #'buffer-substring-no-properties (comment-edit--string-region 20)))))
-    (should (string= expected-string
-                     (comment-edit-test--with-buffer 'emacs-lisp-mode
-                      (concat "(defun foo () " content-string ")")
-                      (apply #'buffer-substring-no-properties (comment-edit--string-region 20)))))
-    (should (string= expected-string
-                     (comment-edit-test--with-buffer 'emacs-lisp-mode
-                      (concat "(defun foo () " content-string ")\n(foo)")
-                      (apply #'buffer-substring-no-properties (comment-edit--string-region 20)))))))
+  (add-hook 'prog-mode-hook 'xah-syntax-color-hex)
+  (unwind-protect
+    (let* ((content-string (format "%S" "string `symbol'\n#ffffff\n(function \"arg\")"))
+           (expected-string (substring content-string 1 (1- (length content-string)))))
+      (should (string= expected-string
+                       (comment-edit-test--with-buffer 'emacs-lisp-mode
+                        content-string
+                        (apply #'buffer-substring-no-properties (comment-edit--string-region 20)))))
+      (should (string= expected-string
+                       (comment-edit-test--with-buffer 'emacs-lisp-mode
+                        (concat "(" content-string ")")
+                        (apply #'buffer-substring-no-properties (comment-edit--string-region 20)))))
+      (should (string= expected-string
+                       (comment-edit-test--with-buffer 'emacs-lisp-mode
+                        (concat "(foo " content-string ")")
+                        (apply #'buffer-substring-no-properties (comment-edit--string-region 20)))))
+      (should (string= expected-string
+                       (comment-edit-test--with-buffer 'emacs-lisp-mode
+                        (concat "(defun foo () " content-string ")")
+                        (apply #'buffer-substring-no-properties (comment-edit--string-region 20)))))
+      (should (string= expected-string
+                       (comment-edit-test--with-buffer 'emacs-lisp-mode
+                        (concat "(defun foo () " content-string ")\n(foo)")
+                        (apply #'buffer-substring-no-properties (comment-edit--string-region 20))))))
+    (remove-hook 'prog-mode-hook 'xah-syntax-color-hex)))
 
 (ert-deftest comment-edit-test-string-region-py ()
   (let* ((content-string "\"\"\"docstring & double quotes\"\"\"")

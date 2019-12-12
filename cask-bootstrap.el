@@ -4,3 +4,5 @@
   (setq user-emacs-directory (expand-file-name "./"))
   (setq package-user-dir (expand-file-name (format "./.cask/%s.%s/elpa/" (car ver-list) (car (cdr ver-list)))))
   (package-initialize))
+
+(provide 'cask-bootstrap)

@@ -161,7 +161,6 @@ Version 2016-07-04"
            (funcall ,mode)
            (goto-char (point-min))
            (re-search-forward "<|>" nil t 1)
-           (xah-syntax-color-hex)
            (let ((noninteractive nil))
              (font-lock-mode 1)
              (font-lock-set-defaults)
