@@ -682,7 +682,15 @@ Block info example:
                            (comment-edit--log "==> mode(edit buffer): %S" ',mode)
                            (funcall ',mode)
                            (set (make-local-variable 'header-line-format)
-                                (substitute-command-keys "*EDIT* Exit: \\[edit-indirect-commit] Abort: \\[edit-indirect-abort], Recursive-entry: \\[comment-edit]"))
+                                (substitute-command-keys (concat "*EDIT* "
+                                                                 (mapconcat
+                                                                  'identity
+                                                                  (-non-nil
+                                                                   (list "\\[edit-indirect-commit]: Exit"
+                                                                         "\\[edit-indirect-abort]: Abort"
+                                                                         (when ,strp
+                                                                           "\\[comment-edit]: Recursive-entry")))
+                                                                  ", "))))
                            (set (make-local-variable 'comment-edit--line-delimiter) line-delimiter)
                            (set (make-local-variable 'edit-indirect-before-commit-hook)
                                 (append '((lambda ()
