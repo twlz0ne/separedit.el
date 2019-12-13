@@ -42,6 +42,11 @@
 (require 'calc-misc)
 (require 'subr-x)
 
+(defcustom comment-edit-default-mode 'fundamental-mode
+  "Default mode for editing comment or docstring file."
+  :group 'comment-edit
+  :type 'symbolp)
+
 (defcustom comment-edit-code-block-default-mode 'normal-mode
   "Default mode to use for editing code blocks.
 This mode is used when automatic detection fails, such as for GFM
@@ -684,10 +689,13 @@ Block info example:
     (comment-edit--log "==> block-info: %S" block)
     ;; (comment-edit--log "==> block: %S" (buffer-substring-no-properties beg end))
     (if block
-        (let* ((mode (or lang-mode
-                         (cond ((and (stringp strp) (string= "'" strp)) 'comment-edit-single-quote-string-mode)
-                               ((and (stringp strp) (string= "\"" strp)) 'comment-edit-double-quote-string-mode)
-                               (t comment-edit-code-block-default-mode)))))
+        (let* ((mode
+                (if codep
+                    (or lang-mode
+                        comment-edit-code-block-default-mode)
+                  (cond ((and (stringp strp) (string= "'" strp)) 'comment-edit-single-quote-string-mode)
+                        ((and (stringp strp) (string= "\"" strp)) 'comment-edit-double-quote-string-mode)
+                        (t comment-edit-default-mode)))))
           (setq-local edit-indirect-guess-mode-function
                       `(lambda (_parent-buffer _beg _end)
                          (let ((line-delimiter (and (or ,codep ,commentp) (comment-edit--remove-comment-delimiter ,delimiter-regexp))))
