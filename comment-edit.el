@@ -92,8 +92,8 @@ Taken from `markdown-code-lang-modes'."
   :group 'comment-edit
   :type 'alist)
 
-(defcustom comment-edit-comment-encloser-modes
-  '((("/*" "*/")       . (c-mode
+(defcustom comment-edit-comment-encloser-alist
+  '((("/\\*+" "\\*/")       . (c-mode
                           c++-mode
                           csharp-mode
                           css-mode
@@ -106,10 +106,10 @@ Taken from `markdown-code-lang-modes'."
                           swift-mode))
     (("{-" "-}")       . haskell-mode)
     (("{" "}")         . pascal-mode)
-    (("(*" "*)")       . (applescript-mode fsharp-mode ocaml-mode))
+    (("(\\*" "\\*)")       . (applescript-mode fsharp-mode ocaml-mode))
     (("#|" "#|")       . (common-lisp racket-mode scheme-mode))
     (("<!--" "-->")    . (html-mode xml-mode))
-    (("--[[" "--]]")   . lua-mode)
+    (("--\\[[" "--\\]\\]")   . lua-mode)
     (("=begin" "=end") . ruby-mode))
   "Alist mapping comment encloser to their major mode."
   :group 'comment-edit
@@ -373,32 +373,44 @@ Style 2:
             (comment-edit--point-at-comment-exclusive-one-line))
         (let* ((fbeg (save-excursion (comment-edit--comment-beginning pos)))
                (fend (save-excursion (comment-edit--comment-end       pos)))
-               (enclosed-p (comment-edit--enclosed-comment-p fbeg fend)))
+               (enclosed-p (comment-edit--enclosed-comment-p fbeg fend))
+               (multi-line-p (not (= (line-number-at-pos fbeg)
+                                     (line-number-at-pos fend)))))
           (list (save-excursion
-                  (goto-char (or fbeg (point-min)))
+                  (goto-char fbeg)
                   (if enclosed-p
                       ;; Skip `/*' for C/C++
                       (re-search-forward
-                         (concat (regexp-quote
-                                  (caar (comment-edit--get-comment-encloser)))
-                                 "[\t\s]*\n")
+                       (comment-edit--comment-begin-encloser multi-line-p)
                          nil t))
                   (point))
                 (save-excursion
-                  (goto-char (or fend (point-max)))
-                  (if enclosed-p
-                      ;; Skip `*/' for C/C++
-                      (re-search-backward
-                         (concat "\n[\t\s]*"
-                                 (regexp-quote
-                                  (cadar (comment-edit--get-comment-encloser))))
-                         nil t))
+                  (goto-char fend)
+                  (when enclosed-p
+                    ;; Skip `*/' for C/C++
+                    (re-search-backward
+                     (comment-edit--comment-end-encloser multi-line-p)
+                     nil t)
+                    (when (and (not multi-line-p) (= (char-before) ?\s))
+                      (backward-char 1)))
                   (point))))
       (user-error "Not inside a comment"))))
 
+(defun comment-edit--comment-begin-encloser (&optional multi-line-p mode)
+  (concat (caar (comment-edit--get-comment-encloser (or mode major-mode)))
+          "[\t\s]*"
+          (when multi-line-p
+            "\n")))
+
+(defun comment-edit--comment-end-encloser (&optional multi-line-p mode)
+  (concat (when multi-line-p
+            "\n")
+          "[\t\s]*"
+          (cadar (comment-edit--get-comment-encloser (or mode major-mode)))))
+
 (defun comment-edit--get-comment-encloser (&optional mode)
   (comment-edit--rassoc (or mode major-mode)
-                        comment-edit-comment-encloser-modes))
+                        comment-edit-comment-encloser-alist))
 
 (defun comment-edit--enclosed-comment-p (&optional comment-beginning comment-end)
   "Determine if the comment from COMMENT-BEGINNING to COMMENT-END is enclosed."
@@ -407,13 +419,13 @@ Style 2:
            (if comment-beginning
                (goto-char comment-beginning)
              (comment-edit--comment-beginning))
-           (search-forward (car encloser) nil t 1))
+           (re-search-forward (car encloser) nil t 1))
          (save-excursion
            (if comment-end
                (goto-char comment-end)
              (comment-edit--comment-end))
            (ignore-errors (forward-char 1))
-           (search-backward (cadr encloser) nil t 1))
+           (re-search-backward (cadr encloser) nil t 1))
          t)))
 
 ;;; Code block functions

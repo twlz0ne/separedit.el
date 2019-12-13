@@ -537,6 +537,32 @@
            (save-excursion (re-search-forward "^\\s-*comment3$" nil t)))))
    ))
 
+(ert-deftest comment-edit-test-region-of-single-line-comment ()
+  (comment-edit-test--with-buffer
+   'c-mode
+   "/* com<|>ment */"
+   (should
+    (equal
+     (comment-edit--comment-region)
+     (list (save-excursion (goto-char (point-min)) (search-forward "/* "))
+           (save-excursion (goto-char (point-max)) (search-backward " */"))))))
+  (comment-edit-test--with-buffer
+   'c-mode
+   "/** com<|>ment */"
+   (should
+    (equal
+     (comment-edit--comment-region)
+     (list (save-excursion (goto-char (point-min)) (search-forward "/** "))
+           (save-excursion (goto-char (point-max)) (search-backward " */"))))))
+  (comment-edit-test--with-buffer
+   'pascal-mode
+   "{ com<|>ment }"
+   (should
+    (equal
+     (comment-edit--comment-region)
+     (list (save-excursion (goto-char (point-min)) (search-forward "{ "))
+           (save-excursion (goto-char (point-max)) (search-backward " }")))))))
+
 (ert-deftest comment-edit-test-comment-at-end-of-comment ()
   (comment-edit-test--with-buffer
    'emacs-lisp-mode
