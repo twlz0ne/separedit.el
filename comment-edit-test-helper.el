@@ -58,7 +58,18 @@
 
 ;;;
 
-(defun comment-edit-test--execute-block-edit (init-mode key-sequnce init-data expected-data)
+(defun comment-edit-test--region-between-regexps (begin-regexp end-regexp)
+  "Return region between BEGIN-REGEXP and END-REGEXP."
+  (list :beginning
+        (save-excursion (re-search-backward begin-regexp)
+                        (forward-line 1)
+                        (point))
+        :end
+        (save-excursion (re-search-forward end-regexp)
+                        (forward-line -1)
+                        (point))))
+
+(defun comment-edit-test--execute-block-edit (init-mode key-sequnce init-data expected-data &optional region-regexps)
   (let ((buf (generate-new-buffer "*init*")))
     (switch-to-buffer buf)
     (insert init-data)
@@ -69,7 +80,8 @@
       (font-lock-ensure))
     (goto-char (point-min))
     (re-search-forward "<|>")
-    (comment-edit)
+    (comment-edit (when region-regexps
+                    (apply #'comment-edit-test--region-between-regexps region-regexps)))
     (test-with nil key-sequnce)
     (should
      (equal expected-data

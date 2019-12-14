@@ -898,6 +898,43 @@ Usage:<|>
     (comment-edit-test--execute-block-edit 'javascript-mode ""       initial-string expected-string)
     (comment-edit-test--execute-block-edit 'javascript-mode "C-c '"  initial-string initial-string)))
 
+(ert-deftest comment-edit-test-el-commentary ()
+  (let* ((comment-edit-leave-blank-line-in-comment t)
+         (initial-string "\
+;;; Commentary:
+
+;; comment1
+
+;; comment2<|>
+
+;; comment3
+
+;;; Code:")
+         (editing-string "\
+
+comment1
+
+comment2<|>
+
+comment3
+")
+         (edit-string "\
+;;; Commentary:
+
+;; comment1
+
+;; comment2<|>
+
+;; comment3
+;; aaa
+
+;;; Code:")
+         (initial-string2 (concat ";; comment0\n\n" initial-string "\n\n;; comment4")))
+    (comment-edit-test--execute-block-edit 'emacs-lisp-mode ""              initial-string  editing-string (list "^;;; Commentary:$" "^;;; .*:$"))
+    (comment-edit-test--execute-block-edit 'emacs-lisp-mode ""              initial-string2 editing-string (list "^;;; Commentary:$" "^;;; .*:$"))
+    (comment-edit-test--execute-block-edit 'emacs-lisp-mode "C-c '"         initial-string  initial-string (list "^;;; Commentary:$" "^;;; .*:$"))
+    (comment-edit-test--execute-block-edit 'emacs-lisp-mode "aaa C-j C-c '" initial-string  edit-string    (list "^;;; Commentary:$" "^;;; .*:$"))))
+
 (provide 'comment-edit-test)
 
 ;;; comment-edit-test.el ends here

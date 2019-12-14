@@ -24,12 +24,18 @@
 
 ;;; Commentary:
 
-;; ## Configuration:
-;;
+;; * Configuration:
+
+
 ;; ```
 ;; (require 'comment-edit)
 ;; (define-key prog-mode-map (kbd "C-c '") #'comment-edit)
 ;; ```
+
+;; * Usage
+
+;; - Move cursor in comment area
+;; - Press <kbd>C-c '</kbd>
 
 ;;; Change Log:
 
@@ -138,6 +144,9 @@ Taken from `markdown-code-lang-modes'."
 (defvar comment-edit--line-delimiter nil "Comment delimiter of each editing line.")
 
 (defvar comment-edit-debug-p nil)
+
+(defvar comment-edit-leave-blank-line-in-comment nil
+  "Leave blank lines in comment without left-padding.")
 
 ;;; Utils
 
@@ -572,9 +581,15 @@ Block info example:
                        (concat comment-edit--line-delimiter " "))))
       (save-excursion
         (goto-char beg)
-        (while (re-search-forward "^.*$" nil t)
-          (replace-match (string-trim-right
-                          (concat delimiter (match-string 0)))))))))
+        (catch 'end-of-buffer
+          (while (re-search-forward "^.*$" nil t)
+            (let* ((str (string-trim-right (match-string 0)))
+                   (leave-blank-p (and comment-edit-leave-blank-line-in-comment
+                                      (string-empty-p str))))
+              (replace-match (if leave-blank-p "" (concat delimiter str)))
+              (when leave-blank-p
+                (unless (zerop (forward-line 1))
+                  (throw 'end-of-buffer nil))))))))))
 
 (defun comment-edit--remove-nested-escape ()
   (catch 'break
@@ -673,10 +688,10 @@ Block info example:
   "Major mode for editing single-quoted string.")
 
 ;;;###autoload
-(defun comment-edit ()
+(defun comment-edit (&optional block)
   "Edit comment or docstring or code block in them."
   (interactive)
-  (let* ((block (comment-edit--block-info))
+  (let* ((block (or block (comment-edit--block-info)))
          (beg (plist-get block :beginning))
          (end (plist-get block :end))
          (lang-mode (plist-get block :lang-mode))
@@ -705,6 +720,8 @@ Block info example:
                              (comment-edit--remove-escape ,strp))
                            (comment-edit--log "==> mode(edit buffer): %S" ',mode)
                            (funcall ',mode)
+                           (set (make-local-variable 'comment-edit-leave-blank-line-in-comment)
+                                ,comment-edit-leave-blank-line-in-comment)
                            (set (make-local-variable 'header-line-format)
                                 (substitute-command-keys (concat "*EDIT* "
                                                                  (mapconcat
