@@ -105,16 +105,16 @@ Taken from `markdown-code-lang-modes'."
 
 (defcustom comment-edit-comment-encloser-alist
   '((("/\\*+" "\\*/")       . (c-mode
-                          c++-mode
-                          csharp-mode
-                          css-mode
-                          go-mode
-                          java-mode
-                          js-mode
-                          objc-mode
-                          php-mode
-                          rust-mode
-                          swift-mode))
+                               c++-mode
+                               csharp-mode
+                               css-mode
+                               go-mode
+                               java-mode
+                               js-mode
+                               objc-mode
+                               php-mode
+                               rust-mode
+                               swift-mode))
     (("{-" "-}")       . haskell-mode)
     (("{" "}")         . pascal-mode)
     (("(\\*" "\\*)")       . (applescript-mode fsharp-mode ocaml-mode))
@@ -200,7 +200,7 @@ Return nil if reached the end of the buffer."
                    (memq item it)
                  (eq it item)))))
 
-(defun comment-edit--get-real-mode (&option mode)
+(defun comment-edit--get-real-mode (&optional mode)
   (let ((mode (or mode major-mode)))
     (or (and (symbolp (symbol-function mode))
              (symbol-function mode))
@@ -396,7 +396,7 @@ Style 2:
                       ;; Skip `/*' for C/C++
                       (re-search-forward
                        (comment-edit--comment-begin-encloser multi-line-p)
-                         nil t))
+                       nil t))
                   (point))
                 (save-excursion
                   (goto-char fend)
@@ -585,7 +585,7 @@ Block info example:
           (while (re-search-forward "^.*$" nil t)
             (let* ((str (string-trim-right (match-string 0)))
                    (leave-blank-p (and comment-edit-leave-blank-line-in-comment
-                                      (string-empty-p str))))
+                                       (string-empty-p str))))
               (replace-match (if leave-blank-p "" (concat delimiter str)))
               (when leave-blank-p
                 (unless (zerop (forward-line 1))
