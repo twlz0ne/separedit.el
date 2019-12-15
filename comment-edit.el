@@ -531,28 +531,81 @@ Block info example:
 
 :regexps        not nil means point at a code block.
 :in-str-p       not nil means point at a string block otherwish a comment block."
-  (let ((strp (comment-edit--point-at-string)))
+  (let* ((strp (comment-edit--point-at-string))
+         (comment-or-string-region
+          (if strp
+              (let ((region (comment-edit--string-region)))
+                (setq strp (comment-edit--string-quotes
+                            (comment-edit--string-beginning)))
+                region)
+            (when (or (derived-mode-p 'prog-mode)
+                      (memq major-mode '(markdown-mode org-mode)))
+              (comment-edit--comment-region)))))
     (save-restriction
-      (apply 'narrow-to-region
-             (if strp
-                 (let ((region (comment-edit--string-region)))
-                   (setq strp (comment-edit--string-quotes
-                               (comment-edit--string-beginning)))
-                   region)
-               (comment-edit--comment-region)))
+      (when comment-or-string-region
+        (apply 'narrow-to-region comment-or-string-region))
       (let* ((delimiter (unless strp (comment-edit--comment-delimiter-regexp)))
              (code-info (comment-edit--code-block-end
                          (comment-edit--code-block-beginning delimiter)
                          delimiter)))
         (if (and (plist-get code-info :beginning) (plist-get code-info :end))
             (plist-put code-info :in-str-p strp)
-          (plist-put
-           (plist-put
-            (plist-put code-info :beginning (point-min))
-            :end (point-max))
-           :in-str-p strp))))))
+          (if comment-or-string-region
+              (plist-put
+               (plist-put
+                (plist-put code-info :beginning (point-min))
+                :end (point-max))
+               :in-str-p strp)
+            (user-error "Not inside a code block")))))))
 
 ;;; comment-edit-mode
+
+(defvar comment-edit-entry-key (kbd "C-c '")
+  "The default entry key in editing buffer.
+It will override by the key that `comment-edit' binding in source buffer.")
+
+(defvar comment-edit-exit-key (kbd "C-c C-c")
+  "The default exit key in editing buffer.")
+
+(defvar comment-edit-abort-key (kbd "C-c C-k")
+  "The default abort key in editing buffer.")
+
+(defun comment-edit--entry-key ()
+  "Return `comment-edit-entry-key' or the key that `comment-edit' binding in source buffer."
+  (or (car (where-is-internal
+            'comment-edit-cl
+            overriding-local-map))
+      comment-edit-entry-key))
+
+(defun comment-edit--buffer-creation-setup ()
+  (-if-let (entry-cmd
+            (pcase (or (derived-mode-p 'prog-mode) major-mode)
+              ((or `comment-edit-single-quote-string-mode
+                   `comment-edit-double-quote-string-mode
+                   `fundamental-mode
+                   `prog-mode)
+               #'comment-edit)
+              (`markdown-mode
+               #'markdown-edit-code-block)
+              (`org-mode
+               #'org-edit-special)))
+      (progn
+        (comment-edit--log "==> [-buffer-creation-setup] major-mode: %s, entry-cmd: %s" major-mode entry-cmd)
+        (use-local-map edit-indirect-mode-map)
+        (local-set-key (comment-edit--entry-key) entry-cmd)
+        (local-set-key comment-edit-exit-key #'edit-indirect-commit)
+        (local-set-key comment-edit-abort-key #'edit-indirect-abort)
+        (setq-local header-line-format
+                    (substitute-command-keys
+                     (concat "*EDIT* "
+                                    (mapconcat
+                                     'identity
+                                     (-non-nil
+                                      (list "\\[edit-indirect-commit]: Exit"
+                                            "\\[edit-indirect-abort]: Abort"
+                                            (format "\\[%s]: Recursive-entry" entry-cmd)))
+                                     ", ")))))
+    (warn "Unknown major-mode: %s" major-mode)))
 
 (defun comment-edit--remove-comment-delimiter (regexp)
   "Remove comment delimiter of each line by REGEXP when entering comment-edit-mode."
@@ -575,7 +628,8 @@ Block info example:
   (comment-edit--log "==> [comment-edit--restore-comment-delimiter] line delimiter: %s"
                      comment-edit--line-delimiter)
   (when (and (string-prefix-p "*edit-indirect " (buffer-name))
-             comment-edit--line-delimiter)
+             comment-edit--line-delimiter
+             (not (string-empty-p comment-edit--line-delimiter)))
     (let ((delimiter (if (string-suffix-p " " comment-edit--line-delimiter)
                          comment-edit--line-delimiter
                        (concat comment-edit--line-delimiter " "))))
@@ -663,7 +717,7 @@ Block info example:
 
 (defvar comment-edit-double-quote-string-mode-map
   (let ((map (make-sparse-keymap)))
-    (define-key map (kbd "C-c C-e") #'comment-edit)
+    (define-key map (comment-edit--entry-key) #'comment-edit)
     map)
   "Keymap for `comment-edit-double-quote-string-mode'.")
 
@@ -676,7 +730,7 @@ Block info example:
 
 (defvar comment-edit-single-quote-string-mode-map
   (let ((map (make-sparse-keymap)))
-    (define-key map (kbd "C-c C-e") #'comment-edit)
+    (define-key map (comment-edit--entry-key) #'comment-edit)
     map)
   "Keymap for `comment-edit-single-quote-string-mode'.")
 
@@ -700,7 +754,8 @@ Block info example:
          (codep (and (plist-get block :regexps) t))
          (delimiter-regexp (concat (if strp "^\s*"
                                      (comment-edit--comment-delimiter-regexp))
-                                   (plist-get (plist-get block :regexps) :middle))))
+                                   (plist-get (plist-get block :regexps) :middle)))
+         (edit-indirect-after-creation-hook #'comment-edit--buffer-creation-setup))
     (comment-edit--log "==> block-info: %S" block)
     ;; (comment-edit--log "==> block: %S" (buffer-substring-no-properties beg end))
     (if block
@@ -722,16 +777,6 @@ Block info example:
                            (funcall ',mode)
                            (set (make-local-variable 'comment-edit-leave-blank-line-in-comment)
                                 ,comment-edit-leave-blank-line-in-comment)
-                           (set (make-local-variable 'header-line-format)
-                                (substitute-command-keys (concat "*EDIT* "
-                                                                 (mapconcat
-                                                                  'identity
-                                                                  (-non-nil
-                                                                   (list "\\[edit-indirect-commit]: Exit"
-                                                                         "\\[edit-indirect-abort]: Abort"
-                                                                         (when ,strp
-                                                                           "\\[comment-edit]: Recursive-entry")))
-                                                                  ", "))))
                            (set (make-local-variable 'comment-edit--line-delimiter) line-delimiter)
                            (set (make-local-variable 'edit-indirect-before-commit-hook)
                                 (append '((lambda ()
