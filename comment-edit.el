@@ -640,7 +640,8 @@ It will override by the key that `comment-edit' binding in source buffer.")
             (let* ((str (string-trim-right (match-string 0)))
                    (leave-blank-p (and comment-edit-leave-blank-line-in-comment
                                        (string-empty-p str))))
-              (replace-match (if leave-blank-p "" (concat delimiter str)))
+              (replace-match "")
+              (insert (if leave-blank-p "" (concat delimiter str)))
               (when leave-blank-p
                 (unless (zerop (forward-line 1))
                   (throw 'end-of-buffer nil))))))))))
