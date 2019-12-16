@@ -420,7 +420,7 @@ Style 2:
   (concat (when multi-line-p
             "\n")
           "[\t\s]*"
-          (cadar (comment-edit--get-comment-encloser (or mode major-mode)))))
+          (cl-cadar (comment-edit--get-comment-encloser (or mode major-mode)))))
 
 (defun comment-edit--get-comment-encloser (&optional mode)
   (comment-edit--rassoc (or mode major-mode)
