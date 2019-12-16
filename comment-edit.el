@@ -158,7 +158,7 @@ Taken from `markdown-code-lang-modes'."
 (defun comment-edit--log (format-string &rest args)
   (when comment-edit-debug-p
     (if noninteractive
-        (funcall 'message format-string args)
+        (apply 'message format-string args)
       (with-current-buffer (get-buffer-create "*comment-log*")
         (outline-mode)
         (buffer-disable-undo)
