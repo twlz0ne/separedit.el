@@ -60,14 +60,13 @@
 
 (defun comment-edit-test--region-between-regexps (begin-regexp end-regexp)
   "Return region between BEGIN-REGEXP and END-REGEXP."
-  (list :beginning
-        (save-excursion (re-search-backward begin-regexp)
-                        (forward-line 1)
-                        (point))
-        :end
-        (save-excursion (re-search-forward end-regexp)
-                        (forward-line -1)
-                        (point))))
+  (save-excursion
+    (goto-char (point-min))
+    (when (re-search-forward begin-regexp)
+      (let ((begin (point)))
+        (when (re-search-forward end-regexp nil t)
+          (goto-char (match-beginning 0))
+          (list :beginning begin :end (point)))))))
 
 (defun comment-edit-test--execute-block-edit (init-mode key-sequnce init-data expected-data &optional region-regexps)
   (let ((buf (generate-new-buffer "*init*")))
@@ -267,9 +266,10 @@ Version 2016-07-04"
   (with-temp-buffer
     (insert-file-contents "comment-edit.el")
     (emacs-lisp-mode)
+    (goto-char (point-min))
     (let* ((reg (or (comment-edit-test--region-between-regexps "^;;; Commentary:\n+" "\n;;; .*$")
                     (error "Commentary not found in current file!")))
-           (str (buffer-substring-no-properties (car reg) (cdr reg))))
+           (str (buffer-substring-no-properties (plist-get reg :beginning) (plist-get reg :end))))
       (with-temp-buffer
         (insert str)
         (comment-edit--remove-comment-delimiter
