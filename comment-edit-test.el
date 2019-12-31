@@ -17,6 +17,8 @@
 
 ;;; Code:
 
+(require 'cl-macs)
+
 (require 'ert)
 ;; (setq ert-batch-backtrace-right-margin nil)
 
@@ -934,6 +936,16 @@ comment3
     (comment-edit-test--execute-block-edit 'emacs-lisp-mode ""                initial-string2 editing-string (list "^;;; Commentary:$" "^;;; .*:$"))
     (comment-edit-test--execute-block-edit 'emacs-lisp-mode "C-c C-c"         initial-string  initial-string (list "^;;; Commentary:$" "^;;; .*:$"))
     (comment-edit-test--execute-block-edit 'emacs-lisp-mode "aaa C-j C-c C-c" initial-string  edit-string    (list "^;;; Commentary:$" "^;;; .*:$"))))
+
+(ert-deftest comment-edit-test-readme ()
+  (cl-assert (string= (comment-edit-test--generate-readme)
+                      (with-temp-buffer
+                        (insert-file-contents "README.md")
+                        (goto-char (point-min))
+                        (re-search-forward "\n\n") ;; skip notice
+                        (buffer-substring (point) (point-max))))
+             nil
+             ">>> The README.md must be generated from commentrary <<<"))
 
 (provide 'comment-edit-test)
 
