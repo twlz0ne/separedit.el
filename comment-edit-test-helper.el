@@ -263,15 +263,6 @@ Version 2016-07-04"
                                     "'" "\""                 ;; use `format' to add escape characters.
                                     (buffer-substring-no-properties (point-min) (point-max))))))))
 
-(defun comment-edit-test--region-between-regexps (begin-regexp end-regexp)
-      (save-excursion
-        (goto-char (point-min))
-        (when (re-search-forward begin-regexp)
-          (let ((begin (point)))
-            (when (re-search-forward end-regexp nil t)
-              (goto-char (match-beginning 0))
-              (cons begin (point)))))))
-
 (defun comment-edit-test--generate-readme ()
   (with-temp-buffer
     (insert-file-contents "comment-edit.el")
