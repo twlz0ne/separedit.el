@@ -913,12 +913,12 @@ Usage:<|>
 
 ;;; Code:")
          (editing-string "\
-
 comment1
 
 comment2<|>
 
 comment3
+
 ")
          (edit-string "\
 ;;; Commentary:
@@ -928,14 +928,14 @@ comment3
 ;; comment2<|>
 
 ;; comment3
-;; aaa
 
+;; aaa
 ;;; Code:")
          (initial-string2 (concat ";; comment0\n\n" initial-string "\n\n;; comment4")))
-    (comment-edit-test--execute-block-edit 'emacs-lisp-mode ""                initial-string  editing-string (list "^;;; Commentary:$" "^;;; .*:$"))
-    (comment-edit-test--execute-block-edit 'emacs-lisp-mode ""                initial-string2 editing-string (list "^;;; Commentary:$" "^;;; .*:$"))
-    (comment-edit-test--execute-block-edit 'emacs-lisp-mode "C-c C-c"         initial-string  initial-string (list "^;;; Commentary:$" "^;;; .*:$"))
-    (comment-edit-test--execute-block-edit 'emacs-lisp-mode "aaa C-j C-c C-c" initial-string  edit-string    (list "^;;; Commentary:$" "^;;; .*:$"))))
+    (comment-edit-test--execute-block-edit 'emacs-lisp-mode ""                initial-string  editing-string (list "^;;; Commentary:\n+" "^;;; .*:$"))
+    (comment-edit-test--execute-block-edit 'emacs-lisp-mode ""                initial-string2 editing-string (list "^;;; Commentary:\n+" "^;;; .*:$"))
+    (comment-edit-test--execute-block-edit 'emacs-lisp-mode "C-c C-c"         initial-string  initial-string (list "^;;; Commentary:\n+" "^;;; .*:$"))
+    (comment-edit-test--execute-block-edit 'emacs-lisp-mode "aaa C-j C-c C-c" initial-string  edit-string    (list "^;;; Commentary:\n+" "^;;; .*:$"))))
 
 (ert-deftest comment-edit-test-readme ()
   (cl-assert (string= (comment-edit-test--generate-readme)
