@@ -1,13 +1,15 @@
 #!/usr/bin/env bash
 
-make clean
-
-make test comment-edit-test-readme > /dev/null 2>&1
+make clean && make test comment-edit-test-readme > /dev/null 2>&1 && make clean
 err=$?
 
 if [[ $err -gt "0" ]]; then
     echo "[ERROR] The README.md must be generated from commentary!"
 fi
 
-make clean
+if [[ -n $(git status -s ./README.md) ]]; then
+    echo "[ERROR] The README.md changed but not committed!"
+    err=1
+fi
+
 exit $err
