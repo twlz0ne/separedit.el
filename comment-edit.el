@@ -809,8 +809,7 @@ It will override by the key that `comment-edit' binding in source buffer.")
   :init-value nil
   :group 'comment-edit
   :global nil
-  :keymap 'comment-edit-mode-map
-  )
+  :keymap 'comment-edit-mode-map)
 
 (defvar comment-edit-double-quote-string-mode-map
   (let ((map (make-sparse-keymap)))
