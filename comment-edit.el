@@ -41,7 +41,7 @@
 
 ;; ## Installation
 
-;; Clone this repository to `~/.emacs.d/site-lisp/comment-edit`. Add the following to your `.emacs`:
+;; Clone this repository to `~/.emacs.d/site-lisp/comment-edit`.  Add the following to your `.emacs`:
 
 ;; ```elisp
 ;; (require 'comment-edit)
@@ -246,12 +246,18 @@ Taken from `markdown-code-lang-modes'."
 
 ;;; Utils
 
-(defun comment-edit-toggle-debug (&optional debug-p)
+(defun comment-edit-toggle-debug (&optional force-p)
+  "Toggle whether or not to enable to print debug.
+
+Force enable if FORCE-P is not nil."
   (interactive)
-  (setq comment-edit-debug-p (or debug-p (not comment-edit-debug-p)))
+  (setq comment-edit-debug-p (or force-p (not comment-edit-debug-p)))
   (message "comment-edit-debug-p => %s" comment-edit-debug-p))
 
 (defun comment-edit--log (format-string &rest args)
+  "Log message to the ’*comment-log*’ buffer.
+
+FORMAT-STRING and ARGS is the same as for `message'."
   (when comment-edit-debug-p
     (if noninteractive
         (apply 'message format-string args)
@@ -288,6 +294,7 @@ Return nil if reached the end of the buffer."
   t)
 
 (defun comment-edit--rassoc (item list)
+  "Return non-nil if ITEM ‘eq’ to or contained in the cdr of an element of LIST."
   (cl-rassoc item
              list
              :test
@@ -297,6 +304,7 @@ Return nil if reached the end of the buffer."
                  (eq it item)))))
 
 (defun comment-edit--get-real-mode (&optional mode)
+  "Return real name of ‘major-mode’ or given MODE."
   (let ((mode (or mode major-mode)))
     (or (and (symbolp (symbol-function mode))
              (symbol-function mode))
@@ -331,6 +339,10 @@ Return nil if reached the end of the buffer."
     (point)))
 
 (defun comment-edit--string-quotes (pos &optional backwardp mode)
+  "Return quote characters around string at POS.
+
+If BACKWARDP is not nil, search backward.
+If MODE is nil, use ‘major-mode’."
   (let* ((mode (or mode major-mode))
          (looking-fn (if backwardp 'looking-back 'looking-at))
          (quotes (comment-edit-get-mode-quotes mode)))
@@ -344,7 +356,7 @@ Return nil if reached the end of the buffer."
               (throw 'break s))))))))
 
 (defun comment-edit--string-region (&optional pos)
-  "Return region of string at point POS"
+  "Return region of string at point POS."
   (let ((pos (or pos (point))))
     (save-excursion
       (goto-char pos)
@@ -384,7 +396,7 @@ Return nil if reached the end of the buffer."
                 (comment-edit--point-at-comment))))))
 
 (defun comment-edit--point-at-comment (&optional point)
-  "Return the face if point at comment."
+  "Return the face if POINT at comment."
   (let ((face (get-text-property (or point (point)) 'face)))
     (or (memq face '(font-lock-comment-face font-lock-comment-delimiter-face))
         (when (apply #'derived-mode-p '(c-mode c++-mode java-mode js-mode rust-mode))
@@ -401,8 +413,7 @@ Example:
         ||      ;; comment      |
         |       ;; comment      |
         |       ;; comment      |
-        '-----------------------+
-"
+        '-----------------------+"
   (let ((point-at-comment-p nil)
         (point-at-newline-p nil)))
   (while (and (setq point-at-comment-p
@@ -425,8 +436,7 @@ Example:
         |       ;; comment     ||
         '----------------------|+
                               /
-                        end -`
-"
+                        end -`"
   (let ((point-at-comment-p nil)
         (point-at-newline-p nil))
     (while (and (setq point-at-comment-p
@@ -449,7 +459,7 @@ Example:
     (point)))
 
 (defun comment-edit--comment-region (&optional pos)
-  "Return the region of continuous comments.
+  "Return the region of continuous comments at POS.
 
 Style 1:
 
@@ -473,8 +483,7 @@ Style 2:
         |        * comment|
         '-----------------+
                  */      /
-                   end -`
-"
+                   end -`"
   (let ((pos (or pos (point))))
     (comment-edit--log "==> [comment-edit--comment-region] pos: %s" pos)
     ;; (comment-edit--log "==> [comment-edit--comment-region] buffer string: %S"
@@ -507,18 +516,27 @@ Style 2:
       (user-error "Not inside a comment"))))
 
 (defun comment-edit--comment-begin-encloser (&optional multi-line-p mode)
+  "Return a regexp to match the beginning of enclosed comment.
+
+MULTI-LINE-P means whether the comment is multi-line.
+If MODE is nil, use ‘major-mode’."
   (concat (caar (comment-edit--get-comment-encloser (or mode major-mode)))
           "[\t\s]*"
           (when multi-line-p
             "\n")))
 
 (defun comment-edit--comment-end-encloser (&optional multi-line-p mode)
+  "Return a regexp to match the end of enclosed comment.
+
+MULTI-LINE-P means whether the comment is multi-line.
+If MODE is nil, use ‘major-mode’."
   (concat (when multi-line-p
             "\n")
           "[\t\s]*"
           (cl-cadar (comment-edit--get-comment-encloser (or mode major-mode)))))
 
 (defun comment-edit--get-comment-encloser (&optional mode)
+  "Return a list in the form of ‘((begin-encloser end-enclose) mode1 mode2...)’ for MODE."
   (comment-edit--rassoc (or mode major-mode)
                         comment-edit-comment-encloser-alist))
 
@@ -541,7 +559,9 @@ Style 2:
 ;;; Code block functions
 
 (defun comment-edit--code-block-beginning (&optional comment-delimiter)
-  "Return code block info contains :beginning."
+  "Return code block info containing ‘:beginning’.
+
+Search process will skip characters COMMENT-DELIMITER at beginning of each line."
   (let ((regexp-group
          (concat
           comment-delimiter
@@ -577,7 +597,9 @@ Style 2:
                            comment-edit-block-regexp-plist))))))))))
 
 (defun comment-edit--code-block-end (code-info &optional comment-delimiter)
-  "Return CODE-INFO with :end added."
+  "Return CODE-INFO with ‘:end’ added.
+
+Search process will skip characters COMMENT-DELIMITER at beginning of each line."
   (save-excursion
     (let ((regexp (concat comment-delimiter
                           (plist-get
@@ -590,6 +612,7 @@ Style 2:
 
 (defun comment-edit-get-lang-mode (lang)
   "Return major mode that should be used for LANG.
+
 LANG is a string, and the returned major mode is a symbol."
   (cl-find-if
    'fboundp
@@ -610,6 +633,7 @@ LANG is a string, and the returned major mode is a symbol."
                       (eq it mode))))))
 
 (defun comment-edit-get-mode-quotes (mode)
+  "Return a list of quote string for MODE."
   (let ((aval (assoc-default mode comment-edit-string-quotes-alist)))
     (cond ((symbolp aval) (assoc-default (or aval t) comment-edit-string-quotes-alist))
           (t aval))))
@@ -619,11 +643,11 @@ LANG is a string, and the returned major mode is a symbol."
 
 Block info example:
 
-    (:beginning 10
-     :lang-mode emacs-lisp-mode
-     :regexps (:beginning \"``` ?\\(\\w*\\)$\" :middle nil :end \"```$\")
-     :end 12
-     :in-str-p nil)
+    '(:beginning 10
+      :lang-mode emacs-lisp-mode
+      :regexps (:beginning \"``` ?\\(\\w*\\)$\" :middle nil :end \"```$\")
+      :end 12
+      :in-str-p nil)
 
 :regexps        not nil means point at a code block.
 :in-str-p       not nil means point at a string block otherwish a comment block."
@@ -674,6 +698,7 @@ It will override by the key that `comment-edit' binding in source buffer.")
       comment-edit-entry-key))
 
 (defun comment-edit--buffer-creation-setup ()
+  "Function called after the edit-indirect buffer is created."
   (-if-let (entry-cmd
             (pcase (or (derived-mode-p 'prog-mode) major-mode)
               ((or `comment-edit-single-quote-string-mode
@@ -704,7 +729,7 @@ It will override by the key that `comment-edit' binding in source buffer.")
     (warn "Unknown major-mode: %s" major-mode)))
 
 (defun comment-edit--remove-comment-delimiter (regexp)
-  "Remove comment delimiter of each line by REGEXP when entering comment-edit-mode."
+  "Remove comment delimiter of each line by REGEXP when entering comment edit buffer."
   (let ((line-delimiter)
         (inhibit-read-only t))
     (save-excursion
@@ -743,6 +768,7 @@ It will override by the key that `comment-edit' binding in source buffer.")
                   (throw 'end-of-buffer nil))))))))))
 
 (defun comment-edit--remove-nested-escape ()
+  "Remove escape of nested string."
   (catch 'break
     (dolist (num (number-sequence 1 9))
       (let ((match-len (1- (math-pow 2 num))))
@@ -753,6 +779,7 @@ It will override by the key that `comment-edit' binding in source buffer.")
             (throw 'break nil)))))))
 
 (defun comment-edit--remove-nested-escape-sq ()
+  "Remove escape of nested single-quote string."
   (catch 'break
     (dolist (num (number-sequence 1 9))
       (let ((match-len (- (math-pow 2 num) 2)))
@@ -763,7 +790,9 @@ It will override by the key that `comment-edit' binding in source buffer.")
             (throw 'break nil)))))))
 
 (defun comment-edit--remove-escape (quotes-char)
-  "Remove escape when editing docstring."
+  "Remove escape when editing docstring.
+
+QUOTES-CHAR should be \" or '."
   (goto-char (point-min))
   (cond ((string= quotes-char "\"")
          (while (re-search-forward "\\\"" nil t)
@@ -777,6 +806,7 @@ It will override by the key that `comment-edit' binding in source buffer.")
            (insert "'")))))
 
 (defun comment-edit--restore-nested-escape ()
+  "Restore escape of nested string."
   (catch 'break
     (dolist (num (number-sequence 1 9))
       (let ((match-len (1- (math-pow 2 (1- num)))))
@@ -789,7 +819,9 @@ It will override by the key that `comment-edit' binding in source buffer.")
             (throw 'break nil)))))))
 
 (defun comment-edit--restore-escape (quotes-char)
-  "Restore escape when finished edting docstring."
+  "Restore escape when finished edting docstring.
+
+QUOTES-CHAR should be \" or '."
   (goto-char (point-min))
   (cond ((string= quotes-char "\"")
          (while (search-forward "\"" nil t)
@@ -802,7 +834,7 @@ It will override by the key that `comment-edit' binding in source buffer.")
            (comment-edit--restore-nested-escape)
            (insert "\\'")))))
 
-(defvar comment-edit-mode-map (make-sparse-keymap) "Keymap for `comment-edit-mode'.")
+(defvar comment-edit-mode-map (make-sparse-keymap) "Keymap used in comment edit buffer.")
 
 (define-minor-mode comment-edit-mode
   "Minor mode for enable edit code block in comment.\\{comment-edit-mode-map}"
@@ -839,7 +871,7 @@ It will override by the key that `comment-edit' binding in source buffer.")
 
 ;;;###autoload
 (defun comment-edit (&optional block)
-  "Edit comment or docstring or code block in them."
+  "Edit comment or docstring or code BLOCK in them."
   (interactive)
   (let* ((block (or block (comment-edit--block-info)))
          (beg (plist-get block :beginning))

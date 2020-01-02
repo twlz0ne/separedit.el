@@ -17,7 +17,7 @@ Edit comment or docstring or code block inside them with your favorite mode.
 
 ## Installation
 
-Clone this repository to `~/.emacs.d/site-lisp/comment-edit`. Add the following to your `.emacs`:
+Clone this repository to `~/.emacs.d/site-lisp/comment-edit`.  Add the following to your `.emacs`:
 
 ```elisp
 (require 'comment-edit)
