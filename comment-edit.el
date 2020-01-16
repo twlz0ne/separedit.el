@@ -237,6 +237,11 @@ Taken from `markdown-code-lang-modes'."
   :group 'comment-edit
   :type 'alist)
 
+(defcustom comment-edit-remove-trailing-spaces-in-comment nil
+  "Remove trailing spaces in comment."
+  :group 'comment-edit
+  :type 'boolean)
+
 (defvar comment-edit--line-delimiter nil "Comment delimiter of each editing line.")
 
 (defvar comment-edit-debug-p nil)
@@ -759,10 +764,14 @@ It will override by the key that `comment-edit' binding in source buffer.")
         (catch 'end-of-buffer
           (while (re-search-forward "^.*$" nil t)
             (let* ((str (string-trim-right (match-string 0)))
+                   (line (concat delimiter str))
                    (leave-blank-p (and comment-edit-leave-blank-line-in-comment
                                        (string-empty-p str))))
               (replace-match "")
-              (insert (if leave-blank-p "" (concat delimiter str)))
+              (insert (if leave-blank-p ""
+                        (if comment-edit-remove-trailing-spaces-in-comment
+                            (string-trim-right line)
+                          line)))
               (when leave-blank-p
                 (unless (zerop (forward-line 1))
                   (throw 'end-of-buffer nil))))))))))
