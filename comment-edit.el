@@ -175,6 +175,12 @@ Taken from `markdown-code-lang-modes'."
   :group 'comment-edit
   :type 'alist)
 
+(defcustom comment-edit-not-support-docstring-modes
+  '(c-mode c++-mode java-mode js-mode rust-mode)
+  "A list of modes not support docstring."
+  :group 'comment-edit
+  :type 'list)
+
 (defcustom comment-edit-comment-delimiter-alist
   '((("//+" "\\*+")    . (c-mode
                           c++-mode
@@ -185,8 +191,8 @@ Taken from `markdown-code-lang-modes'."
                           js-mode
                           objc-mode
                           php-mode
-                          rust-mode
                           swift-mode))
+    (("//+!" "//+" "\\*+") . rust-mode)
     (("--")            . (applescript-mode haskell-mode lua-mode))
     (("//+")           . (pascal-mode fsharp-mode))
     ((";+")            . (emacs-lisp-mode
@@ -404,7 +410,7 @@ If MODE is nil, use ‘major-mode’."
   "Return the face if POINT at comment."
   (let ((face (get-text-property (or point (point)) 'face)))
     (or (memq face '(font-lock-comment-face font-lock-comment-delimiter-face))
-        (when (apply #'derived-mode-p '(c-mode c++-mode java-mode js-mode rust-mode))
+        (when (apply #'derived-mode-p comment-edit-not-support-docstring-modes)
           (memq face '(font-lock-doc-face))))))
 
 (defun comment-edit--comment-beginning (&optional pos)
