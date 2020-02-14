@@ -238,7 +238,8 @@ Taken from `markdown-code-lang-modes'."
     ;; ,---
     ;; | (message "hello, world")
     ;; `---
-    (:beginning ",---+\s?\\(\\w*\\)$" :middle "|\s?" :end "`---+$"))
+    (:beginning ",---+\s?\\(\\w*\\)$" :middle "|\s?" :end "`---+$")
+    (:beginning "Local Variables:$" :middle nil :end "End:$" :mode emacs-lisp-mode))
   "Alist of block regexp."
   :group 'comment-edit
   :type 'alist)
@@ -593,19 +594,21 @@ Search process will skip characters COMMENT-DELIMITER at beginning of each line.
             (comment-edit--log "==> [code-block-beginning] language: %s" (comment-edit-get-mode-lang major-mode)))
           (comment-edit--beginning-of-next-line)
           (throw 'break
-                 (list
-                  :beginning (point-at-bol)
-                  :lang-mode
-                  (or (comment-edit-get-lang-mode (or (match-string-no-properties 1) ""))
-                      major-mode)
-                  :regexps
-                  (car
-                   (-non-nil
-                    (--map (when (string-match-p
-                                  (plist-get it :beginning)
-                                  (match-string-no-properties 0))
-                             it)
-                           comment-edit-block-regexp-plist))))))))))
+                 (let ((block-regexp
+                        (car
+                         (-non-nil
+                          (--map (when (string-match-p
+                                        (plist-get it :beginning)
+                                        (match-string-no-properties 0))
+                                   it)
+                                 comment-edit-block-regexp-plist)))))
+                   (list
+                    :beginning (point-at-bol)
+                    :lang-mode
+                    (or (plist-get block-regexp :mode)
+                        (comment-edit-get-lang-mode (or (match-string-no-properties 1) ""))
+                        major-mode)
+                    :regexps block-regexp))))))))
 
 (defun comment-edit--code-block-end (code-info &optional comment-delimiter)
   "Return CODE-INFO with ‘:end’ added.
