@@ -249,6 +249,16 @@ Taken from `markdown-code-lang-modes'."
   :group 'comment-edit
   :type 'boolean)
 
+(defcustom comment-edit-continue-fill-column nil
+  "Use the remaining fill with of the source buffer in edit buffer."
+  :group 'comment-edit
+  :type 'boolean)
+
+(defcustom comment-edit-buffer-creation-hook nil
+  "Functions called after the edit buffer is created."
+  :group 'comment-edit
+  :type 'hook)
+
 (defvar comment-edit--line-delimiter nil "Comment delimiter of each editing line.")
 
 (defvar comment-edit-debug-p nil)
@@ -730,6 +740,8 @@ It will override by the key that `comment-edit' binding in source buffer.")
         (local-set-key (comment-edit--entry-key) entry-cmd)
         (local-set-key comment-edit-exit-key #'edit-indirect-commit)
         (local-set-key comment-edit-abort-key #'edit-indirect-abort)
+        (when comment-edit-continue-fill-column
+          (setq-local fill-column (- fill-column (length comment-edit--line-delimiter))))
         (setq-local header-line-format
                     (substitute-command-keys
                      (concat "*EDIT* "
@@ -739,7 +751,8 @@ It will override by the key that `comment-edit' binding in source buffer.")
                                       (list "\\[edit-indirect-commit]: Exit"
                                             "\\[edit-indirect-abort]: Abort"
                                             (format "\\[%s]: Enter" entry-cmd)))
-                                     ", ")))))
+                                     ", "))))
+        (run-hooks 'comment-edit-buffer-creation-hook))
     (warn "Unknown major-mode: %s" major-mode)))
 
 (defun comment-edit--remove-comment-delimiter (regexp)
