@@ -30,6 +30,8 @@ Clone this repository to `~/.emacs.d/site-lisp/comment-edit`.  Add the following
 - Move the cursor to a comment or string, or a code block inside them.
 - <kbd>C-c '</kbd>.
 
+    or press <kbd>C-u C-c '</kbd> to starting edit with manually selected major mode.
+
 ## Edit comment
 
 `comment-edit` use **continuity** as basis for determing whether it is a comment **block** or **line**.

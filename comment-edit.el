@@ -54,6 +54,8 @@
 ;; - Move the cursor to a comment or string, or a code block inside them.
 ;; - <kbd>C-c '</kbd>.
 
+;;     or press <kbd>C-u C-c '</kbd> to starting edit with manually selected major mode.
+
 ;; ## Edit comment
 
 ;; `comment-edit` use **continuity** as basis for determing whether it is a comment **block** or **line**.
@@ -714,6 +716,9 @@ It will override by the key that `comment-edit' binding in source buffer.")
 (defvar comment-edit-abort-key (kbd "C-c C-k")
   "The default abort key in editing buffer.")
 
+(defvar comment-edit--mode-history nil "Mode select history in each buffer.")
+(make-variable-buffer-local 'comment-edit--mode-history)
+
 (defun comment-edit--entry-key ()
   "Return `comment-edit-entry-key' or the key that `comment-edit' binding in source buffer."
   (or (car (where-is-internal
@@ -865,6 +870,42 @@ QUOTES-CHAR should be \" or '."
            (comment-edit--restore-nested-escape)
            (insert "\\'")))))
 
+(defalias 'comment-edit--derived-mode-p
+    (if (fboundp 'provided-mode-derived-p) 'provided-mode-derived-p
+      ;; From Emacs 26
+      (lambda (mode &rest modes)
+        "Non-nil if MODE is derived from one of MODES or their aliases.
+Uses the `derived-mode-parent' property of the symbol to trace backwards.
+If you just want to check `major-mode', use `derived-mode-p'."
+        (while
+            (and
+             (not (memq mode modes))
+             (let* ((parent (get mode 'derived-mode-parent))
+                    (parentfn (symbol-function parent)))
+               (setq mode (if (and parentfn (symbolp parentfn)) parentfn parent)))))
+        mode)))
+
+(defun comment-edit--select-mode ()
+  "Select major mode."
+  (completing-read
+   "Select mode: "
+   (lambda (string pred action)
+     (append comment-edit--mode-history
+             (let ((pred
+                     (lambda (sym)
+                       (and (funcall pred sym)
+                            (or (comment-edit--derived-mode-p sym 'prog-mode)
+                                (memq sym
+                                      '(text-mode
+                                        markdown-mode
+                                        org-mode
+                                        comment-edit-mode
+                                        comment-edit-single-quote-string-mode
+                                        comment-edit-double-quote-string-mode)))))))
+               (complete-with-action action obarray string pred))))
+   #'commandp t nil 'comment-edit--mode-history (or (car comment-edit--mode-history)
+                                                    (format "%s" major-mode))))
+
 (defvar comment-edit-mode-map (make-sparse-keymap) "Keymap used in comment edit buffer.")
 
 (define-minor-mode comment-edit-mode
@@ -902,8 +943,11 @@ QUOTES-CHAR should be \" or '."
 
 ;;;###autoload
 (defun comment-edit (&optional block)
-  "Edit comment or docstring or code BLOCK in them."
-  (interactive)
+  "Edit comment or docstring or code BLOCK in them.
+
+Normally, the major mode of the edit buffer will be selected automatically,
+but users can also manually select it by pressing `C-u \\[comment-edit]'."
+  (interactive "P")
   (let* ((block (or block (comment-edit--block-info)))
          (beg (plist-get block :beginning))
          (end (plist-get block :end))
@@ -918,13 +962,14 @@ QUOTES-CHAR should be \" or '."
     (comment-edit--log "==> block-info: %S" block)
     ;; (comment-edit--log "==> block: %S" (buffer-substring-no-properties beg end))
     (if block
-        (let* ((mode
-                (if codep
-                    (or lang-mode
-                        comment-edit-code-block-default-mode)
-                  (cond ((and (stringp strp) (string= "'" strp)) 'comment-edit-single-quote-string-mode)
-                        ((and (stringp strp) (string= "\"" strp)) 'comment-edit-double-quote-string-mode)
-                        (t comment-edit-default-mode)))))
+        (let* ((mode (if current-prefix-arg
+                         (intern (comment-edit--select-mode))
+                       (if codep
+                           (or lang-mode
+                               comment-edit-code-block-default-mode)
+                         (cond ((and (stringp strp) (string= "'" strp)) 'comment-edit-single-quote-string-mode)
+                               ((and (stringp strp) (string= "\"" strp)) 'comment-edit-double-quote-string-mode)
+                               (t comment-edit-default-mode))))))
           (setq-local edit-indirect-guess-mode-function
                       `(lambda (_parent-buffer _beg _end)
                          (let ((line-delimiter (and (or ,codep ,commentp) (comment-edit--remove-comment-delimiter ,delimiter-regexp))))
