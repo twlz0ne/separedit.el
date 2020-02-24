@@ -58,7 +58,7 @@
 
 ;;;
 
-(defun comment-edit-test--region-between-regexps (begin-regexp end-regexp)
+(defun separedit-test--region-between-regexps (begin-regexp end-regexp)
   "Return region between BEGIN-REGEXP and END-REGEXP."
   (save-excursion
     (goto-char (point-min))
@@ -68,7 +68,7 @@
           (goto-char (match-beginning 0))
           (list :beginning begin :end (point)))))))
 
-(defun comment-edit-test--execute-block-edit (init-mode key-sequnce init-data expected-data &optional region-regexps)
+(defun separedit-test--execute-block-edit (init-mode key-sequnce init-data expected-data &optional region-regexps)
   (let ((buf (generate-new-buffer "*init*")))
     (switch-to-buffer buf)
     (insert init-data)
@@ -79,14 +79,14 @@
       (font-lock-ensure))
     (goto-char (point-min))
     (re-search-forward "<|>")
-    (comment-edit (when region-regexps
-                    (apply #'comment-edit-test--region-between-regexps region-regexps)))
+    (separedit (when region-regexps
+                    (apply #'separedit-test--region-between-regexps region-regexps)))
     (test-with nil key-sequnce)
     (should
      (equal expected-data
             (buffer-substring-no-properties (point-min) (point-max))))))
 
-(defun comment-edit-test--append-to-code-block (mode string append)
+(defun separedit-test--append-to-code-block (mode string append)
   "Insert APPEND into the tail of code block in comment of STRING.
 
 Example:
@@ -111,35 +111,35 @@ Example:
       (font-lock-ensure))
     (goto-char (point-min))
     (re-search-forward "<|>")
-    (let ((block (comment-edit--block-info)))
+    (let ((block (separedit--block-info)))
       (goto-char (plist-get block :end))
       (insert append)
       (buffer-substring-no-properties (point-min) (point-max)))))
 
-(defun comment-edit-test--indent (mode string &optional indent-fn)
+(defun separedit-test--indent (mode string &optional indent-fn)
   (with-current-buffer (generate-new-buffer "*indent*")
     (insert string)
     (funcall mode)
     (funcall (or indent-fn 'indent-region) (point-min) (point-max))
     (buffer-substring-no-properties (point-min) (point-max))))
 
-(defun comment-edit-test--indent-c (&rest strings)
-  (comment-edit-test--indent 'c-mode (apply #'concat strings)))
+(defun separedit-test--indent-c (&rest strings)
+  (separedit-test--indent 'c-mode (apply #'concat strings)))
 
-(defun comment-edit-test--indent-sh (string)
-  (comment-edit-test--indent 'shell-script-mode string 'indent-region-line-by-line))
+(defun separedit-test--indent-sh (string)
+  (separedit-test--indent 'shell-script-mode string 'indent-region-line-by-line))
 
-(defun comment-edit-test--indent-el (string)
-  (comment-edit-test--indent 'emacs-lisp-mode string))
+(defun separedit-test--indent-el (string)
+  (separedit-test--indent 'emacs-lisp-mode string))
 
-(defun comment-edit-test--indent-py (string)
-  (comment-edit-test--indent 'python-mode string))
+(defun separedit-test--indent-py (string)
+  (separedit-test--indent 'python-mode string))
 
-(defun comment-edit-test--indent-rb (string)
-  (comment-edit-test--indent 'ruby-mode string))
+(defun separedit-test--indent-rb (string)
+  (separedit-test--indent 'ruby-mode string))
 
-(defun comment-edit-test--indent-pascal (string)
-  (comment-edit-test--indent 'pascal-mode string))
+(defun separedit-test--indent-pascal (string)
+  (separedit-test--indent 'pascal-mode string))
 
 (defun xah-syntax-color-hex ()
   "Syntax color text of the form 「#ff1100」 and 「#abc」 in current buffer.
@@ -166,9 +166,9 @@ Version 2016-07-04"
           'face (list :background (match-string-no-properties 0)))))))
   (font-lock-fontify-buffer))
 
-(defmacro comment-edit-test--with-buffer (mode content &rest body)
+(defmacro separedit-test--with-buffer (mode content &rest body)
   (declare (indent 1) (debug t))
-  `(let ((buf (generate-new-buffer "*comment-edit-test*")))
+  `(let ((buf (generate-new-buffer "*separedit-test*")))
      (unwind-protect
          (with-current-buffer buf
            (insert ,content)
@@ -229,13 +229,13 @@ Version 2016-07-04"
   (save-restriction
     (goto-char (point-min))
     (search-forward "\"")
-    (apply 'narrow-to-region (comment-edit--string-region))
-    (comment-edit--remove-escape "\"")
+    (apply 'narrow-to-region (separedit--string-region))
+    (separedit--remove-escape "\"")
     (should (string= (car curr) (format "%S" (buffer-substring-no-properties (point-min) (point-max)))))
     (when nexts
       (apply #'nest-and-assert nexts))
   ;;; restore escape
-    (comment-edit--restore-escape "\""))
+    (separedit--restore-escape "\""))
   (should (string= (cdr curr) (format "%S" (buffer-substring-no-properties (point-min) (point-max))))))
 
 (defun nest-and-assert-sq (curr &rest nexts)
@@ -243,8 +243,8 @@ Version 2016-07-04"
   (save-restriction
     (goto-char (point-min))
     (search-forward "'")
-    (apply 'narrow-to-region (comment-edit--string-region))
-    (comment-edit--remove-escape "'")
+    (apply 'narrow-to-region (separedit--string-region))
+    (separedit--remove-escape "'")
     (should (string= (car curr)
                      (replace-regexp-in-string
                       "\"" "'"
@@ -254,7 +254,7 @@ Version 2016-07-04"
     (when nexts
       (apply #'nest-and-assert-sq nexts))
   ;;; restore escape
-    (comment-edit--restore-escape "'"))
+    (separedit--restore-escape "'"))
   (should (string= (cdr curr)
                      (replace-regexp-in-string
                       "\"" "'"
@@ -262,18 +262,18 @@ Version 2016-07-04"
                                     "'" "\""                 ;; use `format' to add escape characters.
                                     (buffer-substring-no-properties (point-min) (point-max))))))))
 
-(defun comment-edit-test--generate-readme ()
+(defun separedit-test--generate-readme ()
   (with-temp-buffer
-    (insert-file-contents "comment-edit.el")
+    (insert-file-contents "separedit.el")
     (emacs-lisp-mode)
     (goto-char (point-min))
-    (let* ((reg (or (comment-edit-test--region-between-regexps "^;;; Commentary:\n+" "\n;;; .*$")
+    (let* ((reg (or (separedit-test--region-between-regexps "^;;; Commentary:\n+" "\n;;; .*$")
                     (error "Commentary not found in current file!")))
            (str (buffer-substring-no-properties (plist-get reg :beginning) (plist-get reg :end))))
       (with-temp-buffer
         (insert str)
-        (comment-edit--remove-comment-delimiter
-         (comment-edit--comment-delimiter-regexp 'emacs-lisp-mode))
+        (separedit--remove-comment-delimiter
+         (separedit--comment-delimiter-regexp 'emacs-lisp-mode))
         (buffer-string)))))
 
 ;;; test-helper.el ends here

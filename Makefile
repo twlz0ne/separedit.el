@@ -1,7 +1,7 @@
 EMACS ?= emacs
-ELS = comment-edit.el
-ELCS = comment-edit.elc
-TEST_ELS = cask-bootstrap.el comment-edit-test-helper.el comment-edit-test.el
+ELS = separedit.el
+ELCS = separedit.elc
+TEST_ELS = cask-bootstrap.el separedit-test-helper.el separedit-test.el
 
 # If the first argument is "test"...
 ifeq (test, $(firstword $(MAKECMDGOALS)))
@@ -33,9 +33,9 @@ readme:
 	 (with-temp-buffer\
 	   (insert\
 	    \"<!-- This file was generated from elisp commentary section by tool, DO NOT EDIT -->\n\n\"\
-	   (comment-edit-test--generate-readme))\
-	  (comment-edit--remove-comment-delimiter\
-	   (comment-edit--comment-delimiter-regexp 'emacs-lisp-mode))\
+	   (separedit-test--generate-readme))\
+	  (separedit--remove-comment-delimiter\
+	   (separedit--comment-delimiter-regexp 'emacs-lisp-mode))\
 	  (write-file filename)))"
 
 help:

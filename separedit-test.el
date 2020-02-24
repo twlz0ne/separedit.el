@@ -1,4 +1,4 @@
-;;; comment-edit-test.el --- Test comment-edit -*- lexical-binding: t; -*-
+;;; separedit-test.el --- Test separedit -*- lexical-binding: t; -*-
 
 ;; Copyright (C) 2019 Gong Qijian <gongqijian@gmail.com>
 
@@ -22,217 +22,217 @@
 (require 'ert)
 ;; (setq ert-batch-backtrace-right-margin nil)
 
-(require 'comment-edit)
-;; (comment-edit-toggle-debug t)
+(require 'separedit)
+;; (separedit-toggle-debug t)
 
 (when noninteractive
   (transient-mark-mode))
 
 ;;; Function test
 
-(ert-deftest comment-edit-test-beginning-of-comment-el ()
-  (comment-edit-test--with-buffer
+(ert-deftest separedit-test-beginning-of-comment-el ()
+  (separedit-test--with-buffer
    'emacs-lisp-mode
-   (comment-edit-test--indent-el
+   (separedit-test--indent-el
     ";; comment1
      ;; comment2<|>
      ;; comment3")
-   (should (eq (comment-edit--comment-beginning) (+ (point-min) 0))))
+   (should (eq (separedit--comment-beginning) (+ (point-min) 0))))
 
-  (comment-edit-test--with-buffer
+  (separedit-test--with-buffer
    'emacs-lisp-mode
-   (comment-edit-test--indent-el
+   (separedit-test--indent-el
     "
      ;; comment1
      ;; comment2<|>
      ;; comment3")
-   (should (eq (comment-edit--comment-beginning) (+ (point-min) 1))))
+   (should (eq (separedit--comment-beginning) (+ (point-min) 1))))
 
-  (comment-edit-test--with-buffer
+  (separedit-test--with-buffer
    'emacs-lisp-mode
-   (comment-edit-test--indent-el
+   (separedit-test--indent-el
     "\n
      ;; comment1
      ;; comment2<|>
      ;; comment3\n\n")
-   (should (eq (comment-edit--comment-beginning) (+ (point-min) 2))))
+   (should (eq (separedit--comment-beginning) (+ (point-min) 2))))
 
   ;;;
   
-  (comment-edit-test--with-buffer
+  (separedit-test--with-buffer
    'emacs-lisp-mode
-   (comment-edit-test--indent-el
+   (separedit-test--indent-el
     "     ;; comment1
           ;; comment2<|>
           ;; comment3")
-   (should (eq (comment-edit--comment-beginning) (+ (point-min) 0))))
+   (should (eq (separedit--comment-beginning) (+ (point-min) 0))))
 
-  (comment-edit-test--with-buffer
+  (separedit-test--with-buffer
    'emacs-lisp-mode
-   (comment-edit-test--indent-el
+   (separedit-test--indent-el
     "
            ;; comment1
            ;; comment2<|>
            ;; comment3\n")
-   (should (eq (comment-edit--comment-beginning) (+ (point-min) 1))))
+   (should (eq (separedit--comment-beginning) (+ (point-min) 1))))
   
-  (comment-edit-test--with-buffer
+  (separedit-test--with-buffer
    'emacs-lisp-mode
-   (comment-edit-test--indent-el
+   (separedit-test--indent-el
     "\n
          ;; comment1
           ;; comment2<|>
           ;; comment3\n\n")
-   (should (eq (comment-edit--comment-beginning) (+ (point-min) 2)))))
+   (should (eq (separedit--comment-beginning) (+ (point-min) 2)))))
 
-(ert-deftest comment-edit-test-end-of-comment-el ()
-  (comment-edit-test--with-buffer
+(ert-deftest separedit-test-end-of-comment-el ()
+  (separedit-test--with-buffer
    'emacs-lisp-mode
-   (comment-edit-test--indent-el
+   (separedit-test--indent-el
     ";; comment1
      ;; comment2<|>
      ;; comment3")
-   (should (eq (comment-edit--comment-end) (- (point-max) 0))))
+   (should (eq (separedit--comment-end) (- (point-max) 0))))
 
-  (comment-edit-test--with-buffer
+  (separedit-test--with-buffer
    'emacs-lisp-mode
-   (comment-edit-test--indent-el
+   (separedit-test--indent-el
     ";; comment1
      ;; comment2<|>
      ;; comment3\n")
-   (should (eq (comment-edit--comment-end) (- (point-max) 1))))
+   (should (eq (separedit--comment-end) (- (point-max) 1))))
 
-  (comment-edit-test--with-buffer
+  (separedit-test--with-buffer
    'emacs-lisp-mode
-   (comment-edit-test--indent-el
+   (separedit-test--indent-el
     ";; comment1
      ;; comment2<|>
      ;; comment3\n\n")
-   (should (eq (comment-edit--comment-end) (- (point-max) 2))))
+   (should (eq (separedit--comment-end) (- (point-max) 2))))
 
   ;;;
 
-  (comment-edit-test--with-buffer
+  (separedit-test--with-buffer
    'emacs-lisp-mode
-   (comment-edit-test--indent-el
+   (separedit-test--indent-el
     "     ;; comment1
           ;; comment2<|>
           ;; comment3")
-   (should (eq (comment-edit--comment-end) (- (point-max) 0))))
+   (should (eq (separedit--comment-end) (- (point-max) 0))))
 
-  (comment-edit-test--with-buffer
+  (separedit-test--with-buffer
    'emacs-lisp-mode
-   (comment-edit-test--indent-el
+   (separedit-test--indent-el
     "     ;; comment1
           ;; comment2<|>
           ;; comment3\n")
-   (should (eq (comment-edit--comment-end) (- (point-max) 1))))
+   (should (eq (separedit--comment-end) (- (point-max) 1))))
 
-  (comment-edit-test--with-buffer
+  (separedit-test--with-buffer
    'emacs-lisp-mode
-   (comment-edit-test--indent-el
+   (separedit-test--indent-el
     "     ;; comment1
           ;; comment2<|>
           ;; comment3\n\n")
-   (should (eq (comment-edit--comment-end) (- (point-max) 2))))
+   (should (eq (separedit--comment-end) (- (point-max) 2))))
 
   ;;; With trailing empty comment line
 
-  (comment-edit-test--with-buffer
+  (separedit-test--with-buffer
    'emacs-lisp-mode
-   (comment-edit-test--indent-el
+   (separedit-test--indent-el
     ";; comment1
      ;; comment2<|>
      ;; comment3
      ;;")
-   (should (eq (comment-edit--comment-end) (- (point-max) 0))))
+   (should (eq (separedit--comment-end) (- (point-max) 0))))
 
-  (comment-edit-test--with-buffer
+  (separedit-test--with-buffer
    'emacs-lisp-mode
-   (comment-edit-test--indent-el
+   (separedit-test--indent-el
     ";; comment1
      ;; comment2<|>
      ;; comment3
      ;; ")
-   (should (eq (comment-edit--comment-end) (- (point-max) 0))))
+   (should (eq (separedit--comment-end) (- (point-max) 0))))
 
-  (comment-edit-test--with-buffer
+  (separedit-test--with-buffer
    'emacs-lisp-mode
-   (comment-edit-test--indent-el
+   (separedit-test--indent-el
     ";; comment1
      ;; comment2<|>
      ;; comment3
      ;;\n")
-   (should (eq (comment-edit--comment-end) (- (point-max) 1)))))
+   (should (eq (separedit--comment-end) (- (point-max) 1)))))
 
-(ert-deftest comment-edit-test-region-of-comment-c1 ()
+(ert-deftest separedit-test-region-of-comment-c1 ()
   ;;; Without leading spaces
   
   ;; Without blank lines
 
-  (comment-edit-test--with-buffer
+  (separedit-test--with-buffer
    'c-mode
-   (comment-edit-test--indent-c
+   (separedit-test--indent-c
     "// comment1
      // comment2<|>
      // comment3")
    (should
     (equal
-     (comment-edit--comment-region)
+     (separedit--comment-region)
      (list (point-min)
            (point-max)))))
 
   ;; Blank lines at the end
   
-  (comment-edit-test--with-buffer
+  (separedit-test--with-buffer
    'c-mode
-   (comment-edit-test--indent-c
+   (separedit-test--indent-c
     "// comment1
      // comment2<|>
      // comment3\n")
    (should
     (equal
-     (comment-edit--comment-region)
+     (separedit--comment-region)
      (list (point-min)
            (- (point-max) 1)))))
   
-  (comment-edit-test--with-buffer
+  (separedit-test--with-buffer
    'c-mode
-   (comment-edit-test--indent-c
+   (separedit-test--indent-c
     "// comment1
      // comment2<|>
      // comment3\n\n")
    (should
     (equal
-     (comment-edit--comment-region)
+     (separedit--comment-region)
      (list (point-min)
            (- (point-max) 2)))))
 
   ;; Blank lines at the bebinning
 
-  (comment-edit-test--with-buffer
+  (separedit-test--with-buffer
    'c-mode
-   (comment-edit-test--indent-c
+   (separedit-test--indent-c
     "\n"
     "// comment1
      // comment2<|>
      // comment3")
    (should
     (equal
-     (comment-edit--comment-region)
+     (separedit--comment-region)
      (list (+ (point-min) 1)
            (point-max)))))
   
-  (comment-edit-test--with-buffer
+  (separedit-test--with-buffer
    'c-mode
-   (comment-edit-test--indent-c
+   (separedit-test--indent-c
     "\n\n"
     "// comment1
      // comment2<|>
      // comment3")
    (should
     (equal
-     (comment-edit--comment-region)
+     (separedit--comment-region)
      (list (+ (point-min) 2)
            (point-max)))))
 
@@ -240,121 +240,121 @@
 
   ;; Without blank lines
 
-  (comment-edit-test--with-buffer
+  (separedit-test--with-buffer
    'c-mode
-   (comment-edit-test--indent-c
+   (separedit-test--indent-c
     "   // comment1
         // comment2<|>
         // comment3")
    (should
     (equal
-     (comment-edit--comment-region)
+     (separedit--comment-region)
      (list (point-min)
            (point-max)))))
 
   ;; Blank lines at the end
 
-  (comment-edit-test--with-buffer
+  (separedit-test--with-buffer
    'c-mode
-   (comment-edit-test--indent-c
+   (separedit-test--indent-c
     "   // comment1
         // comment2<|>
         // comment3\n")
    (should
     (equal
-     (comment-edit--comment-region)
+     (separedit--comment-region)
      (list (point-min)
            (- (point-max) 1)))))
 
-  (comment-edit-test--with-buffer
+  (separedit-test--with-buffer
    'c-mode
-   (comment-edit-test--indent-c
+   (separedit-test--indent-c
     "   // comment1
         // comment2<|>
         // comment3\n\n")
    (should
     (equal
-     (comment-edit--comment-region)
+     (separedit--comment-region)
      (list (point-min)
            (- (point-max) 2)))))
 
   ;; Blank lines at the end
 
-  (comment-edit-test--with-buffer
+  (separedit-test--with-buffer
    'c-mode
-   (comment-edit-test--indent-c
+   (separedit-test--indent-c
     "\n"
     "   // comment1
         // comment2<|>
         // comment3")
    (should
     (equal
-     (comment-edit--comment-region)
+     (separedit--comment-region)
      (list (+ (point-min) 1)
            (point-max)))))
 
-  (comment-edit-test--with-buffer
+  (separedit-test--with-buffer
    'c-mode
-   (comment-edit-test--indent-c
+   (separedit-test--indent-c
     "\n\n"
     "   // comment1
         // comment2<|>
         // comment3")
    (should
     (equal
-     (comment-edit--comment-region)
+     (separedit--comment-region)
      (list (+ (point-min) 2)
            (point-max)))))
 
   ;;; With trailing empty comment line
 
-  (comment-edit-test--with-buffer
+  (separedit-test--with-buffer
    'c-mode
-   (comment-edit-test--indent-c
+   (separedit-test--indent-c
     "// comment1
      // comment2<|>
      // comment3
      //")
    (should
     (equal
-     (comment-edit--comment-region)
+     (separedit--comment-region)
      (list (point-min)
            (point-max)))))
 
-  (comment-edit-test--with-buffer
+  (separedit-test--with-buffer
    'c-mode
-   (comment-edit-test--indent-c
+   (separedit-test--indent-c
     "// comment1
      // comment2<|>
      // comment3
      // ")
    (should
     (equal
-     (comment-edit--comment-region)
+     (separedit--comment-region)
      (list (point-min)
            (point-max)))))
 
-  (comment-edit-test--with-buffer
+  (separedit-test--with-buffer
    'c-mode
-   (comment-edit-test--indent-c
+   (separedit-test--indent-c
     "// comment1
      // comment2<|>
      // comment3
      //\n")
    (should
     (equal
-     (comment-edit--comment-region)
+     (separedit--comment-region)
      (list (point-min)
            (- (point-max) 1))))))
 
-(ert-deftest comment-edit-test-region-of-comment-c2 ()
+(ert-deftest separedit-test-region-of-comment-c2 ()
   ;;; Without leading spaces
 
   ;; Without blank lines
   
-  (comment-edit-test--with-buffer
+  (separedit-test--with-buffer
    'c-mode
-   (comment-edit-test--indent-c
+   (separedit-test--indent-c
     "/*
       * comment1
       * comment2<|>
@@ -362,15 +362,15 @@
       */")
    (should
     (equal
-     (comment-edit--comment-region)
+     (separedit--comment-region)
      (list (save-excursion (re-search-backward "^\\s-*\\* comment1$" nil t))
            (save-excursion (re-search-forward "^\\s-*\\* comment3$" nil t))))))
 
   ;; Blank lines at the end
   
-  (comment-edit-test--with-buffer
+  (separedit-test--with-buffer
    'c-mode
-   (comment-edit-test--indent-c
+   (separedit-test--indent-c
     "/*
       * comment1
       * comment2<|>
@@ -378,13 +378,13 @@
       */\n")
    (should
     (equal
-     (comment-edit--comment-region)
+     (separedit--comment-region)
      (list (save-excursion (re-search-backward "^\\s-*\\* comment1$" nil t))
            (save-excursion (re-search-forward "^\\s-*\\* comment3$" nil t))))))
   
-  (comment-edit-test--with-buffer
+  (separedit-test--with-buffer
    'c-mode
-   (comment-edit-test--indent-c
+   (separedit-test--indent-c
     "/*
       * comment1
       * comment2<|>
@@ -392,15 +392,15 @@
       */\n\n")
    (should
     (equal
-     (comment-edit--comment-region)
+     (separedit--comment-region)
      (list (save-excursion (re-search-backward "^\\s-*\\* comment1$" nil t))
            (save-excursion (re-search-forward "^\\s-*\\* comment3$" nil t))))))
 
   ;; Blank lines at the beginning
   
-  (comment-edit-test--with-buffer
+  (separedit-test--with-buffer
    'c-mode
-   (comment-edit-test--indent-c
+   (separedit-test--indent-c
     "\n"
     "/*
       * comment1
@@ -409,13 +409,13 @@
       */")
    (should
     (equal
-     (comment-edit--comment-region)
+     (separedit--comment-region)
      (list (save-excursion (re-search-backward "^\\s-*\\* comment1$" nil t))
            (save-excursion (re-search-forward "^\\s-*\\* comment3$" nil t))))))
   
-  (comment-edit-test--with-buffer
+  (separedit-test--with-buffer
    'c-mode
-   (comment-edit-test--indent-c
+   (separedit-test--indent-c
     "\n\n"
     "/*
       * comment1
@@ -424,7 +424,7 @@
       */")
    (should
     (equal
-     (comment-edit--comment-region)
+     (separedit--comment-region)
      (list (save-excursion (re-search-backward "^\\s-*\\* comment1$" nil t))
            (save-excursion (re-search-forward "^\\s-*\\* comment3$" nil t))))))
 
@@ -432,9 +432,9 @@
 
   ;; Without blank lines
 
-  (comment-edit-test--with-buffer
+  (separedit-test--with-buffer
    'c-mode
-   (comment-edit-test--indent-c
+   (separedit-test--indent-c
     "   /*
          * comment1
          * comment2<|>
@@ -442,15 +442,15 @@
          */")
    (should
     (equal
-     (comment-edit--comment-region)
+     (separedit--comment-region)
      (list (save-excursion (re-search-backward "^\\s-*\\* comment1$" nil t))
            (save-excursion (re-search-forward "^\\s-*\\* comment3$" nil t))))))
 
   ;; Blank lines at the end
 
-  (comment-edit-test--with-buffer
+  (separedit-test--with-buffer
    'c-mode
-   (comment-edit-test--indent-c
+   (separedit-test--indent-c
     "   /*
          * comment1
          * comment2<|>
@@ -458,13 +458,13 @@
          */\n")
    (should
     (equal
-     (comment-edit--comment-region)
+     (separedit--comment-region)
      (list (save-excursion (re-search-backward "^\\s-*\\* comment1$" nil t))
            (save-excursion (re-search-forward "^\\s-*\\* comment3$" nil t))))))
 
-  (comment-edit-test--with-buffer
+  (separedit-test--with-buffer
    'c-mode
-   (comment-edit-test--indent-c
+   (separedit-test--indent-c
     "   /*
          * comment1
          * comment2<|>
@@ -472,15 +472,15 @@
          */\n\n")
    (should
     (equal
-     (comment-edit--comment-region)
+     (separedit--comment-region)
      (list (save-excursion (re-search-backward "^\\s-*\\* comment1$" nil t))
            (save-excursion (re-search-forward "^\\s-*\\* comment3$" nil t))))))
 
   ;; Blank lines at the beginning
 
-  (comment-edit-test--with-buffer
+  (separedit-test--with-buffer
    'c-mode
-   (comment-edit-test--indent-c
+   (separedit-test--indent-c
     "\n"
     "   /*
          * comment1
@@ -489,13 +489,13 @@
          */")
    (should
     (equal
-     (comment-edit--comment-region)
+     (separedit--comment-region)
      (list (save-excursion (re-search-backward "^\\s-*\\* comment1$" nil t))
            (save-excursion (re-search-forward "^\\s-*\\* comment3$" nil t))))))
 
-  (comment-edit-test--with-buffer
+  (separedit-test--with-buffer
    'c-mode
-   (comment-edit-test--indent-c
+   (separedit-test--indent-c
     "\n\n"
     "   /*
          * comment1
@@ -504,14 +504,14 @@
          */")
    (should
     (equal
-     (comment-edit--comment-region)
+     (separedit--comment-region)
      (list (save-excursion (re-search-backward "^\\s-*\\* comment1$" nil t))
            (save-excursion (re-search-forward "^\\s-*\\* comment3$" nil t)))))))
 
-(ert-deftest comment-edit-test-region-of-comment-c3 ()
-  (comment-edit-test--with-buffer
+(ert-deftest separedit-test-region-of-comment-c3 ()
+  (separedit-test--with-buffer
    'c-mode
-   (comment-edit-test--indent-c
+   (separedit-test--indent-c
     "/*
         comment1
         comment2<|>
@@ -519,14 +519,14 @@
       */")
    (should
     (equal
-     (comment-edit--comment-region)
+     (separedit--comment-region)
      (list (save-excursion (re-search-backward "^\\s-* comment1$" nil t))
            (save-excursion (re-search-forward "^\\s-* comment3$" nil t)))))))
 
-(ert-deftest comment-edit-test-region-of-comment-pascal ()
-  (comment-edit-test--with-buffer
+(ert-deftest separedit-test-region-of-comment-pascal ()
+  (separedit-test--with-buffer
    'pascal-mode
-   (comment-edit-test--indent-pascal
+   (separedit-test--indent-pascal
     "{
      comment1
      comment2<|>
@@ -534,55 +534,55 @@
      }")
    (should
     (equal
-     (comment-edit--comment-region)
+     (separedit--comment-region)
      (list (save-excursion (re-search-backward "^\\s-*comment1$" nil t))
            (save-excursion (re-search-forward "^\\s-*comment3$" nil t)))))
    ))
 
-(ert-deftest comment-edit-test-region-of-single-line-comment ()
-  (comment-edit-test--with-buffer
+(ert-deftest separedit-test-region-of-single-line-comment ()
+  (separedit-test--with-buffer
    'c-mode
    "/* com<|>ment */"
    (should
     (equal
-     (comment-edit--comment-region)
+     (separedit--comment-region)
      (list (save-excursion (goto-char (point-min)) (search-forward "/* "))
            (save-excursion (goto-char (point-max)) (search-backward " */"))))))
-  (comment-edit-test--with-buffer
+  (separedit-test--with-buffer
    'c-mode
    "/** com<|>ment */"
    (should
     (equal
-     (comment-edit--comment-region)
+     (separedit--comment-region)
      (list (save-excursion (goto-char (point-min)) (search-forward "/** "))
            (save-excursion (goto-char (point-max)) (search-backward " */"))))))
-  (comment-edit-test--with-buffer
+  (separedit-test--with-buffer
    'pascal-mode
    "{ com<|>ment }"
    (should
     (equal
-     (comment-edit--comment-region)
+     (separedit--comment-region)
      (list (save-excursion (goto-char (point-min)) (search-forward "{ "))
            (save-excursion (goto-char (point-max)) (search-backward " }")))))))
 
-(ert-deftest comment-edit-test-comment-at-end-of-comment ()
-  (comment-edit-test--with-buffer
+(ert-deftest separedit-test-comment-at-end-of-comment ()
+  (separedit-test--with-buffer
    'emacs-lisp-mode
    ";; comment-without-trailing-spaces"
-   (should (not (comment-edit--point-at-comment (point-max)))))
+   (should (not (separedit--point-at-comment (point-max)))))
 
-  (comment-edit-test--with-buffer
+  (separedit-test--with-buffer
    'emacs-lisp-mode
    ";; comment-with-trailing-spaces "
-   (should (not (comment-edit--point-at-comment (point-max))))))
+   (should (not (separedit--point-at-comment (point-max))))))
 
-(ert-deftest comment-edit-test-comment-delimiter-regexp-el ()
+(ert-deftest separedit-test-comment-delimiter-regexp-el ()
   (mapc
    (lambda (it)
      (should
       (equal (cdr it)
              (replace-regexp-in-string
-              (comment-edit--comment-delimiter-regexp 'emacs-lisp-mode) "" (car it)))))
+              (separedit--comment-delimiter-regexp 'emacs-lisp-mode) "" (car it)))))
    '((";foo"     . "foo")
      ("; foo"    . "foo")
      (";  foo"   . " foo")
@@ -595,13 +595,13 @@
      (";;; foo"  . "foo")
      (";;;  foo" . " foo"))))
 
-(ert-deftest comment-edit-test-comment-delimiter-regexp-py ()
+(ert-deftest separedit-test-comment-delimiter-regexp-py ()
   (mapc
    (lambda (it)
      (should
       (equal (cdr it)
              (replace-regexp-in-string
-              (comment-edit--comment-delimiter-regexp 'python-mode) "" (car it)))))
+              (separedit--comment-delimiter-regexp 'python-mode) "" (car it)))))
    '(("#foo"     . "foo")
      ("# foo"    . "foo")
      ("#  foo"   . " foo")
@@ -614,13 +614,13 @@
      ("### foo"  . "foo")
      ("###  foo" . " foo"))))
 
-(ert-deftest comment-edit-test-comment-delimiter-regexp-c1 ()
+(ert-deftest separedit-test-comment-delimiter-regexp-c1 ()
   (mapc
    (lambda (it)
      (should
       (equal (cdr it)
              (replace-regexp-in-string
-              (comment-edit--comment-delimiter-regexp 'c-mode) "" (car it)))))
+              (separedit--comment-delimiter-regexp 'c-mode) "" (car it)))))
    '(("*foo"     . "foo")
      ("* foo"    . "foo")
      ("*  foo"   . " foo")
@@ -633,13 +633,13 @@
      ("*** foo"  . "foo")
      ("***  foo" . " foo"))))
 
-(ert-deftest comment-edit-test-comment-delimiter-regexp-c2 ()
+(ert-deftest separedit-test-comment-delimiter-regexp-c2 ()
   (mapc
    (lambda (it)
      (should
       (equal (cdr it)
              (replace-regexp-in-string
-              (comment-edit--comment-delimiter-regexp 'c-mode) "" (car it)))))
+              (separedit--comment-delimiter-regexp 'c-mode) "" (car it)))))
    '(("/foo"     . "/foo")
      ("/ foo"    . "/ foo")
      ("/  foo"   . "/  foo")
@@ -652,62 +652,62 @@
      ("/// foo"  . "foo")
      ("///  foo" . " foo"))))
 
-(ert-deftest comment-edit-test-string-region-el ()
+(ert-deftest separedit-test-string-region-el ()
   (add-hook 'prog-mode-hook 'xah-syntax-color-hex)
   (unwind-protect
     (let* ((content-string (format "%S" "string `symbol'\n#ffffff\n(function \"arg\")"))
            (expected-string (substring content-string 1 (1- (length content-string)))))
       (should (string= expected-string
-                       (comment-edit-test--with-buffer 'emacs-lisp-mode
+                       (separedit-test--with-buffer 'emacs-lisp-mode
                         content-string
-                        (apply #'buffer-substring-no-properties (comment-edit--string-region 20)))))
+                        (apply #'buffer-substring-no-properties (separedit--string-region 20)))))
       (should (string= expected-string
-                       (comment-edit-test--with-buffer 'emacs-lisp-mode
+                       (separedit-test--with-buffer 'emacs-lisp-mode
                         (concat "(" content-string ")")
-                        (apply #'buffer-substring-no-properties (comment-edit--string-region 20)))))
+                        (apply #'buffer-substring-no-properties (separedit--string-region 20)))))
       (should (string= expected-string
-                       (comment-edit-test--with-buffer 'emacs-lisp-mode
+                       (separedit-test--with-buffer 'emacs-lisp-mode
                         (concat "(foo " content-string ")")
-                        (apply #'buffer-substring-no-properties (comment-edit--string-region 20)))))
+                        (apply #'buffer-substring-no-properties (separedit--string-region 20)))))
       (should (string= expected-string
-                       (comment-edit-test--with-buffer 'emacs-lisp-mode
+                       (separedit-test--with-buffer 'emacs-lisp-mode
                         (concat "(defun foo () " content-string ")")
-                        (apply #'buffer-substring-no-properties (comment-edit--string-region 20)))))
+                        (apply #'buffer-substring-no-properties (separedit--string-region 20)))))
       (should (string= expected-string
-                       (comment-edit-test--with-buffer 'emacs-lisp-mode
+                       (separedit-test--with-buffer 'emacs-lisp-mode
                         (concat "(defun foo () " content-string ")\n(foo)")
-                        (apply #'buffer-substring-no-properties (comment-edit--string-region 20))))))
+                        (apply #'buffer-substring-no-properties (separedit--string-region 20))))))
     (remove-hook 'prog-mode-hook 'xah-syntax-color-hex)))
 
-(ert-deftest comment-edit-test-string-region-py ()
+(ert-deftest separedit-test-string-region-py ()
   (let* ((content-string "\"\"\"docstring & double quotes\"\"\"")
          (expected-string (substring content-string 3 (- (length content-string) 3))))
     (should (string= expected-string
-                     (comment-edit-test--with-buffer 'python-mode
+                     (separedit-test--with-buffer 'python-mode
                       content-string
-                      (apply #'buffer-substring-no-properties (comment-edit--string-region 20))))))
+                      (apply #'buffer-substring-no-properties (separedit--string-region 20))))))
   (let* ((content-string "'''docstring & single quotes'''")
          (expected-string (substring content-string 3 (- (length content-string) 3))))
     (should (string= expected-string
-                     (comment-edit-test--with-buffer 'python-mode
+                     (separedit-test--with-buffer 'python-mode
                       content-string
-                      (apply #'buffer-substring-no-properties (comment-edit--string-region 20))))))
+                      (apply #'buffer-substring-no-properties (separedit--string-region 20))))))
   (let* ((content-string "\"docstring & double quotes\"")
          (expected-string (substring content-string 1 (- (length content-string) 1))))
     (should (string= expected-string
-                     (comment-edit-test--with-buffer 'python-mode
+                     (separedit-test--with-buffer 'python-mode
                       content-string
-                      (apply #'buffer-substring-no-properties (comment-edit--string-region 20))))))
+                      (apply #'buffer-substring-no-properties (separedit--string-region 20))))))
   (let* ((content-string "'docstring & single quotes'")
          (expected-string (substring content-string 1 (- (length content-string) 1))))
     (should (string= expected-string
-                     (comment-edit-test--with-buffer 'python-mode
+                     (separedit-test--with-buffer 'python-mode
                       content-string
-                      (apply #'buffer-substring-no-properties (comment-edit--string-region 20)))))))
+                      (apply #'buffer-substring-no-properties (separedit--string-region 20)))))))
 
-(ert-deftest comment-edit-test-nested-escape ()
+(ert-deftest separedit-test-nested-escape ()
   (with-temp-buffer
-    (comment-edit-double-quote-string-mode)
+    (separedit-double-quote-string-mode)
     (insert (escape "a" "b" "c" "d" "e"))
     (nest-and-assert
        (cons (escape "a" "b" "c" "d" "e") (escape "" "a" "b" "c" "d" "e"))
@@ -716,9 +716,9 @@
        (cons (escape "d" "e")             (escape "c" "d" "e"))
        (cons (escape "e")                 (escape "d" "e")))))
 
-(ert-deftest comment-edit-test-nested-escape-sq ()
+(ert-deftest separedit-test-nested-escape-sq ()
   (with-temp-buffer
-    (comment-edit-single-quote-string-mode)
+    (separedit-single-quote-string-mode)
     (insert (escape-sq "a" "b" "c" "d" "e"))
     (nest-and-assert-sq
        (cons (escape-sq "a" "b" "c" "d" "e") (escape-sq "" "a" "b" "c" "d" "e"))
@@ -729,9 +729,9 @@
 
 ;;; Interaction test
 
-(ert-deftest comment-edit-test-el-in-el ()
+(ert-deftest separedit-test-el-in-el ()
   (let ((code-with-comment
-         (comment-edit-test--indent-el
+         (separedit-test--indent-el
           "(defun sum (&rest nums)
              (funcall '+ nums))
            ;; ```elisp
@@ -739,17 +739,17 @@
            ;; ;; => 6
            ;;```"))
         (code-in-editing
-         (comment-edit-test--indent-el
+         (separedit-test--indent-el
           "(sum '(1 2 3)) ;; <|>
            ;; => 6")))
-    (comment-edit-test--execute-block-edit 'emacs-lisp-mode ""            code-with-comment code-in-editing)
-    (comment-edit-test--execute-block-edit 'emacs-lisp-mode "C-c C-c"     code-with-comment code-with-comment)
-    (comment-edit-test--execute-block-edit 'emacs-lisp-mode "aaa C-c C-c" code-with-comment (comment-edit-test--append-to-code-block
+    (separedit-test--execute-block-edit 'emacs-lisp-mode ""            code-with-comment code-in-editing)
+    (separedit-test--execute-block-edit 'emacs-lisp-mode "C-c C-c"     code-with-comment code-with-comment)
+    (separedit-test--execute-block-edit 'emacs-lisp-mode "aaa C-c C-c" code-with-comment (separedit-test--append-to-code-block
                                                                                              'emacs-lisp-mode code-with-comment "aaa"))))
 
-(ert-deftest comment-edit-test-py-in-py ()
+(ert-deftest separedit-test-py-in-py ()
   (let ((code-with-comment
-         (comment-edit-test--indent-py
+         (separedit-test--indent-py
           "def sum(*nums):
                sum = 0
                for n in nums:
@@ -760,17 +760,17 @@
            # # => 6
            # ```"))
         (code-in-comment
-         (comment-edit-test--indent-py
+         (separedit-test--indent-py
           "sum(1, 2, 3) # <|>
            # => 6")))
-    (comment-edit-test--execute-block-edit 'python-mode ""            code-with-comment code-in-comment)
-    (comment-edit-test--execute-block-edit 'python-mode "C-c C-c"     code-with-comment code-with-comment)
-    (comment-edit-test--execute-block-edit 'python-mode "aaa C-c C-c" code-with-comment (comment-edit-test--append-to-code-block
+    (separedit-test--execute-block-edit 'python-mode ""            code-with-comment code-in-comment)
+    (separedit-test--execute-block-edit 'python-mode "C-c C-c"     code-with-comment code-with-comment)
+    (separedit-test--execute-block-edit 'python-mode "aaa C-c C-c" code-with-comment (separedit-test--append-to-code-block
                                                                                          'python-mode code-with-comment "aaa"))))
 
-(ert-deftest comment-edit-test-rb-in-rb ()
+(ert-deftest separedit-test-rb-in-rb ()
   (let ((code-with-comment
-         (comment-edit-test--indent-rb
+         (separedit-test--indent-rb
           "def sum(*nums):
              nums.inject(0) {|sum,x| sum + x }
            # ```ruby
@@ -778,17 +778,17 @@
            # # => 6
            # ```"))
         (code-in-comment
-         (comment-edit-test--indent-sh
+         (separedit-test--indent-sh
           "sum 1, 2, 3 # <|>
            # => 6")))
-    (comment-edit-test--execute-block-edit 'ruby-mode ""            code-with-comment code-in-comment)
-    (comment-edit-test--execute-block-edit 'ruby-mode "C-c C-c"     code-with-comment code-with-comment)
-    (comment-edit-test--execute-block-edit 'ruby-mode "aaa C-c C-c" code-with-comment (comment-edit-test--append-to-code-block
+    (separedit-test--execute-block-edit 'ruby-mode ""            code-with-comment code-in-comment)
+    (separedit-test--execute-block-edit 'ruby-mode "C-c C-c"     code-with-comment code-with-comment)
+    (separedit-test--execute-block-edit 'ruby-mode "aaa C-c C-c" code-with-comment (separedit-test--append-to-code-block
                                                                                        'ruby-mode code-with-comment "aaa"))))
 
-(ert-deftest comment-edit-test-sh-in-c1 ()
+(ert-deftest separedit-test-sh-in-c1 ()
   (let ((code-with-comment
-         (comment-edit-test--indent-c
+         (separedit-test--indent-c
           "int main()
            {
              printf(\"Hellow, world!\");
@@ -801,17 +801,17 @@
             * ```
             */"))
         (code-in-comment
-         (comment-edit-test--indent-sh
+         (separedit-test--indent-sh
           "# build <|>
            make -k")))
-    (comment-edit-test--execute-block-edit 'c-mode ""            code-with-comment code-in-comment)
-    (comment-edit-test--execute-block-edit 'c-mode "C-c C-c"     code-with-comment code-with-comment)
-    (comment-edit-test--execute-block-edit 'c-mode "aaa C-c C-c" code-with-comment (comment-edit-test--append-to-code-block
+    (separedit-test--execute-block-edit 'c-mode ""            code-with-comment code-in-comment)
+    (separedit-test--execute-block-edit 'c-mode "C-c C-c"     code-with-comment code-with-comment)
+    (separedit-test--execute-block-edit 'c-mode "aaa C-c C-c" code-with-comment (separedit-test--append-to-code-block
                                                                                     'c-mode code-with-comment "aaa"))))
 
-(ert-deftest comment-edit-test-sh-in-c2 ()
+(ert-deftest separedit-test-sh-in-c2 ()
   (let ((code-with-comment
-         (comment-edit-test--indent-c
+         (separedit-test--indent-c
           "int main()
            {
              printf(\"Hellow, world!\");
@@ -824,15 +824,15 @@
            // ```
            //"))
         (code-in-comment
-         (comment-edit-test--indent-sh
+         (separedit-test--indent-sh
           "# build <|>
            make -k")))
-    (comment-edit-test--execute-block-edit 'c-mode ""            code-with-comment code-in-comment)
-    (comment-edit-test--execute-block-edit 'c-mode "C-c C-c"     code-with-comment code-with-comment)
-    (comment-edit-test--execute-block-edit 'c-mode "aaa C-c C-c" code-with-comment (comment-edit-test--append-to-code-block
+    (separedit-test--execute-block-edit 'c-mode ""            code-with-comment code-in-comment)
+    (separedit-test--execute-block-edit 'c-mode "C-c C-c"     code-with-comment code-with-comment)
+    (separedit-test--execute-block-edit 'c-mode "aaa C-c C-c" code-with-comment (separedit-test--append-to-code-block
                                                                                     'c-mode code-with-comment "aaa"))))
 
-(ert-deftest comment-edit-test-code-in-doc-1 ()
+(ert-deftest separedit-test-code-in-doc-1 ()
   (let ((init-data "(defun hello (name)
   \"Greet a person.
 
@@ -843,12 +843,12 @@ Usage:
     ```\"
   (message \"hello, %s\" name))")
         (code-in-doc "(hello \"foo\") ;; <|>"))
-    (comment-edit-test--execute-block-edit 'emacs-lisp-mode ""                init-data code-in-doc)
-    (comment-edit-test--execute-block-edit 'emacs-lisp-mode "C-c C-c"         init-data init-data)
-    (comment-edit-test--execute-block-edit 'emacs-lisp-mode "M-> aaa C-c C-c" init-data (comment-edit-test--append-to-code-block
+    (separedit-test--execute-block-edit 'emacs-lisp-mode ""                init-data code-in-doc)
+    (separedit-test--execute-block-edit 'emacs-lisp-mode "C-c C-c"         init-data init-data)
+    (separedit-test--execute-block-edit 'emacs-lisp-mode "M-> aaa C-c C-c" init-data (separedit-test--append-to-code-block
                                                                                          'emacs-lisp-mode init-data "aaa"))))
 
-(ert-deftest comment-edit-test-code-in-doc-2 ()
+(ert-deftest separedit-test-code-in-doc-2 ()
   (let ((init-data "(defun hello (name)
   \"Greet a person.
 
@@ -859,12 +859,12 @@ Usage:
     `---\"
   (message \"hello, %s\" name))")
         (code-in-doc "(hello \"foo\") ;; <|>"))
-    (comment-edit-test--execute-block-edit 'emacs-lisp-mode ""                init-data code-in-doc)
-    (comment-edit-test--execute-block-edit 'emacs-lisp-mode "C-c C-c"         init-data init-data)
-    (comment-edit-test--execute-block-edit 'emacs-lisp-mode "M-> aaa C-c C-c" init-data (comment-edit-test--append-to-code-block
+    (separedit-test--execute-block-edit 'emacs-lisp-mode ""                init-data code-in-doc)
+    (separedit-test--execute-block-edit 'emacs-lisp-mode "C-c C-c"         init-data init-data)
+    (separedit-test--execute-block-edit 'emacs-lisp-mode "M-> aaa C-c C-c" init-data (separedit-test--append-to-code-block
                                                                                          'emacs-lisp-mode init-data "aaa"))))
 
-(ert-deftest comment-edit-test-code-in-doc-3 ()
+(ert-deftest separedit-test-code-in-doc-3 ()
   (let ((init-data "(defun hello (name)
   \"Greet a person.
 
@@ -881,27 +881,27 @@ Usage:<|>
     ```elisp
     (hello \"foo\")
     ```"))
-    (comment-edit-test--execute-block-edit 'emacs-lisp-mode ""                init-data code-in-doc)
-    (comment-edit-test--execute-block-edit 'emacs-lisp-mode "C-c C-c"         init-data init-data)
-    (comment-edit-test--execute-block-edit 'emacs-lisp-mode "M-> aaa C-c C-c" init-data (comment-edit-test--append-to-code-block
+    (separedit-test--execute-block-edit 'emacs-lisp-mode ""                init-data code-in-doc)
+    (separedit-test--execute-block-edit 'emacs-lisp-mode "C-c C-c"         init-data init-data)
+    (separedit-test--execute-block-edit 'emacs-lisp-mode "M-> aaa C-c C-c" init-data (separedit-test--append-to-code-block
                                                                                          'emacs-lisp-mode init-data "aaa"))))
 
-(ert-deftest comment-edit-test-string-escape-js ()
+(ert-deftest separedit-test-string-escape-js ()
   (let* ((initial-string "'\"single quotes wrap<|> double quotes.\"'")
          (expected-string (substring initial-string 1 (- (length initial-string) 1))))
-    (comment-edit-test--execute-block-edit 'javascript-mode ""        initial-string expected-string)
-    (comment-edit-test--execute-block-edit 'javascript-mode "C-c C-c" initial-string initial-string))
+    (separedit-test--execute-block-edit 'javascript-mode ""        initial-string expected-string)
+    (separedit-test--execute-block-edit 'javascript-mode "C-c C-c" initial-string initial-string))
   (let* ((initial-string "'\\'single quotes wrap<|> single quotes.\\''")
          (expected-string   "'single quotes wrap<|> single quotes.'"))
-    (comment-edit-test--execute-block-edit 'javascript-mode ""        initial-string expected-string)
-    (comment-edit-test--execute-block-edit 'javascript-mode "C-c C-c" initial-string initial-string))
+    (separedit-test--execute-block-edit 'javascript-mode ""        initial-string expected-string)
+    (separedit-test--execute-block-edit 'javascript-mode "C-c C-c" initial-string initial-string))
 (let* ((initial-string "\"'double quotes wrap<|> single quotes.'\"")
        (expected-string  "'double quotes wrap<|> single quotes.'"))
-    (comment-edit-test--execute-block-edit 'javascript-mode ""        initial-string expected-string)
-    (comment-edit-test--execute-block-edit 'javascript-mode "C-c C-c" initial-string initial-string)))
+    (separedit-test--execute-block-edit 'javascript-mode ""        initial-string expected-string)
+    (separedit-test--execute-block-edit 'javascript-mode "C-c C-c" initial-string initial-string)))
 
-(ert-deftest comment-edit-test-el-commentary ()
-  (let* ((comment-edit-leave-blank-line-in-comment t)
+(ert-deftest separedit-test-el-commentary ()
+  (let* ((separedit-leave-blank-line-in-comment t)
          (initial-string "\
 ;;; Commentary:
 
@@ -932,13 +932,13 @@ comment3
 ;; aaa
 ;;; Code:")
          (initial-string2 (concat ";; comment0\n\n" initial-string "\n\n;; comment4")))
-    (comment-edit-test--execute-block-edit 'emacs-lisp-mode ""                initial-string  editing-string (list "^;;; Commentary:\n+" "^;;; .*:$"))
-    (comment-edit-test--execute-block-edit 'emacs-lisp-mode ""                initial-string2 editing-string (list "^;;; Commentary:\n+" "^;;; .*:$"))
-    (comment-edit-test--execute-block-edit 'emacs-lisp-mode "C-c C-c"         initial-string  initial-string (list "^;;; Commentary:\n+" "^;;; .*:$"))
-    (comment-edit-test--execute-block-edit 'emacs-lisp-mode "aaa C-j C-c C-c" initial-string  edit-string    (list "^;;; Commentary:\n+" "^;;; .*:$"))))
+    (separedit-test--execute-block-edit 'emacs-lisp-mode ""                initial-string  editing-string (list "^;;; Commentary:\n+" "^;;; .*:$"))
+    (separedit-test--execute-block-edit 'emacs-lisp-mode ""                initial-string2 editing-string (list "^;;; Commentary:\n+" "^;;; .*:$"))
+    (separedit-test--execute-block-edit 'emacs-lisp-mode "C-c C-c"         initial-string  initial-string (list "^;;; Commentary:\n+" "^;;; .*:$"))
+    (separedit-test--execute-block-edit 'emacs-lisp-mode "aaa C-j C-c C-c" initial-string  edit-string    (list "^;;; Commentary:\n+" "^;;; .*:$"))))
 
-(ert-deftest comment-edit-test-readme ()
-  (cl-assert (string= (comment-edit-test--generate-readme)
+(ert-deftest separedit-test-readme ()
+  (cl-assert (string= (separedit-test--generate-readme)
                       (with-temp-buffer
                         (insert-file-contents "README.md")
                         (goto-char (point-min))
@@ -947,6 +947,6 @@ comment3
              nil
              ">>> The README.md must be generated from commentrary <<<"))
 
-(provide 'comment-edit-test)
+(provide 'separedit-test)
 
-;;; comment-edit-test.el ends here
+;;; separedit-test.el ends here

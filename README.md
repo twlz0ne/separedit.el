@@ -1,8 +1,8 @@
 <!-- This file was generated from elisp commentary section by tool, DO NOT EDIT -->
 
-[![Build Status](https://travis-ci.com/twlz0ne/comment-edit.el.svg?branch=master)](https://travis-ci.com/twlz0ne/comment-edit.el)
+[![Build Status](https://travis-ci.com/twlz0ne/separedit.el.svg?branch=master)](https://travis-ci.com/twlz0ne/separedit.el)
 
-# comment-edit.el
+# separedit.el
 
 Edit comment or docstring or code block inside them with your favorite mode.
 
@@ -17,12 +17,12 @@ Edit comment or docstring or code block inside them with your favorite mode.
 
 ## Installation
 
-Clone this repository to `~/.emacs.d/site-lisp/comment-edit`.  Add the following to your `.emacs`:
+Clone this repository to `~/.emacs.d/site-lisp/separedit`.  Add the following to your `.emacs`:
 
 ```elisp
-(require 'comment-edit)
-(define-key prog-mode-map (kbd "C-c '") #'comment-edit)
-(setq comment-edit-default-mode 'markdown-mode) ;; or org-mode
+(require 'separedit)
+(define-key prog-mode-map (kbd "C-c '") #'separedit)
+(setq separedit-default-mode 'markdown-mode) ;; or org-mode
 ```
 
 ## Usage
@@ -34,7 +34,7 @@ Clone this repository to `~/.emacs.d/site-lisp/comment-edit`.  Add the following
 
 ## Edit comment
 
-`comment-edit` use **continuity** as basis for determing whether it is a comment **block** or **line**.
+`separedit` use **continuity** as basis for determing whether it is a comment **block** or **line**.
 Continuous means that there is no barrier (e.g. code or blank line) between the end of previous line and the beginning of next line, for example:
 
     /*
@@ -57,7 +57,7 @@ Continuous means that there is no barrier (e.g. code or blank line) between the 
     code 3 // all this are comment lines
     code 4 // all this are comment lines
 
-By setting `comment-edit-default-mode` to choose the mode (e.g. `markdown-mode` or `org-mode`) for edit buffer.
+By setting `separedit-default-mode` to choose the mode (e.g. `markdown-mode` or `org-mode`) for edit buffer.
 In edit buffer, the comment delimiter will be removed, for example:
 
     source buffer     ->    edit buffer   ->    edit buffer
@@ -78,7 +78,7 @@ In edit buffer, the comment delimiter will be removed, for example:
 
 ## Edit string
 
-`comment-edit` provides convenience for editing escaped strings, if there are nested string or code block, just continue press <kbd>C-c '</kbd> to enter a new edit buffer:
+`separedit` provides convenience for editing escaped strings, if there are nested string or code block, just continue press <kbd>C-c '</kbd> to enter a new edit buffer:
 
     source buffer     ->    edit buffer   ->    edit buffer
 
@@ -86,7 +86,7 @@ In edit buffer, the comment delimiter will be removed, for example:
 
 ## Edit code block
 
-`comment-edit` also support for editing code block directly in comment or string:
+`separedit` also support for editing code block directly in comment or string:
 
     source buffer     ->    eidt buffer
 
@@ -105,8 +105,8 @@ If the language identifier of code block is omitted, the edit buffer uses the sa
 ## Screencasts
 
 <p float="left" align="center">
-  <img src="images/comment-edit1.gif" />
-  <img src="images/comment-edit2.gif" />
+  <img src="images/separedit1.gif" />
+  <img src="images/separedit2.gif" />
 </p>
 
 <i>P.S.</i> The language identifier of code block can be omitted in these cases.
