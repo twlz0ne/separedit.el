@@ -147,6 +147,9 @@
 (require 'calc-misc)
 (require 'subr-x)
 
+(declare-function org-edit-special "org")
+(declare-function markdown-edit-code-block "markdown-mode")
+
 (defcustom separedit-default-mode 'fundamental-mode
   "Default mode for editing comment or docstring file."
   :group 'separedit
@@ -300,7 +303,7 @@ FORMAT-STRING and ARGS is the same as for `message'."
 Return nil if reached the beginning of the buffer."
   (when pos
     (goto-char pos))
-  (condition-case err
+  (condition-case _err
       (forward-line -1)
     (error nil))
   (end-of-line)
@@ -312,7 +315,7 @@ Return nil if reached the beginning of the buffer."
 Return nil if reached the end of the buffer."
   (when pos
     (goto-char pos))
-  (condition-case err
+  (condition-case _err
       (forward-line 1)
     (error nil))
   (beginning-of-line)
@@ -440,15 +443,17 @@ Example:
         |       ;; comment      |
         '-----------------------+"
   (let ((point-at-comment-p nil)
-        (point-at-newline-p nil)))
-  (while (and (setq point-at-comment-p
-                    (or (separedit--point-at-comment)
-                        (separedit--point-at-comment-exclusive-one-line)))
-              (setq point-at-newline-p (ignore-errors (backward-char 1) t))))
-  (when (and (not point-at-comment-p)
-             point-at-newline-p)
-    (forward-char 1))
-  (point))
+        (point-at-newline-p nil))
+    (when pos
+      (goto-char pos))
+    (while (and (setq point-at-comment-p
+                      (or (separedit--point-at-comment)
+                          (separedit--point-at-comment-exclusive-one-line)))
+                (setq point-at-newline-p (ignore-errors (backward-char 1) t))))
+    (when (and (not point-at-comment-p)
+               point-at-newline-p)
+      (forward-char 1))
+    (point)))
 
 (defun separedit--comment-end (&optional pos)
   "Look at the last line of comment from point POS.
@@ -464,11 +469,13 @@ Example:
                         end -`"
   (let ((point-at-comment-p nil)
         (point-at-newline-p nil))
+    (when pos
+      (goto-char pos))
     (while (and (setq point-at-comment-p
                       (or (separedit--point-at-comment)
                           (separedit--point-at-comment-exclusive-one-line)))
                 (setq point-at-newline-p
-                      (condition-case err
+                      (condition-case _err
                           (progn
                             (forward-char 1)
                             t)
@@ -777,8 +784,8 @@ It will override by the key that `separedit' binding in source buffer.")
           (backward-char))))
     line-delimiter))
 
-(defun separedit--restore-comment-delimiter (beg end)
-  "Restore comment delimiter of each line between BEG to END when returning from comemntdown-mode."
+(defun separedit--restore-comment-delimiter ()
+  "Restore comment delimiter of each line when returning from edit buffer."
   (separedit--log "==> [separedit--restore-comment-delimiter] line delimiter: %s"
                      separedit--line-delimiter)
   (when (and (string-prefix-p "*edit-indirect " (buffer-name))
@@ -788,7 +795,7 @@ It will override by the key that `separedit' binding in source buffer.")
                          separedit--line-delimiter
                        (concat separedit--line-delimiter " "))))
       (save-excursion
-        (goto-char beg)
+        (goto-char (point-min))
         (catch 'end-of-buffer
           (while (re-search-forward "^.*$" nil t)
             (let* ((str (string-trim-right (match-string 0)))
@@ -985,7 +992,7 @@ but users can also manually select it by pressing `C-u \\[separedit]'."
                            (set (make-local-variable 'separedit--line-delimiter) line-delimiter)
                            (set (make-local-variable 'edit-indirect-before-commit-hook)
                                 (append '((lambda ()
-                                            (separedit--restore-comment-delimiter (point-min) (point-max))
+                                            (separedit--restore-comment-delimiter)
                                             (when ,strp
                                               (separedit--restore-escape ,strp))))
                                         edit-indirect-before-commit-hook)))))
