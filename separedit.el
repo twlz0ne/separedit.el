@@ -572,8 +572,8 @@ If MODE is nil, use ‘major-mode’."
   (separedit--rassoc (or mode major-mode)
                         separedit-comment-encloser-alist))
 
-(defun separedit--enclosed-comment-p (&optional comment-beginning comment-end)
-  "Determine if the comment from COMMENT-BEGINNING to COMMENT-END is enclosed."
+(defun separedit--enclosed-comment-p (&optional comment-beginning comment-close)
+  "Determine if the comment from COMMENT-BEGINNING to COMMENT-CLOSE is enclosed."
   (-when-let (encloser (car (separedit--get-comment-encloser major-mode)))
     (and (save-excursion
            (if comment-beginning
@@ -581,8 +581,8 @@ If MODE is nil, use ‘major-mode’."
              (separedit--comment-beginning))
            (re-search-forward (car encloser) nil t 1))
          (save-excursion
-           (if comment-end
-               (goto-char comment-end)
+           (if comment-close
+               (goto-char comment-close)
              (separedit--comment-end))
            (ignore-errors (forward-char 1))
            (re-search-backward (cadr encloser) nil t 1))
