@@ -322,7 +322,7 @@ Return nil if reached the end of the buffer."
   t)
 
 (defun separedit--rassoc (item list)
-  "Return non-nil if ITEM ‘eq’ to or contained in the cdr of an element of LIST."
+  "Return non-nil if ITEM `eq' to or contained in the cdr of an element of LIST."
   (cl-rassoc item
              list
              :test
@@ -332,7 +332,7 @@ Return nil if reached the end of the buffer."
                  (eq it item)))))
 
 (defun separedit--get-real-mode (&optional mode)
-  "Return real name of ‘major-mode’ or given MODE."
+  "Return real name of `major-mode' or given MODE."
   (let ((mode (or mode major-mode)))
     (or (and (symbolp (symbol-function mode))
              (symbol-function mode))
@@ -370,7 +370,7 @@ Return nil if reached the end of the buffer."
   "Return quote characters around string at POS.
 
 If BACKWARDP is not nil, search backward.
-If MODE is nil, use ‘major-mode’."
+If MODE is nil, use `major-mode'."
   (let* ((mode (or mode major-mode))
          (looking-fn (if backwardp 'looking-back 'looking-at))
          (quotes (separedit-get-mode-quotes mode)))
@@ -551,7 +551,7 @@ Style 2:
   "Return a regexp to match the beginning of enclosed comment.
 
 MULTI-LINE-P means whether the comment is multi-line.
-If MODE is nil, use ‘major-mode’."
+If MODE is nil, use `major-mode'."
   (concat (caar (separedit--get-comment-encloser (or mode major-mode)))
           "[\t\s]*"
           (when multi-line-p
@@ -561,14 +561,14 @@ If MODE is nil, use ‘major-mode’."
   "Return a regexp to match the end of enclosed comment.
 
 MULTI-LINE-P means whether the comment is multi-line.
-If MODE is nil, use ‘major-mode’."
+If MODE is nil, use `major-mode'."
   (concat (when multi-line-p
             "\n")
           "[\t\s]*"
           (cl-cadar (separedit--get-comment-encloser (or mode major-mode)))))
 
 (defun separedit--get-comment-encloser (&optional mode)
-  "Return a list in the form of ‘((begin-encloser end-enclose) mode1 mode2...)’ for MODE."
+  "Return a list in the form of `((begin-encloser end-enclose) mode1 mode2...)' for MODE."
   (separedit--rassoc (or mode major-mode)
                         separedit-comment-encloser-alist))
 
@@ -591,7 +591,7 @@ If MODE is nil, use ‘major-mode’."
 ;;; Code block functions
 
 (defun separedit--code-block-beginning (&optional comment-delimiter)
-  "Return code block info containing ‘:beginning’.
+  "Return code block info containing `:beginning'.
 
 Search process will skip characters COMMENT-DELIMITER at beginning of each line."
   (let ((regexp-group
@@ -631,7 +631,7 @@ Search process will skip characters COMMENT-DELIMITER at beginning of each line.
                     :regexps block-regexp))))))))
 
 (defun separedit--code-block-end (code-info &optional comment-delimiter)
-  "Return CODE-INFO with ‘:end’ added.
+  "Return CODE-INFO with `:end' added.
 
 Search process will skip characters COMMENT-DELIMITER at beginning of each line."
   (save-excursion
