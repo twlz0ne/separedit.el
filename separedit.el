@@ -711,8 +711,8 @@ Block info example:
   "The default entry key in editing buffer.
 It will override by the key that `separedit' binding in source buffer.")
 
-(defvar separedit-exit-key (kbd "C-c C-c")
-  "The default exit key in editing buffer.")
+(defvar separedit-commit-key (kbd "C-c C-c")
+  "The default commit key in editing buffer.")
 
 (defvar separedit-abort-key (kbd "C-c C-k")
   "The default abort key in editing buffer.")
@@ -744,7 +744,7 @@ It will override by the key that `separedit' binding in source buffer.")
         (separedit--log "==> [-buffer-creation-setup] major-mode: %s, entry-cmd: %s" major-mode entry-cmd)
         (use-local-map edit-indirect-mode-map)
         (local-set-key (separedit--entry-key) entry-cmd)
-        (local-set-key separedit-exit-key #'edit-indirect-commit)
+        (local-set-key separedit-commit-key #'edit-indirect-commit)
         (local-set-key separedit-abort-key #'edit-indirect-abort)
         (when separedit-continue-fill-column
           (setq-local fill-column (- fill-column (length separedit--line-delimiter))))
@@ -754,7 +754,7 @@ It will override by the key that `separedit' binding in source buffer.")
                                     (mapconcat
                                      'identity
                                      (-non-nil
-                                      (list "\\[edit-indirect-commit]: Exit"
+                                      (list "\\[edit-indirect-commit]: Commit"
                                             "\\[edit-indirect-abort]: Abort"
                                             (format "\\[%s]: Enter" entry-cmd)))
                                      ", "))))
