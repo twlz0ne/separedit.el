@@ -955,7 +955,7 @@ If you just want to check `major-mode', use `derived-mode-p'."
 
 Normally, the major mode of the edit buffer will be selected automatically,
 but users can also manually select it by pressing `C-u \\[separedit]'."
-  (interactive "P")
+  (interactive)
   (let* ((block (or block (separedit--block-info)))
          (beg (plist-get block :beginning))
          (end (plist-get block :end))
