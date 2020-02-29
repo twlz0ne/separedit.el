@@ -816,9 +816,16 @@ It will override by the key that `separedit' binding in source buffer.")
   "Remove escape of nested string."
   (catch 'break
     (dolist (num (number-sequence 1 9))
-      (let ((match-len (1- (math-pow 2 num))))
+      (let ((match-len (1- (math-pow 2 num)))
+            (prefix (rx (not (any "\\")))))
         (when (and (< 0 match-len)
-                   (looking-back (eval `(rx (not (any "\\")) (= ,match-len "\\"))) 1))
+                   (looking-back
+                    (concat (if (> (point) 2)
+                                ;; If the escaped character at point
+                                ;; is not the 1st character of string
+                                prefix)
+                            (rx-to-string `(= ,match-len "\\")))
+                    1))
           (let ((del-len (- match-len (1- (math-pow 2 (1- num))))))
             (backward-delete-char del-len)
             (throw 'break nil)))))))
