@@ -729,6 +729,40 @@
 
 ;;; Interaction test
 
+(ert-deftest separedit-test-keybinding ()
+  (require 'markdown-mode)
+  (let ((init-str-d "\"string<|>\"")
+        (init-str-s "'string<|>'")
+        (init-block (separedit-test--indent-el
+                     ";; comment1
+           ;; comment2<|>
+           ;; comment3")))
+    (let ((separedit-default-mode 'fundamental-mode))
+      (--with-callback 'emacs-lisp-mode init-block ""
+                       (lambda () (should (--key= "C-c '"   'separedit
+                                                  "C-c C-c" 'edit-indirect-commit
+                                                  "C-c C-k" 'edit-indirect-abort)))))
+    (let ((separedit-default-mode 'separedit-double-quote-string-mode))
+      (--with-callback 'javascript-mode init-str-d ""
+                       (lambda () (should (--key= "C-c '"   'separedit
+                                                  "C-c C-c" 'edit-indirect-commit
+                                                  "C-c C-k" 'edit-indirect-abort)))))
+    (let ((separedit-default-mode 'separedit-single-quote-string-mode))
+      (--with-callback 'javascript-mode init-str-s ""
+                       (lambda () (should (--key= "C-c '"   'separedit
+                                                  "C-c C-c" 'edit-indirect-commit
+                                                  "C-c C-k" 'edit-indirect-abort)))))
+    (let ((separedit-default-mode 'org-mode))
+      (--with-callback 'emacs-lisp-mode init-block ""
+                       (lambda () (should (--key= "C-c '"   'org-edit-special
+                                                  "C-c C-c" 'edit-indirect-commit
+                                                  "C-c C-k" 'edit-indirect-abort)))))
+    (let ((separedit-default-mode 'markdown-mode))
+      (--with-callback 'emacs-lisp-mode init-block ""
+                       (lambda () (should (--key= "C-c '"   'markdown-edit-code-block
+                                                  "C-c C-c" 'edit-indirect-commit
+                                                  "C-c C-k" 'edit-indirect-abort)))))))
+
 (ert-deftest separedit-test-el-in-el ()
   (let ((code-with-comment
          (separedit-test--indent-el

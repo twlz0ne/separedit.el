@@ -68,6 +68,35 @@
           (goto-char (match-beginning 0))
           (list :beginning begin :end (point)))))))
 
+(defun --key= (&rest args)
+  "Verify keybindings.
+
+ARGS is a list in the form of `KEY-STR CMD-SYM ...'."
+  (->> (-partition 2 args)
+       (--map (string= (car it) (substitute-command-keys (format "\\[%s]" (cadr it)))))
+       (-none? 'null)))
+
+(defun --with-callback (init-mode init-data key-sequnce callback &optional region-regexps)
+  "Execute CALLBACK after the KEY-SEQUNCE pressed in edit buffer.
+
+INIT-MODE       major-mode of source buffer
+INIT-DATA       initial data of source buffer
+REGION-REGEXPS  regexp for detection block in source buffer"
+  (let ((buf (generate-new-buffer "*init*")))
+    (switch-to-buffer buf)
+    (insert init-data)
+    (funcall init-mode)
+    ;; Force enable face / text property / syntax highlighting
+    (let ((noninteractive nil))
+      (font-lock-mode 1)
+      (font-lock-ensure))
+    (goto-char (point-min))
+    (re-search-forward "<|>")
+    (separedit (when region-regexps
+                 (apply #'separedit-test--region-between-regexps region-regexps)))
+    (test-with nil key-sequnce)
+    (funcall callback)))
+
 (defun separedit-test--execute-block-edit (init-mode key-sequnce init-data expected-data &optional region-regexps)
   (let ((buf (generate-new-buffer "*init*")))
     (switch-to-buffer buf)
