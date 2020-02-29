@@ -747,13 +747,13 @@ It will override by the key that `separedit' binding in source buffer.")
                #'markdown-edit-code-block)
               (`org-mode
                #'org-edit-special)))
-      (progn
+      (let ((km (copy-keymap edit-indirect-mode-map)))
         (separedit--log "==> [-buffer-creation-setup] major-mode: %s, entry-cmd: %s" major-mode entry-cmd)
-        (use-local-map (or (ignore-errors (symbol-value (intern (format "%s-map" major-mode))))
-                           edit-indirect-mode-map))
-        (local-set-key (separedit--entry-key) entry-cmd)
-        (local-set-key separedit-commit-key #'edit-indirect-commit)
-        (local-set-key separedit-abort-key #'edit-indirect-abort)
+        (define-key km (separedit--entry-key) entry-cmd)
+        (define-key km separedit-commit-key #'edit-indirect-commit)
+        (define-key km separedit-abort-key #'edit-indirect-abort)
+        (make-local-variable 'minor-mode-overriding-map-alist)
+        (push `(edit-indirect--overlay . ,km) minor-mode-overriding-map-alist)
         (when separedit-continue-fill-column
           (setq-local fill-column (- fill-column (length separedit--line-delimiter))))
         (setq-local header-line-format
