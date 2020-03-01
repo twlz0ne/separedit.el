@@ -239,6 +239,10 @@ Taken from `markdown-code-lang-modes'."
      :body   ""
      :footer "```$")
 
+    (:header "#\\+BEGIN_SRC \\(\\w*\\).*$"
+     :body   ""
+     :footer "#\\+END_SRC$")
+
     (:header ",---+\s?\\(\\w*\\)$"
      :body   "|\s?"
      :footer "`---+$")
