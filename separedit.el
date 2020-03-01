@@ -247,6 +247,10 @@ Taken from `markdown-code-lang-modes'."
      :body   "|\s?"
      :footer "`---+$")
 
+    (:header "┌───+\s?\\(\\w*\\)$"
+     :body   "│\s?"
+     :footer "└───+$")
+
     (:header "Local Variables:$"
      :body   ""
      :footer "End:$"
