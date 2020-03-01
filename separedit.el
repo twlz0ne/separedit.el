@@ -235,18 +235,26 @@ Taken from `markdown-code-lang-modes'."
   :type 'alist)
 
 (defcustom separedit-block-regexp-plist
-  '(;; Example:
-    ;; ```
-    ;; (message "hello, world")
-    ;; ```
-    (:beginning "```\s?\\(\\w*\\)$"   :middle nil    :end "```$")
-    ;; Example:
-    ;; ,---
-    ;; | (message "hello, world")
-    ;; `---
-    (:beginning ",---+\s?\\(\\w*\\)$" :middle "|\s?" :end "`---+$")
-    (:beginning "Local Variables:$" :middle nil :end "End:$" :mode emacs-lisp-mode))
-  "Alist of block regexp."
+  '((:header "```\s?\\(\\w*\\)$"
+     :body   ""
+     :footer "```$")
+
+    (:header ",---+\s?\\(\\w*\\)$"
+     :body   "|\s?"
+     :footer "`---+$")
+
+    (:header "Local Variables:$"
+     :body   ""
+     :footer "End:$"
+     :mode   emacs-lisp-mode))
+  "Plist of block regexp.
+
+Each element of it is in the form of:
+
+    (:header REGEX ;; to match the header    line of block
+     :body   REGEX ;; to match the each body line of block
+     :fotter REGEX ;; to match the footer    line of block
+     :mode   MODE) ;; major mode for edit buffer (optional)"
   :group 'separedit
   :type 'alist)
 
@@ -600,7 +608,7 @@ Search process will skip characters COMMENT-DELIMITER at beginning of each line.
           "\\(?:"
           (mapconcat
            (lambda (it)
-             (plist-get it :beginning))
+             (plist-get it :header))
            separedit-block-regexp-plist
            "\\|")
           "\\)")))
@@ -618,7 +626,7 @@ Search process will skip characters COMMENT-DELIMITER at beginning of each line.
                         (car
                          (-non-nil
                           (--map (when (string-match-p
-                                        (plist-get it :beginning)
+                                        (plist-get it :header)
                                         (match-string-no-properties 0))
                                    it)
                                  separedit-block-regexp-plist)))))
@@ -638,7 +646,7 @@ Search process will skip characters COMMENT-DELIMITER at beginning of each line.
     (let ((regexp (concat comment-delimiter
                           (plist-get
                            (plist-get code-info :regexps)
-                           :end))))
+                           :footer))))
       (when (re-search-forward regexp nil t)
         (separedit--end-of-previous-line)
         (plist-put code-info
@@ -679,7 +687,9 @@ Block info example:
 
     '(:beginning 10
       :lang-mode emacs-lisp-mode
-      :regexps (:beginning \"``` ?\\(\\w*\\)$\" :middle nil :end \"```$\")
+      :regexps (:header \"``` ?\\(\\w*\\)$\"
+                :body   \"\"
+                :footer \"```$\")
       :end 12
       :in-str-p nil)
 
@@ -973,7 +983,7 @@ but users can also manually select it by pressing `C-u \\[separedit]'."
          (codep (and (plist-get block :regexps) t))
          (delimiter-regexp (concat (if strp "^\s*"
                                      (separedit--comment-delimiter-regexp))
-                                   (plist-get (plist-get block :regexps) :middle)))
+                                   (plist-get (plist-get block :regexps) :body)))
          (edit-indirect-after-creation-hook #'separedit--buffer-creation-setup))
     (separedit--log "==> block-info: %S" block)
     ;; (separedit--log "==> block: %S" (buffer-substring-no-properties beg end))
