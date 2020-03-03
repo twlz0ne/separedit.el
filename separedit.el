@@ -643,7 +643,12 @@ Search process will skip characters COMMENT-DELIMITER at beginning of each line.
                     :beginning (point-at-bol)
                     :lang-mode
                     (or (plist-get block-regexp :mode)
-                        (separedit-get-lang-mode (or (match-string-no-properties 1) ""))
+                        (separedit-get-lang-mode
+                         (or (cadr
+                              (-non-nil
+                               (cl-loop for n from 0 to (1- (length (match-data)))
+                                        collect (match-string-no-properties n))))
+                             ""))
                         major-mode)
                     :regexps block-regexp))))))))
 

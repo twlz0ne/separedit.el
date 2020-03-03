@@ -763,6 +763,36 @@
                                                   "C-c C-c" 'edit-indirect-commit
                                                   "C-c C-k" 'edit-indirect-abort)))))))
 
+(ert-deftest separedit-test-code-block-matching ()
+  (let ((init-data (separedit-test--indent-c
+                    "// ``` emacs-lisp
+                     // (message \"foobar\")<|>
+                     // ```")))
+    (--with-callback 'c-mode init-data ""
+                     (lambda () (and (--bufs= "(message \"foobar\")<|>")
+                                     (--mode= 'emacs-lisp-mode)))))
+  (let ((init-data (separedit-test--indent-el
+                    ";; #+BEGIN_SRC c++
+                     ;; console.log('foobar');<|>
+                     ;; #+END_SRC")))
+    (--with-callback 'emacs-lisp-mode init-data ""
+                     (lambda () (and (--bufs= "console.log('foobar');<|>")
+                                     (--mode= 'c++-mode)))))
+  (let ((init-data (separedit-test--indent-c
+                    "// ,--- emacs-lisp
+                     // | (message \"foobar\")<|>
+                     // `---")))
+    (--with-callback 'c-mode init-data ""
+                     (lambda () (and (--bufs= "(message \"foobar\")<|>")
+                                     (--mode= 'emacs-lisp-mode)))))
+  (let ((init-data (separedit-test--indent-el
+                    ";; ┌──── c++
+                     ;; │ cout << 'foobar';<|>
+                     ;; └────")))
+    (--with-callback 'emacs-lisp-mode init-data ""
+                     (lambda () (and (--bufs= "cout << 'foobar';<|>")
+                                     (--mode= 'c++-mode))))))
+
 (ert-deftest separedit-test-el-in-el ()
   (let ((code-with-comment
          (separedit-test--indent-el

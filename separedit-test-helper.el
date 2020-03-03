@@ -68,6 +68,16 @@
           (goto-char (match-beginning 0))
           (list :beginning begin :end (point)))))))
 
+(defun --bufs= (string)
+  "Verify whether buffer string equals STRING."
+  (should (string= string
+                   (buffer-substring-no-properties (point-min)
+                                                   (point-max)))))
+
+(defun --mode= (mode)
+  "Verify whether major mode equals MODE."
+  (should (eq mode major-mode)))
+
 (defun --key= (&rest args)
   "Verify keybindings.
 
