@@ -142,6 +142,7 @@
 
 ;;; Code:
 
+(require 'cl-lib)
 (require 'dash)
 (require 'edit-indirect)
 (require 'calc-misc)
@@ -235,19 +236,19 @@ Taken from `markdown-code-lang-modes'."
   :type 'alist)
 
 (defcustom separedit-block-regexp-plist
-  '((:header "```\s?\\(\\w*\\)$"
+  '((:header "```\s?\\([^\s\n\r]*\\)$"
      :body   ""
      :footer "```$")
 
-    (:header "#\\+BEGIN_SRC \\(\\w*\\).*$"
+    (:header "#\\+BEGIN_SRC\s\\([^\s\n\r]*\\).*$"
      :body   ""
      :footer "#\\+END_SRC$")
 
-    (:header ",---+\s?\\(\\w*\\)$"
+    (:header ",---+\s?\\([^\s\n\r]*\\)$"
      :body   "|\s?"
      :footer "`---+$")
 
-    (:header "┌───+\s?\\(\\w*\\)$"
+    (:header "┌───+\s?\\([^\s\n\r]*\\)$"
      :body   "│\s?"
      :footer "└───+$")
 
