@@ -273,7 +273,7 @@ Each element of it is in the form of:
   :type 'boolean)
 
 (defcustom separedit-continue-fill-column nil
-  "Use the remaining fill with of the source buffer in edit buffer."
+  "Use the remaining fill width of the source buffer in edit buffer."
   :group 'separedit
   :type 'boolean)
 
@@ -420,9 +420,9 @@ If MODE is nil, use ‘major-mode’."
   (let* ((mode (or mode major-mode))
          (def (or (separedit--rassoc mode separedit-comment-delimiter-alist)
                   (separedit--rassoc (get mode 'derived-mode-parent)
-                                        separedit-comment-delimiter-alist)
+                                     separedit-comment-delimiter-alist)
                   (separedit--rassoc (separedit--get-real-mode mode)
-                                        separedit-comment-delimiter-alist))))
+                                     separedit-comment-delimiter-alist))))
     (when def
       (if (symbolp (car def))
           (separedit--comment-delimiter-regexp (car def))
@@ -587,7 +587,7 @@ If MODE is nil, use ‘major-mode’."
 (defun separedit--get-comment-encloser (&optional mode)
   "Return a list in the form of ‘((begin-encloser end-enclose) mode1 mode2...)’ for MODE."
   (separedit--rassoc (or mode major-mode)
-                        separedit-comment-encloser-alist))
+                     separedit-comment-encloser-alist))
 
 (defun separedit--enclosed-comment-p (&optional comment-beginning comment-close)
   "Determine if the comment from COMMENT-BEGINNING to COMMENT-CLOSE is enclosed."
@@ -783,13 +783,13 @@ It will override by the key that `separedit' binding in source buffer.")
         (setq-local header-line-format
                     (substitute-command-keys
                      (concat "*EDIT* "
-                                    (mapconcat
-                                     'identity
-                                     (-non-nil
-                                      (list "\\[edit-indirect-commit]: Commit"
-                                            "\\[edit-indirect-abort]: Abort"
-                                            (format "\\[%s]: Enter" entry-cmd)))
-                                     ", "))))
+                             (mapconcat
+                              'identity
+                              (-non-nil
+                               (list "\\[edit-indirect-commit]: Commit"
+                                     "\\[edit-indirect-abort]: Abort"
+                                     (format "\\[%s]: Enter" entry-cmd)))
+                              ", "))))
         (run-hooks 'separedit-buffer-creation-hook))
     (warn "Unknown major-mode: %s" major-mode)))
 
@@ -812,7 +812,7 @@ It will override by the key that `separedit' binding in source buffer.")
 (defun separedit--restore-comment-delimiter ()
   "Restore comment delimiter of each line when returning from edit buffer."
   (separedit--log "==> [separedit--restore-comment-delimiter] line delimiter: %s"
-                     separedit--line-delimiter)
+                  separedit--line-delimiter)
   (when (and (string-prefix-p "*edit-indirect " (buffer-name))
              separedit--line-delimiter
              (not (string-empty-p separedit--line-delimiter)))
@@ -911,19 +911,19 @@ QUOTES-CHAR should be \" or '."
            (insert "\\'")))))
 
 (defalias 'separedit--derived-mode-p
-    (if (fboundp 'provided-mode-derived-p) 'provided-mode-derived-p
-      ;; From Emacs 26
-      (lambda (mode &rest modes)
-        "Non-nil if MODE is derived from one of MODES or their aliases.
+  (if (fboundp 'provided-mode-derived-p) 'provided-mode-derived-p
+    ;; From Emacs 26
+    (lambda (mode &rest modes)
+      "Non-nil if MODE is derived from one of MODES or their aliases.
 Uses the `derived-mode-parent' property of the symbol to trace backwards.
 If you just want to check `major-mode', use `derived-mode-p'."
-        (while
-            (and
-             (not (memq mode modes))
-             (let* ((parent (get mode 'derived-mode-parent))
-                    (parentfn (symbol-function parent)))
-               (setq mode (if (and parentfn (symbolp parentfn)) parentfn parent)))))
-        mode)))
+      (while
+          (and
+           (not (memq mode modes))
+           (let* ((parent (get mode 'derived-mode-parent))
+                  (parentfn (symbol-function parent)))
+             (setq mode (if (and parentfn (symbolp parentfn)) parentfn parent)))))
+      mode)))
 
 (defun separedit--select-mode ()
   "Select major mode."
@@ -932,19 +932,19 @@ If you just want to check `major-mode', use `derived-mode-p'."
    (lambda (string pred action)
      (append separedit--mode-history
              (let ((pred
-                     (lambda (sym)
-                       (and (funcall pred sym)
-                            (or (separedit--derived-mode-p sym 'prog-mode)
-                                (memq sym
-                                      '(text-mode
-                                        markdown-mode
-                                        org-mode
-                                        separedit-mode
-                                        separedit-single-quote-string-mode
-                                        separedit-double-quote-string-mode)))))))
+                    (lambda (sym)
+                      (and (funcall pred sym)
+                           (or (separedit--derived-mode-p sym 'prog-mode)
+                               (memq sym
+                                     '(text-mode
+                                       markdown-mode
+                                       org-mode
+                                       separedit-mode
+                                       separedit-single-quote-string-mode
+                                       separedit-double-quote-string-mode)))))))
                (complete-with-action action obarray string pred))))
    #'commandp t nil 'separedit--mode-history (or (car separedit--mode-history)
-                                                    (format "%s" major-mode))))
+                                                 (format "%s" major-mode))))
 
 (defvar separedit-mode-map (make-sparse-keymap) "Keymap used in comment edit buffer.")
 
