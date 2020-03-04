@@ -235,7 +235,7 @@ Taken from `markdown-code-lang-modes'."
   :group 'separedit
   :type 'alist)
 
-(defcustom separedit-block-regexp-plist
+(defcustom separedit-block-regexp-plists
   '((:header "```\s?\\([^\s\n\r]*\\)$"
      :body   ""
      :footer "```$")
@@ -256,7 +256,7 @@ Taken from `markdown-code-lang-modes'."
      :body   ""
      :footer "End:$"
      :mode   emacs-lisp-mode))
-  "Plist of block regexp.
+  "Lists of regexp to match code block.
 
 Each element of it is in the form of:
 
@@ -618,7 +618,7 @@ Search process will skip characters COMMENT-DELIMITER at beginning of each line.
           (mapconcat
            (lambda (it)
              (plist-get it :header))
-           separedit-block-regexp-plist
+           separedit-block-regexp-plists
            "\\|")
           "\\)")))
     (catch 'break
@@ -638,7 +638,7 @@ Search process will skip characters COMMENT-DELIMITER at beginning of each line.
                                         (plist-get it :header)
                                         (match-string-no-properties 0))
                                    it)
-                                 separedit-block-regexp-plist)))))
+                                 separedit-block-regexp-plists)))))
                    (list
                     :beginning (point-at-bol)
                     :lang-mode
