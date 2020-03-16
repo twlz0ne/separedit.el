@@ -183,7 +183,7 @@ Taken from `markdown-code-lang-modes'."
   :type 'alist)
 
 (defcustom separedit-not-support-docstring-modes
-  '(c-mode c++-mode java-mode js-mode rust-mode)
+  '(c-mode c++-mode java-mode js-mode rust-mode rustic-mode)
   "A list of modes not support docstring."
   :group 'separedit
   :type 'list)
@@ -199,7 +199,8 @@ Taken from `markdown-code-lang-modes'."
                           objc-mode
                           php-mode
                           swift-mode))
-    (("//+!" "//+" "\\*+") . rust-mode)
+    (("//+!" "//+" "\\*+") . (rust-mode
+                              rustic-mode))
     (("--")            . (applescript-mode haskell-mode lua-mode))
     (("//+")           . (pascal-mode fsharp-mode))
     ((";+")            . (emacs-lisp-mode
@@ -223,6 +224,7 @@ Taken from `markdown-code-lang-modes'."
                                objc-mode
                                php-mode
                                rust-mode
+                               rustic-mode
                                swift-mode))
     (("{-" "-}")       . haskell-mode)
     (("{" "}")         . pascal-mode)
