@@ -727,6 +727,27 @@
        (cons (escape-sq "d" "e")             (escape-sq "c" "d" "e"))
        (cons (escape-sq "e")                 (escape-sq "d" "e")))))
 
+(ert-deftest separedit-test-point-between-two-code-blocks ()
+  (separedit-test--with-buffer
+   'emacs-lisp-mode
+   (separedit-test--indent-el
+    ";; ┌────
+     ;; │ block2
+     ;; └────
+     ;;
+     ;; <|>
+     ;;
+     ;; ┌────
+     ;; │ block2
+     ;; └────")
+   (let* ((comment-beg (save-excursion (separedit--comment-beginning)))
+          (comment-end (save-excursion (separedit--comment-beginning)))
+          (edit-block  (save-excursion (separedit--block-info)))
+          (block-beg    (plist-get edit-block :beginning))
+          (block-end    (plist-get edit-block :beginning)))
+     (should (and (eq comment-beg block-beg)
+                  (eq comment-end block-end))))))
+
 ;;; Interaction test
 
 (ert-deftest separedit-test-keybinding ()

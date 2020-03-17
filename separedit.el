@@ -659,15 +659,17 @@ Search process will skip characters COMMENT-DELIMITER at beginning of each line.
   "Return CODE-INFO with ‘:end’ added.
 
 Search process will skip characters COMMENT-DELIMITER at beginning of each line."
-  (save-excursion
-    (let ((regexp (concat comment-delimiter
-                          (plist-get
-                           (plist-get code-info :regexps)
-                           :footer))))
-      (when (re-search-forward regexp nil t)
-        (separedit--end-of-previous-line)
-        (plist-put code-info
-                   :end (point-at-eol))))))
+  (when (and code-info (plist-get code-info :beginning))
+    (save-excursion
+      (goto-char (plist-get code-info :beginning))
+      (let ((regexp (concat comment-delimiter
+                            (plist-get
+                             (plist-get code-info :regexps)
+                             :footer))))
+        (when (re-search-forward regexp nil t)
+          (separedit--end-of-previous-line)
+          (plist-put code-info
+                     :end (point-at-eol)))))))
 
 (defun separedit-get-lang-mode (lang)
   "Return major mode that should be used for LANG.
@@ -712,7 +714,8 @@ Block info example:
 
 :regexps        not nil means point at a code block.
 :in-str-p       not nil means point at a string block otherwise a comment block."
-  (let* ((strp (separedit--point-at-string))
+  (let* ((pos (point))
+         (strp (separedit--point-at-string))
          (comment-or-string-region
           (if strp
               (let ((region (separedit--string-region)))
@@ -729,15 +732,15 @@ Block info example:
              (code-info (separedit--code-block-end
                          (separedit--code-block-beginning delimiter)
                          delimiter)))
-        (if (and (plist-get code-info :beginning) (plist-get code-info :end))
+        (if (and code-info
+                 (<= (plist-get code-info :beginning) pos)
+                 (<= pos (plist-get code-info :end)))
             (plist-put code-info :in-str-p strp)
           (if comment-or-string-region
-              (plist-put
-               (plist-put
-                (plist-put code-info :beginning (point-min))
-                :end (point-max))
-               :in-str-p strp)
-            (user-error "Not inside a code block")))))))
+              (list :beginning (point-min)
+                    :end (point-max)
+                    :in-str-p strp)
+            (user-error "Not inside a edit block")))))))
 
 ;;; separedit-mode
 

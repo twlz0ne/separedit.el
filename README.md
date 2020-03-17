@@ -34,7 +34,7 @@ Clone this repository to `~/.emacs.d/site-lisp/separedit`.  Add the following to
 
 ## Edit comment
 
-`separedit` use **continuity** as basis for determing whether it is a comment **block** or **line**.
+`separedit` use **continuity** as basis for determning whether it is a comment **block** or **line**.
 Continuous means that there is no barrier (e.g. code or blank line) between the end of previous line and the beginning of next line, for example:
 
     /*
