@@ -20,7 +20,7 @@
 ;; GNU General Public License for more details.
 
 ;; You should have received a copy of the GNU General Public License
-;; along with this program.  If not, see <http://www.gnu.org/licenses/>.
+;; along with this program.  If not, see <https://www.gnu.org/licenses/>.
 
 ;;; Commentary:
 
@@ -58,7 +58,7 @@
 
 ;; ## Edit comment
 
-;; `separedit` use **continuity** as basis for determing whether it is a comment **block** or **line**.
+;; `separedit` use **continuity** as basis for determning whether it is a comment **block** or **line**.
 ;; Continuous means that there is no barrier (e.g. code or blank line) between the end of previous line and the beginning of next line, for example:
 
 ;;     /*
@@ -112,7 +112,7 @@
 
 ;; `separedit` also support for editing code block directly in comment or string:
 
-;;     source buffer     ->    eidt buffer
+;;     source buffer     ->    edit buffer
 
 ;;     ",--- elisp
 ;;      | (foo \"bar\")        (foo "bar")
@@ -308,17 +308,17 @@ Force enable if FORCE-P is not nil."
 FORMAT-STRING and ARGS is the same as for `message'."
   (when separedit-debug-p
     (if noninteractive
-        (apply 'message format-string args)
+        (apply #'message format-string args)
       (with-current-buffer (get-buffer-create "*comment-log*")
         (outline-mode)
         (buffer-disable-undo)
         (let ((inhibit-read-only t))
           (goto-char (point-max))
-          (insert (apply 'format (cons format-string args))
+          (insert (apply #'format (cons format-string args))
                   "\n"))))))
 
 (defun separedit--end-of-previous-line (&optional pos)
-  "Move cursor to the end of prevous line of the given point POS.
+  "Move cursor to the end of previous line of the given point POS.
 
 Return nil if reached the beginning of the buffer."
   (when pos
@@ -358,7 +358,7 @@ Return nil if reached the end of the buffer."
              (symbol-function mode))
         mode)))
 
-;;; Docstring funcitons
+;;; Docstring functions
 
 (defcustom separedit-string-quotes-alist
   '((python-mode     . ("\"\"\"" "'''" "\"" "'"))
@@ -430,7 +430,7 @@ If MODE is nil, use ‘major-mode’."
       (if (symbolp (car def))
           (separedit--comment-delimiter-regexp (car def))
         (concat "^\s*\\(?:"
-                (mapconcat 'identity (car def) "\\|")
+                (mapconcat #'identity (car def) "\\|")
                 "\\)\s?")))))
 
 (defun separedit--point-at-comment-exclusive-one-line ()
@@ -711,7 +711,7 @@ Block info example:
       :in-str-p nil)
 
 :regexps        not nil means point at a code block.
-:in-str-p       not nil means point at a string block otherwish a comment block."
+:in-str-p       not nil means point at a string block otherwise a comment block."
   (let* ((strp (separedit--point-at-string))
          (comment-or-string-region
           (if strp
@@ -724,7 +724,7 @@ Block info example:
               (separedit--comment-region)))))
     (save-restriction
       (when comment-or-string-region
-        (apply 'narrow-to-region comment-or-string-region))
+        (apply #'narrow-to-region comment-or-string-region))
       (let* ((delimiter (unless strp (separedit--comment-delimiter-regexp)))
              (code-info (separedit--code-block-end
                          (separedit--code-block-beginning delimiter)
@@ -900,7 +900,7 @@ QUOTES-CHAR should be \" or '."
             (throw 'break nil)))))))
 
 (defun separedit--restore-escape (quotes-char)
-  "Restore escape when finished edting docstring.
+  "Restore escape when finished editing docstring.
 
 QUOTES-CHAR should be \" or '."
   (goto-char (point-min))

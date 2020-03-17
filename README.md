@@ -88,7 +88,7 @@ In edit buffer, the comment delimiter will be removed, for example:
 
 `separedit` also support for editing code block directly in comment or string:
 
-    source buffer     ->    eidt buffer
+    source buffer     ->    edit buffer
 
     ",--- elisp
      | (foo \"bar\")        (foo "bar")
