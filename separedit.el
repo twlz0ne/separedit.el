@@ -150,6 +150,7 @@
 
 (declare-function org-edit-special "org")
 (declare-function markdown-edit-code-block "markdown-mode")
+(declare-function gfm-edit-code-block "gfm-mode")
 
 (defcustom separedit-default-mode 'fundamental-mode
   "Default mode for editing comment or docstring file."
@@ -183,7 +184,7 @@ Taken from `markdown-code-lang-modes'."
   :type 'alist)
 
 (defcustom separedit-not-support-docstring-modes
-  '(c-mode c++-mode java-mode js-mode rust-mode)
+  '(c-mode c++-mode java-mode js-mode rust-mode rustic-mode)
   "A list of modes not support docstring."
   :group 'separedit
   :type 'list)
@@ -199,7 +200,8 @@ Taken from `markdown-code-lang-modes'."
                           objc-mode
                           php-mode
                           swift-mode))
-    (("//+!" "//+" "\\*+") . rust-mode)
+    (("//+!" "//+" "\\*+") . (rust-mode
+                              rustic-mode))
     (("--")            . (applescript-mode haskell-mode lua-mode))
     (("//+")           . (pascal-mode fsharp-mode))
     ((";+")            . (emacs-lisp-mode
@@ -223,6 +225,7 @@ Taken from `markdown-code-lang-modes'."
                                objc-mode
                                php-mode
                                rust-mode
+                               rustic-mode
                                swift-mode))
     (("{-" "-}")       . haskell-mode)
     (("{" "}")         . pascal-mode)
@@ -717,7 +720,7 @@ Block info example:
                             (separedit--string-beginning)))
                 region)
             (when (or (derived-mode-p 'prog-mode)
-                      (memq major-mode '(markdown-mode org-mode)))
+                      (memq major-mode '(gfm-mode markdown-mode org-mode)))
               (separedit--comment-region)))))
     (save-restriction
       (when comment-or-string-region
@@ -769,6 +772,8 @@ It will override by the key that `separedit' binding in source buffer.")
                #'separedit)
               (`markdown-mode
                #'markdown-edit-code-block)
+              (`gfm-mode
+               #'gfm-edit-code-block)
               (`org-mode
                #'org-edit-special)))
       (let ((km (copy-keymap edit-indirect-mode-map)))
@@ -937,6 +942,7 @@ If you just want to check `major-mode', use `derived-mode-p'."
                            (or (separedit--derived-mode-p sym 'prog-mode)
                                (memq sym
                                      '(text-mode
+                                       gfm-mode
                                        markdown-mode
                                        org-mode
                                        separedit-mode
