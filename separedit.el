@@ -209,7 +209,7 @@ Taken from `markdown-code-lang-modes'."
                           common-lisp
                           racket-mode
                           scheme-mode))
-    (("#+")            . (python-mode ruby-mode)))
+    (("#+")            . (nix-mode python-mode ruby-mode)))
   "Alist of comment delimiter regexp."
   :group 'separedit
   :type 'alist)
@@ -222,6 +222,7 @@ Taken from `markdown-code-lang-modes'."
                                go-mode
                                java-mode
                                js-mode
+                               nix-mode
                                objc-mode
                                php-mode
                                rust-mode
@@ -363,6 +364,7 @@ Return nil if reached the end of the buffer."
 (defcustom separedit-string-quotes-alist
   '((python-mode     . ("\"\"\"" "'''" "\"" "'"))
     (js-mode         . ("\"" "'"))
+    (nix-mode        . ("''" "\""))
     (separedit-double-quote-string-mode . t)
     (separedit-single-quote-string-mode . ("'"))
     (t               . ("\"")))
