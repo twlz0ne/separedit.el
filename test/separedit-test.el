@@ -971,6 +971,108 @@ Usage:<|>
     (separedit-test--execute-block-edit 'emacs-lisp-mode "M-> aaa C-c C-c" init-data (separedit-test--append-to-code-block
                                                                                          'emacs-lisp-mode init-data "aaa"))))
 
+(ert-deftest separedit-test-indentable-docstring ()
+  "Test indentable docstring.
+
+  ┌────
+  │ def function():
+  │     '''
+  │     Indentable
+  │         docstring
+  │     '''
+  └────"
+  (let ((init-str (--join\n "def function1():"
+                            "    '''"
+                            "    Docstring1"
+                            "    Docstring1<|>"
+                            "    Docstring1"
+                            "    '''"
+                            "    pass"))
+        (edit-str (--join\n ""
+                            "Docstring1"
+                            "Docstring1<|>"
+                            "Docstring1"
+                            "    ")))
+    (--with-callback 'python-mode init-str ""        (lambda () (should (--bufs= edit-str))))
+    (--with-callback 'python-mode init-str "C-c C-c" (lambda () (should (--bufs= init-str)))))
+  (let ((init-str (--join\n "def function2():"
+                            "    '''"
+                            "    Docstring2"
+                            "        Docstring2<|>"
+                            "    Docstring2"
+                            "    '''"
+                            "    pass"))
+        (edit-str (--join\n ""
+                            "Docstring2"
+                            "    Docstring2<|>"
+                            "Docstring2"
+                            "    ")))
+    (--with-callback 'python-mode init-str ""        (lambda () (should (--bufs= edit-str))))
+    (--with-callback 'python-mode init-str "C-c C-c" (lambda () (should (--bufs= init-str)))))
+  (let ((init-str (--join\n "def function3():"
+                            "    '''Docstring3"
+                            "    Docstring3<|>"
+                            "    Docstring3"
+                            "    '''"
+                            "    pass"))
+        (edit-str (--join\n "Docstring3"
+                            "Docstring3<|>"
+                            "Docstring3"
+                            "    ")))
+    (--with-callback 'python-mode init-str ""        (lambda () (should (--bufs= edit-str))))
+    (--with-callback 'python-mode init-str "C-c C-c" (lambda () (should (--bufs= init-str))))))
+
+(ert-deftest separedit-test-unindentable-docstring ()
+  "Test unindentable docstring.
+
+  ┌────
+  │ def function():
+  │     '''
+  │     Unindentable
+  │ docstring
+  │     '''
+  └────"
+  (let ((init-str (--join\n "def function1():"
+                            "    '''"
+                            "  Docstring1"
+                            "  Docstring1<|>"
+                            "  Docstring1"
+                            "    '''"
+                            "    pass"))
+        (edit-str (--join\n ""
+                            "  Docstring1"
+                            "  Docstring1<|>"
+                            "  Docstring1"
+                            "    ")))
+    (--with-callback 'python-mode init-str ""        (lambda () (should (--bufs= edit-str))))
+    (--with-callback 'python-mode init-str "C-c C-c" (lambda () (should (--bufs= init-str)))))
+  (let ((init-str (--join\n "def function2():"
+                            "    '''"
+                            "    Docstring2"
+                            "Docstring2<|>"
+                            "    Docstring2"
+                            "    '''"
+                            "    pass"))
+        (edit-str (--join\n ""
+                            "    Docstring2"
+                            "Docstring2<|>"
+                            "    Docstring2"
+                            "    ")))
+    (--with-callback 'python-mode init-str ""        (lambda () (should (--bufs= edit-str))))
+    (--with-callback 'python-mode init-str "C-c C-c" (lambda () (should (--bufs= init-str)))))
+  (let ((init-str (--join\n "def function3():"
+                            "    '''Docstring3"
+                            "    Docstring3<|>"
+                            "Docstring3"
+                            "    '''"
+                            "    pass"))
+        (edit-str (--join\n "Docstring3"
+                            "    Docstring3<|>"
+                            "Docstring3"
+                            "    ")))
+    (--with-callback 'python-mode init-str ""        (lambda () (should (--bufs= edit-str))))
+    (--with-callback 'python-mode init-str "C-c C-c" (lambda () (should (--bufs= init-str))))))
+
 (ert-deftest separedit-test-string-escape-js ()
   (let* ((initial-string "'\"single quotes wrap<|> double quotes.\"'")
          (expected-string (substring initial-string 1 (- (length initial-string) 1))))
