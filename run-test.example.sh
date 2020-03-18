@@ -24,7 +24,7 @@ for bin in "${emacs_bins[@]}"; do
     ver=$($bin --batch --eval '(princ (format "%s.%s" emacs-major-version emacs-minor-version))')
     echo "==> $ver: $bin"
     export EMACS=$bin
-    $bin --batch -l cask-bootstrap.el -l cask-checkinstall.el
+    $bin --batch -l test/test-bootstrap.el -l test/test-checkinstall.el
     make clean ; make test $1
 done
 

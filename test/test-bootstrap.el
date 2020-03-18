@@ -1,4 +1,4 @@
-;;; cask-bootstrap.el ---  -*- lexical-binding: t; -*-
+;;; test-bootstrap.el ---  -*- lexical-binding: t; -*-
 
 ;; Just import packages downloaded by cask,
 ;; make Makefile free from cask-cli -- it's too slow.
@@ -17,5 +17,5 @@
                                       t))
           (apply fn type message rest))))
 
-(provide 'cask-bootstrap)
-;;; cask-bootstrap.el ends here
+(provide 'test-bootstrap)
+;;; test-bootstrap.el ends here

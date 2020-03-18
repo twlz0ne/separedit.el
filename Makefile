@@ -1,7 +1,7 @@
 EMACS ?= emacs
 ELS = separedit.el
 ELCS = separedit.elc
-TEST_ELS = cask-bootstrap.el separedit-test-helper.el separedit-test.el
+TEST_ELS = test/test-bootstrap.el test/separedit-test-helper.el test/separedit-test.el
 
 # If the first argument is "test"...
 ifeq (test, $(firstword $(MAKECMDGOALS)))
@@ -14,7 +14,7 @@ endif
 all: compile test readme clean
 
 %.elc:%.el
-	$(EMACS) -batch -L . -l cask-bootstrap.el -f batch-byte-compile $(ELS)
+	$(EMACS) -batch -L . -l test/test-bootstrap.el -f batch-byte-compile $(ELS)
 
 compile:$(ELCS)
 

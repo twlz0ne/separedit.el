@@ -1,4 +1,4 @@
-;;; test-helper.el --- Helpers of testing -*- lexical-binding: t; -*-
+;;; separedit-test-helper.el --- Helpers of testing -*- lexical-binding: t; -*-
 
 ;; Copyright (C) 2019 Gong Qijian <gongqijian@gmail.com>
 
@@ -315,4 +315,4 @@ Version 2016-07-04"
          (separedit--comment-delimiter-regexp 'emacs-lisp-mode))
         (buffer-string)))))
 
-;;; test-helper.el ends here
+;;; separedit-test-helper.el ends here

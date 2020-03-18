@@ -1,6 +1,10 @@
 (source gnu)
 (source melpa)
 
+(package-file "separedit.el")
+
+(files "*.el")
+
 (depends-on "dash")
 (depends-on "edit-indirect")
 
