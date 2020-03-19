@@ -189,12 +189,6 @@ Taken from `markdown-code-lang-modes'."
   :group 'separedit
   :type 'list)
 
-(defcustom separedit-docstring-indent-modes
-  '(python-mode elixir-mode nix-mode)
-  "A list of modes support docstring indent."
-  :group 'separedit
-  :type 'list)
-
 (defcustom separedit-comment-delimiter-alist
   '((("//+" "\\*+")    . (c-mode
                           c++-mode
@@ -294,7 +288,7 @@ Each element of it is in the form of:
 
 (defvar separedit--line-delimiter nil "Comment delimiter of each editing line.")
 
-(defvar separedit--docstring-indent nil "Indent of each line in docstring.")
+(defvar separedit--string-indent nil "Indentation of each line in string.")
 
 (defvar separedit-debug-p nil)
 
@@ -377,13 +371,6 @@ Return nil if reached the end of the buffer."
     (separedit-single-quote-string-mode . ("'"))
     (t               . ("\"")))
   "Alist of string quotes."
-  :group 'separedit
-  :type 'alist)
-
-(defcustom separedit-docstring-quotes-alist
-  '((python-mode     . ("\"\"\"" "'''"))
-    (nix-mode        . ("''")))
-  "Alist of docstring quotes."
   :group 'separedit
   :type 'alist)
 
@@ -727,7 +714,8 @@ Block info example:
                 :body   \"\"
                 :footer \"```$\")
       :end 12
-      :string-quotes nil)
+      :string-quotes nil
+      :string-indent nil)
 
 :regexps        not nil means point at a code block.
 :string-quotes       not nil means point at a string block otherwise a comment block."
@@ -742,16 +730,13 @@ Block info example:
             (when (or (derived-mode-p 'prog-mode)
                       (memq major-mode '(gfm-mode markdown-mode org-mode)))
               (separedit--comment-region))))
-         (docp
-          (when strp
-            (let ((qs (assoc major-mode separedit-docstring-quotes-alist)))
-              (when (member strp (cdr qs))
-                t))))
-         (doc-indent
-          (when docp
-            (save-excursion
-              (goto-char (car comment-or-string-region))
-              (- (current-column) (length strp))))))
+         (string-indent
+          (save-excursion
+            (goto-char (car comment-or-string-region))
+            (let ((beg (buffer-substring-no-properties (point) (point-at-eol))))
+              (cond ((string= beg "\\") nil)
+                    ((string= beg "") (- (current-column) (length strp)))
+                    ((not (string= beg "")) (current-column)))))))
     (save-restriction
       (when comment-or-string-region
         (apply #'narrow-to-region comment-or-string-region))
@@ -763,14 +748,12 @@ Block info example:
                  (<= (plist-get code-info :beginning) pos)
                  (<= pos (plist-get code-info :end)))
             (append code-info (list :string-quotes strp
-                                    :docp docp
-                                    :doc-indent doc-indent))
+                                    :string-indent string-indent))
           (if comment-or-string-region
               (list :beginning (point-min)
                     :end (point-max)
                     :string-quotes strp
-                    :docp docp
-                    :doc-indent doc-indent)
+                    :string-indent string-indent)
             (user-error "Not inside a edit block")))))))
 
 ;;; separedit-mode
@@ -877,8 +860,8 @@ It will override by the key that `separedit' binding in source buffer.")
                 (unless (zerop (forward-line 1))
                   (throw 'end-of-buffer nil))))))))))
 
-(defun separedit--remove-docstring-indent (indent-length)
-  "Remove INDENT-LENGTH length of indentation from docstring.
+(defun separedit--remove-string-indent (indent-length)
+  "Remove INDENT-LENGTH length of indentation from string.
 
   +---------------------+    +---------------------+
   | def function():     |    | Docstring           |
@@ -910,8 +893,8 @@ It will override by the key that `separedit' binding in source buffer.")
         (insert indented-str))
       indent-length)))
 
-(defun separedit--restore-docstring-indent ()
-  "Restore docstring indent.
+(defun separedit--restore-string-indent ()
+  "Restore string indentation.
 
   +---------------------+    +---------------------+
   | def function():     |    | Docstring           |
@@ -922,12 +905,12 @@ It will override by the key that `separedit' binding in source buffer.")
   +-----\---------------+    +-\-------------------+
          indent                 indent"
   (when (and (string-prefix-p "*edit-indirect " (buffer-name))
-             separedit--docstring-indent)
+             separedit--string-indent)
     (goto-char (point-min))
     (while (and (zerop (forward-line))
                 (re-search-forward "[^\s\t\n\r]" nil t 1))
         (goto-char (match-beginning 0))
-        (insert (make-string separedit--docstring-indent ?\s)))))
+        (insert (make-string separedit--string-indent ?\s)))))
 
 (defun separedit--remove-nested-escape ()
   "Remove escape of nested string."
@@ -1087,7 +1070,7 @@ but users can also manually select it by pressing `C-u \\[separedit]'."
          (end (plist-get block :end))
          (lang-mode (plist-get block :lang-mode))
          (strp (plist-get block :string-quotes))
-         (doc-indent (plist-get block :doc-indent))
+         (str-indent (plist-get block :string-indent))
          (commentp (not strp))
          (codep (and (plist-get block :regexps) t))
          (delimiter-regexp (concat (if strp "^\s*"
@@ -1114,8 +1097,8 @@ but users can also manually select it by pressing `C-u \\[separedit]'."
                              (separedit--remove-escape ,strp))
                            (separedit--log "==> mode(edit buffer): %S" ',mode)
                            (funcall ',mode)
-                           (when ,doc-indent
-                             (set (make-local-variable 'separedit--docstring-indent) (separedit--remove-docstring-indent ,doc-indent)))
+                           (when ,str-indent
+                             (set (make-local-variable 'separedit--string-indent) (separedit--remove-string-indent ,str-indent)))
                            (set (make-local-variable 'separedit-leave-blank-line-in-comment)
                                 ,separedit-leave-blank-line-in-comment)
                            (set (make-local-variable 'separedit--line-delimiter) line-delimiter)
@@ -1123,8 +1106,8 @@ but users can also manually select it by pressing `C-u \\[separedit]'."
                                 (append '((lambda ()
                                             (separedit--restore-comment-delimiter)
                                             (when ,strp
-                                              (when ,doc-indent
-                                                (separedit--restore-docstring-indent))
+                                              (when ,str-indent
+                                                (separedit--restore-string-indent))
                                               (separedit--restore-escape ,strp))))
                                         edit-indirect-before-commit-hook)))))
           (edit-indirect-region beg end 'display-buffer))

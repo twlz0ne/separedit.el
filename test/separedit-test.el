@@ -1011,8 +1011,8 @@ Usage:<|>
     (--with-callback 'python-mode init-str "C-c C-c" (lambda () (should (--bufs= init-str)))))
   (let ((init-str (--join\n "def function3():"
                             "    '''Docstring3"
-                            "    Docstring3<|>"
-                            "    Docstring3"
+                            "       Docstring3<|>"
+                            "       Docstring3"
                             "    '''"
                             "    pass"))
         (edit-str (--join\n "Docstring3"
