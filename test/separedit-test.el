@@ -981,7 +981,8 @@ Usage:<|>
   │         docstring
   │     '''
   └────"
-  (let ((init-str (--join\n "def function1():"
+  (let ((separedit-preserve-string-indentation t)
+        (init-str (--join\n "def function1():"
                             "    '''"
                             "    Docstring1"
                             "    Docstring1<|>"
@@ -995,7 +996,8 @@ Usage:<|>
                             "    ")))
     (--with-callback 'python-mode init-str ""        (lambda () (should (--bufs= edit-str))))
     (--with-callback 'python-mode init-str "C-c C-c" (lambda () (should (--bufs= init-str)))))
-  (let ((init-str (--join\n "def function2():"
+  (let ((separedit-preserve-string-indentation t)
+        (init-str (--join\n "def function2():"
                             "    '''"
                             "    Docstring2"
                             "        Docstring2<|>"
@@ -1009,7 +1011,8 @@ Usage:<|>
                             "    ")))
     (--with-callback 'python-mode init-str ""        (lambda () (should (--bufs= edit-str))))
     (--with-callback 'python-mode init-str "C-c C-c" (lambda () (should (--bufs= init-str)))))
-  (let ((init-str (--join\n "def function3():"
+  (let ((separedit-preserve-string-indentation t)
+        (init-str (--join\n "def function3():"
                             "    '''Docstring3"
                             "       Docstring3<|>"
                             "       Docstring3"
@@ -1032,7 +1035,8 @@ Usage:<|>
   │ docstring
   │     '''
   └────"
-  (let ((init-str (--join\n "def function1():"
+  (let ((separedit-preserve-string-indentation t)
+        (init-str (--join\n "def function1():"
                             "    '''"
                             "  Docstring1"
                             "  Docstring1<|>"
@@ -1046,7 +1050,8 @@ Usage:<|>
                             "    ")))
     (--with-callback 'python-mode init-str ""        (lambda () (should (--bufs= edit-str))))
     (--with-callback 'python-mode init-str "C-c C-c" (lambda () (should (--bufs= init-str)))))
-  (let ((init-str (--join\n "def function2():"
+  (let ((separedit-preserve-string-indentation t)
+        (init-str (--join\n "def function2():"
                             "    '''"
                             "    Docstring2"
                             "Docstring2<|>"
@@ -1060,7 +1065,8 @@ Usage:<|>
                             "    ")))
     (--with-callback 'python-mode init-str ""        (lambda () (should (--bufs= edit-str))))
     (--with-callback 'python-mode init-str "C-c C-c" (lambda () (should (--bufs= init-str)))))
-  (let ((init-str (--join\n "def function3():"
+  (let ((separedit-preserve-string-indentation t)
+        (init-str (--join\n "def function3():"
                             "    '''Docstring3"
                             "    Docstring3<|>"
                             "Docstring3"

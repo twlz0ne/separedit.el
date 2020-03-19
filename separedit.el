@@ -281,6 +281,11 @@ Each element of it is in the form of:
   :group 'separedit
   :type 'boolean)
 
+(defcustom separedit-preserve-string-indentation nil
+  "If non-nil preserve leading whitespaces in string."
+  :group 'separedit
+  :type 'boolean)
+
 (defcustom separedit-buffer-creation-hook nil
   "Functions called after the edit buffer is created."
   :group 'separedit
@@ -731,12 +736,13 @@ Block info example:
                       (memq major-mode '(gfm-mode markdown-mode org-mode)))
               (separedit--comment-region))))
          (string-indent
-          (save-excursion
-            (goto-char (car comment-or-string-region))
-            (let ((beg (buffer-substring-no-properties (point) (point-at-eol))))
-              (cond ((string= beg "\\") nil)
-                    ((string= beg "") (- (current-column) (length strp)))
-                    ((not (string= beg "")) (current-column)))))))
+          (when separedit-preserve-string-indentation
+            (save-excursion
+              (goto-char (car comment-or-string-region))
+              (let ((beg (buffer-substring-no-properties (point) (point-at-eol))))
+                (cond ((string= beg "\\") nil)
+                      ((string= beg "") (- (current-column) (length strp)))
+                      ((not (string= beg "")) (current-column))))))))
     (save-restriction
       (when comment-or-string-region
         (apply #'narrow-to-region comment-or-string-region))
