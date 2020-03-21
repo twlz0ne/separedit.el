@@ -286,6 +286,20 @@ Each element of it is in the form of:
   :group 'separedit
   :type 'boolean)
 
+(defcustom separedit-string-indent-offset-alist
+  '((nix-mode . 2))
+  "AList of indentation offset of string block start at a new line.
+
+Each item is of the form (MODE . OFFSET).
+
+Example of a string block with indentation offset:
+
+   str = ''
+     two spaces indentation offset
+   '';"
+  :group 'separedit
+  :type 'alist)
+
 (defcustom separedit-buffer-creation-hook nil
   "Functions called after the edit buffer is created."
   :group 'separedit
@@ -712,29 +726,42 @@ LANG is a string, and the returned major mode is a symbol."
   "Return the indentation of string block between BEN and END quoted by QUOTES."
   (save-excursion
     (goto-char beg)
-    (let ((start (buffer-substring-no-properties (point) (point-at-eol))))
-      (cond ((string= start "\\")
+    (let ((str-start (buffer-substring-no-properties (point) (point-at-eol)))
+          (beg-at-newline (string= "" (string-trim
+                                       (buffer-substring-no-properties
+                                        (point-at-bol)
+                                        (- (point) (length quotes))))))
+          (end-at-newline (string= "" (string-trim
+                                       (save-excursion
+                                         (goto-char end)
+                                         (buffer-substring-no-properties
+                                          (point-at-bol)
+                                          (point)))))))
+      (cond ((string= str-start "\\")
              ;; For
+             ;;
              ;;   "\
              ;;   String block does not need preserve indetation
              ;;   "
              nil)
-            ((string= start "")
+            ((and (string= str-start "") beg-at-newline end-at-newline)
              ;; For
              ;;
              ;;   '''
              ;;   string block need preserve indetation
              ;;   '''
-             ;;
-             ;; Or
+             (- (current-column) (length quotes)))
+            ((and (string= str-start "") (not beg-at-newline) end-at-newline)
+             ;; For
              ;;
              ;;   str = '''
              ;;   string block need preserve indetation
              ;;   '''
-             ;;
              (goto-char end)
-             (current-column))
-            ((not (string= start ""))
+             (+ (current-column)
+                (or (cdr (assoc major-mode separedit-string-indent-offset-alist))
+                    0)))
+            ((not (string= str-start ""))
              ;; For situations like:
              ;;
              ;;   emacs --batch --eval "(progn
