@@ -129,8 +129,8 @@
 ;; ## Screencasts
 
 ;; <p float="left" align="center">
-;;   <img src="images/separedit1.gif" />
-;;   <img src="images/separedit2.gif" />
+;;   <img src="images/comment-edit1.gif" />
+;;   <img src="images/comment-edit2.gif" />
 ;; </p>
 
 ;; <i>P.S.</i> The language identifier of code block can be omitted in these cases.
