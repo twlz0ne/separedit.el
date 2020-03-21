@@ -112,6 +112,23 @@ REGION-REGEXPS  regexp for detection block in source buffer"
     (test-with nil key-sequnce)
     (funcall callback)))
 
+(defun --assert-help-value (help-content expected)
+  "Verify EXPEDTED is included in HELP-CONTENT.
+
+HELP-CONTENT is a copy of *Help* buffer string with point holder ‘<|>’ added in value form.
+EXPECTED is of the form (symbol value type local-buffer)"
+  (separedit-test--with-buffer
+   'help-mode
+   help-content
+   (should
+    (equal expected
+           (let ((edit-info (separedit-help-variable-edit-info)))
+             (list (nth 0 edit-info)
+                   (buffer-substring-no-properties
+                    (car (nth 1 edit-info)) (cdr (nth 1 edit-info)))
+                   (nth 2 edit-info)
+                   (nth 3 edit-info)))))))
+
 (defun separedit-test--execute-block-edit (init-mode key-sequnce init-data expected-data &optional region-regexps)
   (let ((buf (generate-new-buffer "*init*")))
     (switch-to-buffer buf)
@@ -218,11 +235,13 @@ Version 2016-07-04"
            (insert ,content)
            (funcall ,mode)
            (goto-char (point-min))
-           (re-search-forward "<|>" nil t 1)
-           (let ((noninteractive nil))
+           (unless (re-search-forward "<|>" nil t 1)
+             (message "Can't find cursor placeholder ‘<|>’"))
+           (let ((noninteractive nil)
+                 (jit-lock-functions '(font-lock-fontify-region)))
              (font-lock-mode 1)
              (font-lock-set-defaults)
-             (jit-lock-fontify-now (point-min) (point-max)))
+             (jit-lock-fontify-now))
            ,@body)
        (kill-buffer buf))))
 

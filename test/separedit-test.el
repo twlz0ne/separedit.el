@@ -748,6 +748,89 @@
      (should (and (eq comment-beg block-beg)
                   (eq comment-end block-end))))))
 
+(ert-deftest separedit-test-help-value-edit-info ()
+  (--assert-help-value
+   "tooltip-hook is a variable defined in ‘tooltip.el’.
+Its value is (tooltip-help<|>-tips)
+
+  This variable is an alias for ‘tooltip-functions’.
+  This variable is obsolete since 23.1;
+  use ‘tooltip-functions’ instead.
+  This variable may be risky if used as a file-local variable.
+
+Documentation:
+Functions to call to display tooltips.
+Each function is called with one argument EVENT which is a copy
+of the last mouse movement event that occurred.  If one of these
+functions displays the tooltip, it should return non-nil and the
+rest are not called.
+
+[back]"
+   '(tooltip-hook "(tooltip-help<|>-tips)" global nil))
+  (--assert-help-value
+   "company-backends1 is a variable defined in ‘company.el’.
+Its value is shown below.
+
+  This variable is safe as a file local variable if its value
+  satisfies the predicate ‘company-safe-backends-p’.
+  You can customize this variable.
+
+Documentation:
+The list of active backends (completion engines).
+
+......
+
+Value: (company-lsp company-capf<|>)
+Original value was 
+(company-cmake company-capf company-files company-oddmuse company-dabbrev)
+Local in buffer *.py; global value is 
+(company-cmake company-capf company-files company-oddmuse company-dabbrev)
+
+[back]"
+   '(company-backends1 "(company-lsp company-capf<|>)" local "*.py"))
+  (--assert-help-value
+   "company-backends2 is a variable defined in ‘company.el’.
+Its value is shown below.
+
+  This variable is safe as a file local variable if its value
+  satisfies the predicate ‘company-safe-backends-p’.
+  You can customize this variable.
+
+Documentation:
+The list of active backends (completion engines).
+
+......
+
+Value: (company-lsp company-capf)
+Original value was 
+(company-cmake company-capf<|> company-files company-oddmuse company-dabbrev)
+Local in buffer *.py; global value is 
+(company-cmake company-capf company-files company-oddmuse company-dabbrev)
+
+[back]"
+   '(company-backends2 "(company-cmake company-capf<|> company-files company-oddmuse company-dabbrev)" global "*.py"))
+  (--assert-help-value
+   "company-backends3 is a variable defined in ‘company.el’.
+Its value is shown below.
+
+  This variable is safe as a file local variable if its value
+  satisfies the predicate ‘company-safe-backends-p’.
+  You can customize this variable.
+
+Documentation:
+The list of active backends (completion engines).
+
+......
+
+Value: (company-lsp company-capf)
+Original value was 
+(company-cmake company-capf company-files company-oddmuse company-dabbrev)
+Local in buffer *.py; global value is 
+(company-cmake company-capf<|> company-files company-oddmuse company-dabbrev)
+
+[back]"
+   '(company-backends3 "(company-cmake company-capf<|> company-files company-oddmuse company-dabbrev)" global "*.py")))
+
 ;;; Interaction test
 
 (ert-deftest separedit-test-keybinding ()
@@ -761,27 +844,27 @@
     (let ((separedit-default-mode 'fundamental-mode))
       (--with-callback 'emacs-lisp-mode init-block ""
                        (lambda () (should (--key= "C-c '"   'separedit
-                                                  "C-c C-c" 'edit-indirect-commit
+                                                  "C-c C-c" 'separedit-commit
                                                   "C-c C-k" 'edit-indirect-abort)))))
     (let ((separedit-default-mode 'separedit-double-quote-string-mode))
       (--with-callback 'javascript-mode init-str-d ""
                        (lambda () (should (--key= "C-c '"   'separedit
-                                                  "C-c C-c" 'edit-indirect-commit
+                                                  "C-c C-c" 'separedit-commit
                                                   "C-c C-k" 'edit-indirect-abort)))))
     (let ((separedit-default-mode 'separedit-single-quote-string-mode))
       (--with-callback 'javascript-mode init-str-s ""
                        (lambda () (should (--key= "C-c '"   'separedit
-                                                  "C-c C-c" 'edit-indirect-commit
+                                                  "C-c C-c" 'separedit-commit
                                                   "C-c C-k" 'edit-indirect-abort)))))
     (let ((separedit-default-mode 'org-mode))
       (--with-callback 'emacs-lisp-mode init-block ""
                        (lambda () (should (--key= "C-c '"   'org-edit-special
-                                                  "C-c C-c" 'edit-indirect-commit
+                                                  "C-c C-c" 'separedit-commit
                                                   "C-c C-k" 'edit-indirect-abort)))))
     (let ((separedit-default-mode 'markdown-mode))
       (--with-callback 'emacs-lisp-mode init-block ""
                        (lambda () (should (--key= "C-c '"   'markdown-edit-code-block
-                                                  "C-c C-c" 'edit-indirect-commit
+                                                  "C-c C-c" 'separedit-commit
                                                   "C-c C-k" 'edit-indirect-abort)))))))
 
 (ert-deftest separedit-test-code-block-matching ()
