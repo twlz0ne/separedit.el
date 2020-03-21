@@ -708,6 +708,40 @@ LANG is a string, and the returned major mode is a symbol."
     (cond ((symbolp aval) (assoc-default (or aval t) separedit-string-quotes-alist))
           (t aval))))
 
+(defun separedit--indent-of-string-block (quotes beg end)
+  "Return the indentation of string block between BEN and END quoted by QUOTES."
+  (save-excursion
+    (goto-char beg)
+    (let ((start (buffer-substring-no-properties (point) (point-at-eol))))
+      (cond ((string= start "\\")
+             ;; For
+             ;;   "\
+             ;;   String block does not need preserve indetation
+             ;;   "
+             nil)
+            ((string= start "")
+             ;; For
+             ;;
+             ;;   '''
+             ;;   string block need preserve indetation
+             ;;   '''
+             ;;
+             ;; Or
+             ;;
+             ;;   str = '''
+             ;;   string block need preserve indetation
+             ;;   '''
+             ;;
+             (goto-char end)
+             (current-column))
+            ((not (string= start ""))
+             ;; For situations like:
+             ;;
+             ;;   emacs --batch --eval "(progn
+             ;;                           ...)"
+             ;;
+             (current-column))))))
+
 (defun separedit--block-info ()
   "Return block info at point.
 
@@ -737,12 +771,9 @@ Block info example:
               (separedit--comment-region))))
          (string-indent
           (when separedit-preserve-string-indentation
-            (save-excursion
-              (goto-char (car comment-or-string-region))
-              (let ((beg (buffer-substring-no-properties (point) (point-at-eol))))
-                (cond ((string= beg "\\") nil)
-                      ((string= beg "") (- (current-column) (length strp)))
-                      ((not (string= beg "")) (current-column))))))))
+            (apply #'separedit--indent-of-string-block
+                   strp
+                   comment-or-string-region))))
     (save-restriction
       (when comment-or-string-region
         (apply #'narrow-to-region comment-or-string-region))
