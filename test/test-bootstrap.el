@@ -17,5 +17,4 @@
                                       t))
           (apply fn type message rest))))
 
-(provide 'test-bootstrap)
 ;;; test-bootstrap.el ends here

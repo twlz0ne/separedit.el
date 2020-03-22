@@ -1,4 +1,6 @@
-(require 'test-bootstrap)
+;;; test-checkinstall.el ---  -*- lexical-binding: t; -*-
+
+;; Checks & Install packages declared in Cask file
 
 (toggle-debug-on-error)
 (message "==> user-emacs-directory: %s" user-emacs-directory)
@@ -74,4 +76,4 @@
           (package-install pkg))
         package-selected-packages))
 
-
+;;; test-checkinstall.el ends here
