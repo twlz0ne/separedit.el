@@ -281,12 +281,33 @@ Each element of it is in the form of:
   :group 'separedit
   :type 'boolean)
 
+(defcustom separedit-preserve-string-indentation nil
+  "If non-nil preserve leading whitespaces in string."
+  :group 'separedit
+  :type 'boolean)
+
+(defcustom separedit-string-indent-offset-alist
+  '((nix-mode . 2))
+  "AList of indentation offset of string block start at a new line.
+
+Each item is of the form (MODE . OFFSET).
+
+Example of a string block with indentation offset:
+
+   str = ''
+     two spaces indentation offset
+   '';"
+  :group 'separedit
+  :type 'alist)
+
 (defcustom separedit-buffer-creation-hook nil
   "Functions called after the edit buffer is created."
   :group 'separedit
   :type 'hook)
 
 (defvar separedit--line-delimiter nil "Comment delimiter of each editing line.")
+
+(defvar separedit--string-indent nil "Indentation of each line in string.")
 
 (defvar separedit-debug-p nil)
 
@@ -359,7 +380,7 @@ Return nil if reached the end of the buffer."
              (symbol-function mode))
         mode)))
 
-;;; Docstring functions
+;;; String / Docstring functions
 
 (defcustom separedit-string-quotes-alist
   '((python-mode     . ("\"\"\"" "'''" "\"" "'"))
@@ -701,6 +722,53 @@ LANG is a string, and the returned major mode is a symbol."
     (cond ((symbolp aval) (assoc-default (or aval t) separedit-string-quotes-alist))
           (t aval))))
 
+(defun separedit--indent-of-string-block (quotes beg end)
+  "Return the indentation of string block between BEN and END quoted by QUOTES."
+  (save-excursion
+    (goto-char beg)
+    (let ((str-start (buffer-substring-no-properties (point) (point-at-eol)))
+          (beg-at-newline (string= "" (string-trim
+                                       (buffer-substring-no-properties
+                                        (point-at-bol)
+                                        (- (point) (length quotes))))))
+          (end-at-newline (string= "" (string-trim
+                                       (save-excursion
+                                         (goto-char end)
+                                         (buffer-substring-no-properties
+                                          (point-at-bol)
+                                          (point)))))))
+      (cond ((string= str-start "\\")
+             ;; For
+             ;;
+             ;;   "\
+             ;;   String block does not need preserve indetation
+             ;;   "
+             nil)
+            ((and (string= str-start "") beg-at-newline end-at-newline)
+             ;; For
+             ;;
+             ;;   '''
+             ;;   string block need preserve indetation
+             ;;   '''
+             (- (current-column) (length quotes)))
+            ((and (string= str-start "") (not beg-at-newline) end-at-newline)
+             ;; For
+             ;;
+             ;;   str = '''
+             ;;   string block need preserve indetation
+             ;;   '''
+             (goto-char end)
+             (+ (current-column)
+                (or (cdr (assoc major-mode separedit-string-indent-offset-alist))
+                    0)))
+            ((not (string= str-start ""))
+             ;; For situations like:
+             ;;
+             ;;   emacs --batch --eval "(progn
+             ;;                           ...)"
+             ;;
+             (current-column))))))
+
 (defun separedit--block-info ()
   "Return block info at point.
 
@@ -712,10 +780,11 @@ Block info example:
                 :body   \"\"
                 :footer \"```$\")
       :end 12
-      :in-str-p nil)
+      :string-quotes nil
+      :string-indent nil)
 
 :regexps        not nil means point at a code block.
-:in-str-p       not nil means point at a string block otherwise a comment block."
+:string-quotes       not nil means point at a string block otherwise a comment block."
   (let* ((pos (point))
          (strp (separedit--point-at-string))
          (comment-or-string-region
@@ -726,7 +795,12 @@ Block info example:
                 region)
             (when (or (derived-mode-p 'prog-mode)
                       (memq major-mode '(gfm-mode markdown-mode org-mode)))
-              (separedit--comment-region)))))
+              (separedit--comment-region))))
+         (string-indent
+          (when separedit-preserve-string-indentation
+            (apply #'separedit--indent-of-string-block
+                   strp
+                   comment-or-string-region))))
     (save-restriction
       (when comment-or-string-region
         (apply #'narrow-to-region comment-or-string-region))
@@ -737,11 +811,13 @@ Block info example:
         (if (and code-info
                  (<= (plist-get code-info :beginning) pos)
                  (<= pos (plist-get code-info :end)))
-            (plist-put code-info :in-str-p strp)
+            (append code-info (list :string-quotes strp
+                                    :string-indent string-indent))
           (if comment-or-string-region
               (list :beginning (point-min)
                     :end (point-max)
-                    :in-str-p strp)
+                    :string-quotes strp
+                    :string-indent string-indent)
             (user-error "Not inside a edit block")))))))
 
 ;;; separedit-mode
@@ -790,6 +866,7 @@ It will override by the key that `separedit' binding in source buffer.")
         (push `(edit-indirect--overlay . ,km) minor-mode-overriding-map-alist)
         (when separedit-continue-fill-column
           (setq-local fill-column (- fill-column (length separedit--line-delimiter))))
+        (separedit--log "==> [-buffer-creation-setup] fill-column: %s" fill-column)
         (setq-local header-line-format
                     (substitute-command-keys
                      (concat "*EDIT* "
@@ -800,7 +877,8 @@ It will override by the key that `separedit' binding in source buffer.")
                                      "\\[edit-indirect-abort]: Abort"
                                      (format "\\[%s]: Enter" entry-cmd)))
                               ", "))))
-        (run-hooks 'separedit-buffer-creation-hook))
+        (run-hooks 'separedit-buffer-creation-hook)
+        (separedit--log "==> [-buffer-creation-setup] hooks finished"))
     (warn "Unknown major-mode: %s" major-mode)))
 
 (defun separedit--remove-comment-delimiter (regexp)
@@ -845,6 +923,58 @@ It will override by the key that `separedit' binding in source buffer.")
               (when leave-blank-p
                 (unless (zerop (forward-line 1))
                   (throw 'end-of-buffer nil))))))))))
+
+(defun separedit--remove-string-indent (indent-length)
+  "Remove INDENT-LENGTH length of indentation from string.
+
+  +---------------------+    +---------------------+
+  | def function():     |    | Docstring           |
+  |     '''             |    |                     |
+  |     Docstring       | -> |                     |
+  |     '''             |    |                     |
+  |     ...             |    |                     |
+  +-----\---------------+    +-\-------------------+
+          indent                 indent"
+  (let ((inhibit-read-only t)
+        (indented-str
+         (let ((buffer-str (buffer-string)))
+           (catch 'break
+             (with-temp-buffer
+               (insert buffer-str)
+               (goto-char (point-min))
+               (while (and (zerop (forward-line))
+                           (re-search-forward "[^\s\t\n\r]" nil t 1))
+                 (goto-char (match-beginning 0))
+                 (if (<= indent-length (current-column))
+                     (delete-region (point-at-bol)
+                                    (+ (point-at-bol) indent-length))
+                   ;; Respect the origninal indentation
+                   (throw 'break nil)))
+               (buffer-string))))))
+    (when indented-str
+      (save-excursion
+        (delete-region (point-min) (point-max))
+        (insert indented-str))
+      indent-length)))
+
+(defun separedit--restore-string-indent ()
+  "Restore string indentation.
+
+  +---------------------+    +---------------------+
+  | def function():     |    | Docstring           |
+  |     '''             |    |                     |
+  |     Docstring       | <- |                     |
+  |     '''             |    |                     |
+  |     ...             |    |                     |
+  +-----\---------------+    +-\-------------------+
+         indent                 indent"
+  (when (and (string-prefix-p "*edit-indirect " (buffer-name))
+             separedit--string-indent)
+    (goto-char (point-min))
+    (while (and (zerop (forward-line))
+                (re-search-forward "[^\s\t\n\r]" nil t 1))
+        (goto-char (match-beginning 0))
+        (insert (make-string separedit--string-indent ?\s)))))
 
 (defun separedit--remove-nested-escape ()
   "Remove escape of nested string."
@@ -1003,7 +1133,8 @@ but users can also manually select it by pressing `C-u \\[separedit]'."
          (beg (plist-get block :beginning))
          (end (plist-get block :end))
          (lang-mode (plist-get block :lang-mode))
-         (strp (plist-get block :in-str-p))
+         (strp (plist-get block :string-quotes))
+         (str-indent (plist-get block :string-indent))
          (commentp (not strp))
          (codep (and (plist-get block :regexps) t))
          (delimiter-regexp (concat (if strp "^\s*"
@@ -1030,6 +1161,8 @@ but users can also manually select it by pressing `C-u \\[separedit]'."
                              (separedit--remove-escape ,strp))
                            (separedit--log "==> mode(edit buffer): %S" ',mode)
                            (funcall ',mode)
+                           (when ,str-indent
+                             (set (make-local-variable 'separedit--string-indent) (separedit--remove-string-indent ,str-indent)))
                            (set (make-local-variable 'separedit-leave-blank-line-in-comment)
                                 ,separedit-leave-blank-line-in-comment)
                            (set (make-local-variable 'separedit--line-delimiter) line-delimiter)
@@ -1037,6 +1170,8 @@ but users can also manually select it by pressing `C-u \\[separedit]'."
                                 (append '((lambda ()
                                             (separedit--restore-comment-delimiter)
                                             (when ,strp
+                                              (when ,str-indent
+                                                (separedit--restore-string-indent))
                                               (separedit--restore-escape ,strp))))
                                         edit-indirect-before-commit-hook)))))
           (edit-indirect-region beg end 'display-buffer))

@@ -971,6 +971,172 @@ Usage:<|>
     (separedit-test--execute-block-edit 'emacs-lisp-mode "M-> aaa C-c C-c" init-data (separedit-test--append-to-code-block
                                                                                          'emacs-lisp-mode init-data "aaa"))))
 
+(ert-deftest separedit-test-preserve-string-indent-1 ()
+  "String block with both of STAR & END quotes at a new line"
+  (let ((separedit-preserve-string-indentation t)
+        (init-str (--join\n "    '''"
+                            "    String block 11"
+                            "    String block 11<|>"
+                            "    String block 11"
+                            "    '''"))
+        (edit-str (--join\n ""
+                            "String block 11"
+                            "String block 11<|>"
+                            "String block 11"
+                            "    ")))
+    (--with-callback 'python-mode init-str ""        (lambda () (should (--bufs= edit-str))))
+    (--with-callback 'python-mode init-str "C-c C-c" (lambda () (should (--bufs= init-str)))))
+  (let ((separedit-preserve-string-indentation t)
+        (init-str (--join\n "    '''"
+                            "    String block 12"
+                            "        String block 12<|>"
+                            "    String block 12"
+                            "    '''"))
+        (edit-str (--join\n ""
+                            "String block 12"
+                            "    String block 12<|>"
+                            "String block 12"
+                            "    ")))
+    (--with-callback 'python-mode init-str ""        (lambda () (should (--bufs= edit-str))))
+    (--with-callback 'python-mode init-str "C-c C-c" (lambda () (should (--bufs= init-str)))))
+  (let ((separedit-preserve-string-indentation t)
+        (init-str (--join\n "    '''String block 13"
+                            "       String block 13<|>"
+                            "       String block 13"
+                            "    '''"))
+        (edit-str (--join\n "String block 13"
+                            "String block 13<|>"
+                            "String block 13"
+                            "    ")))
+    (--with-callback 'python-mode init-str ""        (lambda () (should (--bufs= edit-str))))
+    (--with-callback 'python-mode init-str "C-c C-c" (lambda () (should (--bufs= init-str)))))
+
+  ;; Make sure ‘separedit-string-indent-offset-alist’ not act on this case
+  (let ((separedit-preserve-string-indentation t)
+        (separedit-string-indent-offset-alist '((python-mode . 2)))
+        (init-str (--join\n "    '''"
+                            "      String block 11"
+                            "      String block 11<|>"
+                            "      String block 11"
+                            "    '''"))
+        (edit-str (--join\n ""
+                            "  String block 11"
+                            "  String block 11<|>"
+                            "  String block 11"
+                            "    ")))
+    (--with-callback 'python-mode init-str ""        (lambda () (should (--bufs= edit-str))))
+    (--with-callback 'python-mode init-str "C-c C-c" (lambda () (should (--bufs= init-str))))))
+
+(ert-deftest separedit-test-preserve-string-indent-2 ()
+  "String block with only END quotes at a new line"
+  (let ((separedit-preserve-string-indentation t)
+        (init-str (--join\n "    str = '''"
+                            "    String block 21"
+                            "    String block 21<|>"
+                            "    String block 21"
+                            "    '''"))
+        (edit-str (--join\n ""
+                            "String block 21"
+                            "String block 21<|>"
+                            "String block 21"
+                            "    ")))
+    (--with-callback 'python-mode init-str ""        (lambda () (should (--bufs= edit-str))))
+    (--with-callback 'python-mode init-str "C-c C-c" (lambda () (should (--bufs= init-str)))))
+  (let ((separedit-preserve-string-indentation t)
+        (init-str (--join\n "    str = '''"
+                            "    String block 22"
+                            "        String block 22<|>"
+                            "    String block 22"
+                            "    '''"))
+        (edit-str (--join\n ""
+                            "String block 22"
+                            "    String block 22<|>"
+                            "String block 22"
+                            "    ")))
+    (--with-callback 'python-mode init-str ""        (lambda () (should (--bufs= edit-str))))
+    (--with-callback 'python-mode init-str "C-c C-c" (lambda () (should (--bufs= init-str)))))
+  (let ((separedit-preserve-string-indentation t)
+        (init-str (--join\n "    str = '''String block 23"
+                            "             String block 23<|>"
+                            "             String block 23"
+                            "    '''"))
+        (edit-str (--join\n "String block 23"
+                            "String block 23<|>"
+                            "String block 23"
+                            "    ")))
+    (--with-callback 'python-mode init-str ""        (lambda () (should (--bufs= edit-str))))
+    (--with-callback 'python-mode init-str "C-c C-c" (lambda () (should (--bufs= init-str)))))
+
+  ;; Make sure ‘separedit-string-indent-offset-alist’ act on this case
+  (let ((separedit-preserve-string-indentation t)
+        (separedit-string-indent-offset-alist '((python-mode . 2)))
+        (init-str (--join\n "    str = '''"
+                            "      String block 21"
+                            "      String block 21<|>"
+                            "      String block 21"
+                            "    '''"))
+        (edit-str (--join\n ""
+                            "String block 21"
+                            "String block 21<|>"
+                            "String block 21"
+                            "    ")))
+    (--with-callback 'python-mode init-str ""        (lambda () (should (--bufs= edit-str))))
+    (--with-callback 'python-mode init-str "C-c C-c" (lambda () (should (--bufs= init-str))))))
+
+(ert-deftest separedit-test-preserve-string-indent-3 ()
+  "String block with both of START & END quotes NOT at a new line"
+  (let ((separedit-preserve-string-indentation t)
+        (init-str (--join\n "emacs --batch --eval '(progn"
+                            "                        (+ 1"
+                            "                           2 ;;<|>"
+                            "                           3))'"))
+        (edit-str (--join\n "(progn"
+                            "  (+ 1"
+                            "     2 ;;<|>"
+                            "     3))")))
+    (--with-callback 'python-mode init-str ""        (lambda () (should (--bufs= edit-str))))
+    (--with-callback 'python-mode init-str "C-c C-c" (lambda () (should (--bufs= init-str))))))
+
+(ert-deftest separedit-test-dont-preserve-string-indent ()
+  (let ((separedit-preserve-string-indentation t)
+        (init-str (--join\n "    '''"
+                            "  Dont preserve indent 1"
+                            "  Dont preserve indent 1<|>"
+                            "  Dont preserve indent 1"
+                            "    '''"))
+        (edit-str (--join\n ""
+                            "  Dont preserve indent 1"
+                            "  Dont preserve indent 1<|>"
+                            "  Dont preserve indent 1"
+                            "    ")))
+    (--with-callback 'python-mode init-str ""        (lambda () (should (--bufs= edit-str))))
+    (--with-callback 'python-mode init-str "C-c C-c" (lambda () (should (--bufs= init-str)))))
+  (let ((separedit-preserve-string-indentation t)
+        (init-str (--join\n "    '''"
+                            "    Dont preserve indent 2"
+                            "Dont preserve indent 2<|>"
+                            "    Dont preserve indent 2"
+                            "    '''"
+                            "    pass"))
+        (edit-str (--join\n ""
+                            "    Dont preserve indent 2"
+                            "Dont preserve indent 2<|>"
+                            "    Dont preserve indent 2"
+                            "    ")))
+    (--with-callback 'python-mode init-str ""        (lambda () (should (--bufs= edit-str))))
+    (--with-callback 'python-mode init-str "C-c C-c" (lambda () (should (--bufs= init-str)))))
+  (let ((separedit-preserve-string-indentation t)
+        (init-str (--join\n "    '''Dont preserve indent 3"
+                            "    Dont preserve indent 3<|>"
+                            "Dont preserve indent 3"
+                            "    '''"))
+        (edit-str (--join\n "Dont preserve indent 3"
+                            "    Dont preserve indent 3<|>"
+                            "Dont preserve indent 3"
+                            "    ")))
+    (--with-callback 'python-mode init-str ""        (lambda () (should (--bufs= edit-str))))
+    (--with-callback 'python-mode init-str "C-c C-c" (lambda () (should (--bufs= init-str))))))
+
 (ert-deftest separedit-test-string-escape-js ()
   (let* ((initial-string "'\"single quotes wrap<|> double quotes.\"'")
          (expected-string (substring initial-string 1 (- (length initial-string) 1))))

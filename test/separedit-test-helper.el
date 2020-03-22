@@ -68,6 +68,11 @@
           (goto-char (match-beginning 0))
           (list :beginning begin :end (point)))))))
 
+(defun --join\n (&rest strings)
+  (mapconcat #'identity
+             strings
+             "\n"))
+
 (defun --bufs= (string)
   "Verify whether buffer string equals STRING."
   (should (string= string
