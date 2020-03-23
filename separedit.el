@@ -775,6 +775,28 @@ LANG is a string, and the returned major mode is a symbol."
              ;;
              (current-column))))))
 
+(defun separedit--restore-point (line rcolumn)
+  "Restore point to LINE and RCOLUMN."
+  (forward-line (- line (line-number-at-pos)))
+  (condition-case _err
+      (goto-char (point-at-eol))
+    (end-of-buffer))
+  (save-restriction
+    (condition-case _err
+        (backward-char rcolumn)
+      (beginning-of-buffer))))
+
+(defun separedit--point-info (&optional beg end)
+  "Return relative point info between BEG and END in source buffer."
+  (save-excursion
+    (save-restriction
+      (narrow-to-region (or beg (point-min)) (or end (point-max)))
+      (list (line-number-at-pos (point))
+            (- (save-excursion
+                 (goto-char (point-at-eol))
+                 (current-column))
+               (current-column))))))
+
 (defun separedit--block-info ()
   "Return block info at point.
 
@@ -847,11 +869,12 @@ Block info example:
                      nil t 1))
                 (intern (match-string-no-properties 1)))))
          (bound
-          (catch 'break
-            (while (pcase-let ((`(,depth ,start . ,_) (syntax-ppss)))
-                     (if (and (zerop depth) (not start))
-                         (throw 'break (bounds-of-thing-at-point 'sexp))
-                       (goto-char start))))))
+          (save-excursion
+            (catch 'break
+              (while (pcase-let ((`(,depth ,start . ,_) (syntax-ppss)))
+                       (if (and (zerop depth) (not start))
+                           (throw 'break (bounds-of-thing-at-point 'sexp))
+                         (goto-char start)))))))
          (type-buffer
           (save-excursion
             (goto-char (point-min))
@@ -899,7 +922,10 @@ It will override by the key that `separedit' binding in source buffer.")
 (defun separedit-commit ()
   "Commit changes."
   (interactive)
-  (let ((inhibit-read-only separedit--inhibit-read-only))
+  (let ((inhibit-read-only separedit--inhibit-read-only)
+        (point-info (separedit--point-info)) ;; Still at edit buffer
+        (mark-beg (overlay-start edit-indirect--overlay))
+        (mark-end (overlay-end edit-indirect--overlay)))
     (edit-indirect--barf-if-not-indirect)
     (if separedit--help-variable-edit-info
         (let* ((sym (nth 0 separedit--help-variable-edit-info))
@@ -914,7 +940,14 @@ It will override by the key that `separedit' binding in source buffer.")
           (when (overlay-buffer edit-indirect--overlay)
             (edit-indirect--commit)))
       (edit-indirect--commit))
-    (edit-indirect--clean-up)))
+    (edit-indirect--clean-up)
+    ;; Returned to source buffer
+    (goto-char
+     (save-excursion
+       (save-restriction
+         (narrow-to-region mark-beg mark-end)
+         (apply #'separedit--restore-point point-info)
+         (point))))))
 
 (defun separedit--buffer-creation-setup ()
   "Function called after the edit-indirect buffer is created."
@@ -1202,9 +1235,11 @@ If you just want to check `major-mode', use `derived-mode-p'."
   (-if-let* ((info (separedit-help-variable-edit-info))
              (region (nth 1 info))
              (edit-indirect-after-creation-hook #'separedit--buffer-creation-setup)
+             (point-info (separedit--point-info (car region) (cdr region)))
              (edit-indirect-guess-mode-function
               `(lambda (_bufer _beg _end)
                  (emacs-lisp-mode)
+                 (separedit--restore-point ,@point-info)
                  (setq-local separedit--inhibit-read-only t)
                  (setq-local separedit--help-variable-edit-info ',info))))
       (edit-indirect-region (car region) (cdr region) 'display-buffer)
@@ -1220,6 +1255,7 @@ but users can also manually select it by pressing `C-u \\[separedit]'."
   (let* ((block (or block (separedit--block-info)))
          (beg (plist-get block :beginning))
          (end (plist-get block :end))
+         (point-info (separedit--point-info beg end))
          (lang-mode (plist-get block :lang-mode))
          (strp (plist-get block :string-quotes))
          (str-indent (plist-get block :string-indent))
@@ -1262,7 +1298,8 @@ but users can also manually select it by pressing `C-u \\[separedit]'."
                                               (when ,str-indent
                                                 (separedit--restore-string-indent))
                                               (separedit--restore-escape ,strp))))
-                                        edit-indirect-before-commit-hook)))))
+                                        edit-indirect-before-commit-hook))
+                           (separedit--restore-point ,@point-info))))
           (edit-indirect-region beg end 'display-buffer))
       (user-error "Not inside a edit block"))))
 

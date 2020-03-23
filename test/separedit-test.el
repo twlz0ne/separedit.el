@@ -1284,6 +1284,47 @@ comment3
              nil
              ">>> The README.md must be generated from commentrary <<<"))
 
+(ert-deftest separedit-test-retain-point ()
+  (--with-callback
+   'emacs-lisp-mode
+   (separedit-test--indent-el
+    "\"retain
+       point <|>
+       in string\"")
+   ""
+   (lambda ()
+     (should (equal (point)
+                    (save-excursion
+                      (goto-char (point-min))
+                      (re-search-forward "<|>" nil t))))))
+  (--with-callback
+   'emacs-lisp-mode
+   (separedit-test--indent-el
+    ";; retain <|>
+     ;; point
+     ;; in comment")
+   ""
+   (lambda ()
+     (should (equal (point)
+                    (save-excursion
+                      (goto-char (point-min))
+                      (re-search-forward "<|>" nil t))))))
+
+(--with-callback
+   'emacs-lisp-mode
+   (separedit-test--indent-el
+    ";; ```
+     ;; (retain
+     ;;  (point
+     ;;   in codeblock <|>)
+     ;; ```")
+   ""
+   (lambda ()
+     (should (equal (point)
+                    (save-excursion
+                      (goto-char (point-min))
+                      (re-search-forward "<|>" nil t)))))))
+
 (provide 'separedit-test)
 
 ;;; separedit-test.el ends here

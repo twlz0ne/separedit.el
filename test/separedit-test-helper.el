@@ -58,6 +58,8 @@
 
 ;;;
 
+(setq python-guess-indent nil)
+
 (defun separedit-test--region-between-regexps (begin-regexp end-regexp)
   "Return region between BEGIN-REGEXP and END-REGEXP."
   (save-excursion
