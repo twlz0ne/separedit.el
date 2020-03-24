@@ -912,8 +912,8 @@ Local in buffer *.py; global value is
            ;; => 6")))
     (separedit-test--execute-block-edit 'emacs-lisp-mode ""            code-with-comment code-in-editing)
     (separedit-test--execute-block-edit 'emacs-lisp-mode "C-c C-c"     code-with-comment code-with-comment)
-    (separedit-test--execute-block-edit 'emacs-lisp-mode "aaa C-c C-c" code-with-comment (separedit-test--append-to-code-block
-                                                                                             'emacs-lisp-mode code-with-comment "aaa"))))
+    (separedit-test--execute-block-edit 'emacs-lisp-mode "aaa C-c C-c" code-with-comment (replace-regexp-in-string
+                                                                                          "<|>" "<|>aaa" code-with-comment))))
 
 (ert-deftest separedit-test-py-in-py ()
   (let ((code-with-comment
@@ -933,8 +933,8 @@ Local in buffer *.py; global value is
            # => 6")))
     (separedit-test--execute-block-edit 'python-mode ""            code-with-comment code-in-comment)
     (separedit-test--execute-block-edit 'python-mode "C-c C-c"     code-with-comment code-with-comment)
-    (separedit-test--execute-block-edit 'python-mode "aaa C-c C-c" code-with-comment (separedit-test--append-to-code-block
-                                                                                         'python-mode code-with-comment "aaa"))))
+    (separedit-test--execute-block-edit 'python-mode "aaa C-c C-c" code-with-comment (replace-regexp-in-string
+                                                                                      "<|>" "<|>aaa" code-with-comment))))
 
 (ert-deftest separedit-test-rb-in-rb ()
   (let ((code-with-comment
@@ -951,8 +951,8 @@ Local in buffer *.py; global value is
            # => 6")))
     (separedit-test--execute-block-edit 'ruby-mode ""            code-with-comment code-in-comment)
     (separedit-test--execute-block-edit 'ruby-mode "C-c C-c"     code-with-comment code-with-comment)
-    (separedit-test--execute-block-edit 'ruby-mode "aaa C-c C-c" code-with-comment (separedit-test--append-to-code-block
-                                                                                       'ruby-mode code-with-comment "aaa"))))
+    (separedit-test--execute-block-edit 'ruby-mode "aaa C-c C-c" code-with-comment (replace-regexp-in-string
+                                                                                    "<|>" "<|>aaa" code-with-comment))))
 
 (ert-deftest separedit-test-sh-in-c1 ()
   (let ((code-with-comment
@@ -974,8 +974,8 @@ Local in buffer *.py; global value is
            make -k")))
     (separedit-test--execute-block-edit 'c-mode ""            code-with-comment code-in-comment)
     (separedit-test--execute-block-edit 'c-mode "C-c C-c"     code-with-comment code-with-comment)
-    (separedit-test--execute-block-edit 'c-mode "aaa C-c C-c" code-with-comment (separedit-test--append-to-code-block
-                                                                                    'c-mode code-with-comment "aaa"))))
+    (separedit-test--execute-block-edit 'c-mode "aaa C-c C-c" code-with-comment (replace-regexp-in-string
+                                                                                 "<|>" "<|>aaa" code-with-comment))))
 
 (ert-deftest separedit-test-sh-in-c2 ()
   (let ((code-with-comment
@@ -997,8 +997,8 @@ Local in buffer *.py; global value is
            make -k")))
     (separedit-test--execute-block-edit 'c-mode ""            code-with-comment code-in-comment)
     (separedit-test--execute-block-edit 'c-mode "C-c C-c"     code-with-comment code-with-comment)
-    (separedit-test--execute-block-edit 'c-mode "aaa C-c C-c" code-with-comment (separedit-test--append-to-code-block
-                                                                                    'c-mode code-with-comment "aaa"))))
+    (separedit-test--execute-block-edit 'c-mode "aaa C-c C-c" code-with-comment (replace-regexp-in-string
+                                                                                 "<|>" "<|>aaa" code-with-comment))))
 
 (ert-deftest separedit-test-code-in-doc-1 ()
   (let ((init-data "(defun hello (name)
@@ -1013,8 +1013,8 @@ Usage:
         (code-in-doc "(hello \"foo\") ;; <|>"))
     (separedit-test--execute-block-edit 'emacs-lisp-mode ""                init-data code-in-doc)
     (separedit-test--execute-block-edit 'emacs-lisp-mode "C-c C-c"         init-data init-data)
-    (separedit-test--execute-block-edit 'emacs-lisp-mode "M-> aaa C-c C-c" init-data (separedit-test--append-to-code-block
-                                                                                         'emacs-lisp-mode init-data "aaa"))))
+    (separedit-test--execute-block-edit 'emacs-lisp-mode "aaa C-c C-c"     init-data (replace-regexp-in-string
+                                                                                      "<|>" "<|>aaa" init-data))))
 
 (ert-deftest separedit-test-code-in-doc-2 ()
   (let ((init-data "(defun hello (name)
@@ -1029,8 +1029,8 @@ Usage:
         (code-in-doc "(hello \"foo\") ;; <|>"))
     (separedit-test--execute-block-edit 'emacs-lisp-mode ""                init-data code-in-doc)
     (separedit-test--execute-block-edit 'emacs-lisp-mode "C-c C-c"         init-data init-data)
-    (separedit-test--execute-block-edit 'emacs-lisp-mode "M-> aaa C-c C-c" init-data (separedit-test--append-to-code-block
-                                                                                         'emacs-lisp-mode init-data "aaa"))))
+    (separedit-test--execute-block-edit 'emacs-lisp-mode "aaa C-c C-c"     init-data (replace-regexp-in-string
+                                                                                      "<|>" "<|>aaa" init-data))))
 
 (ert-deftest separedit-test-code-in-doc-3 ()
   (let ((init-data "(defun hello (name)
@@ -1051,8 +1051,8 @@ Usage:<|>
     ```"))
     (separedit-test--execute-block-edit 'emacs-lisp-mode ""                init-data code-in-doc)
     (separedit-test--execute-block-edit 'emacs-lisp-mode "C-c C-c"         init-data init-data)
-    (separedit-test--execute-block-edit 'emacs-lisp-mode "M-> aaa C-c C-c" init-data (separedit-test--append-to-code-block
-                                                                                         'emacs-lisp-mode init-data "aaa"))))
+    (separedit-test--execute-block-edit 'emacs-lisp-mode "aaa C-c C-c"     init-data (replace-regexp-in-string
+                                                                                      "<|>" "<|>aaa" init-data))))
 
 (ert-deftest separedit-test-preserve-string-indent-1 ()
   "String block with both of STAR & END quotes at a new line"
@@ -1262,11 +1262,11 @@ comment3
 
 ;; comment1
 
-;; comment2<|>
+;; comment2<|>aaa
+
 
 ;; comment3
 
-;; aaa
 ;;; Code:")
          (initial-string2 (concat ";; comment0\n\n" initial-string "\n\n;; comment4")))
     (separedit-test--execute-block-edit 'emacs-lisp-mode ""                initial-string  editing-string (list "^;;; Commentary:\n+" "^;;; .*:$"))

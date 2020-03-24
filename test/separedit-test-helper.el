@@ -149,36 +149,6 @@ EXPECTED is of the form (symbol value type local-buffer)"
      (equal expected-data
             (buffer-substring-no-properties (point-min) (point-max))))))
 
-(defun separedit-test--append-to-code-block (mode string append)
-  "Insert APPEND into the tail of code block in comment of STRING.
-
-Example:
-
-    Input:
-
-    ;; ```elisp
-    ;; (1+ 1)
-    ;; ```
-
-    Output:
-
-    ;; ```elisp
-    ;; (1+ 1)INSERT-APPEND-HERE
-    ;; ```"
-  (with-current-buffer (generate-new-buffer "*append*")
-    (insert string)
-    (funcall mode)
-    ;; Force enable face / text property / syntax highlighting
-    (let ((noninteractive nil))
-      (font-lock-mode 1)
-      (font-lock-ensure))
-    (goto-char (point-min))
-    (re-search-forward "<|>")
-    (let ((block (separedit--block-info)))
-      (goto-char (plist-get block :end))
-      (insert append)
-      (buffer-substring-no-properties (point-min) (point-max)))))
-
 (defun separedit-test--indent (mode string &optional indent-fn)
   (with-current-buffer (generate-new-buffer "*indent*")
     (insert string)
