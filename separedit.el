@@ -637,58 +637,61 @@ If MODE is nil, use ‘major-mode’."
   "Return code block info containing ‘:beginning’.
 
 Search process will skip characters COMMENT-DELIMITER at beginning of each line."
-  (let ((regexp-group
-         (concat
-          comment-delimiter
-          "\\(?:"
-          (mapconcat
-           (lambda (it)
-             (plist-get it :header))
-           separedit-block-regexp-plists
-           "\\|")
-          "\\)")))
+  (let* ((regexp-group
+          (concat
+           comment-delimiter
+           "\\(\s*\\)" ;; group 1
+           "\\("       ;; group 2,3
+           (mapconcat
+            (lambda (it)
+              (plist-get it :header))
+            separedit-block-regexp-plists
+            "\\|")
+           "\\)")))
     (catch 'break
       (save-excursion
         (separedit--log "==> [code-block-beginning] comment-delimiter: %S" comment-delimiter)
         (separedit--log "==> [code-block-beginning] regexp-group: %S" regexp-group)
         (when (re-search-backward regexp-group nil t)
           (save-match-data
-            (separedit--log "==> [code-block-beginning] matched1: %s" (match-string-no-properties 1))
+            (separedit--log "==> [code-block-beginning] matched1: %s" (match-string-no-properties 2))
             (separedit--log "==> [code-block-beginning] language: %s" (separedit-get-mode-lang major-mode)))
           (separedit--beginning-of-next-line)
           (throw 'break
-                 (let ((block-regexp
-                        (car
+                 (let* ((leading-spaces (match-string-no-properties 1))
+                        (matched-group
                          (-non-nil
-                          (--map (when (string-match-p
-                                        (plist-get it :header)
-                                        (match-string-no-properties 0))
-                                   it)
-                                 separedit-block-regexp-plists)))))
+                          (cl-loop for n from 2 to (1- (length (match-data)))
+                                   collect (if (match-string n) n))))
+                        (block-regexp
+                         (car
+                          (-non-nil
+                           (--map (when (string-match-p
+                                         (plist-get it :header)
+                                         (match-string-no-properties (car matched-group)))
+                                    it)
+                                  separedit-block-regexp-plists)))))
                    (list
                     :beginning (point-at-bol)
                     :lang-mode
                     (or (plist-get block-regexp :mode)
                         (separedit-get-lang-mode
-                         (or (cadr
-                              (-non-nil
-                               (cl-loop for n from 0 to (1- (length (match-data)))
-                                        collect (match-string-no-properties n))))
+                         (or (cadr (mapcar #'match-string-no-properties matched-group))
                              ""))
                         major-mode)
+                    :comment-delimiter (concat comment-delimiter leading-spaces)
                     :regexps block-regexp))))))))
 
-(defun separedit--code-block-end (code-info &optional comment-delimiter)
-  "Return CODE-INFO with ‘:end’ added.
-
-Search process will skip characters COMMENT-DELIMITER at beginning of each line."
+(defun separedit--code-block-end (code-info)
+  "Return CODE-INFO with ‘:end’ added."
   (when (and code-info (plist-get code-info :beginning))
     (save-excursion
       (goto-char (plist-get code-info :beginning))
-      (let ((regexp (concat comment-delimiter
+      (let ((regexp (concat (plist-get code-info :comment-delimiter)
                             (plist-get
                              (plist-get code-info :regexps)
                              :footer))))
+        (separedit--log "==> [code=block-end] regexp: %s" regexp)
         (when (re-search-forward regexp nil t)
           (separedit--end-of-previous-line)
           (plist-put code-info
@@ -776,6 +779,7 @@ Block info example:
 
     '(:beginning 10
       :lang-mode emacs-lisp-mode
+      :comment-delimiter \"^ *\\(?:;+\\) ?  \"
       :regexps (:header \"``` ?\\(\\w*\\)$\"
                 :body   \"\"
                 :footer \"```$\")
@@ -806,8 +810,7 @@ Block info example:
         (apply #'narrow-to-region comment-or-string-region))
       (let* ((delimiter (unless strp (separedit--comment-delimiter-regexp)))
              (code-info (separedit--code-block-end
-                         (separedit--code-block-beginning delimiter)
-                         delimiter)))
+                         (separedit--code-block-beginning delimiter))))
         (if (and code-info
                  (<= (plist-get code-info :beginning) pos)
                  (<= pos (plist-get code-info :end)))
@@ -1138,7 +1141,8 @@ but users can also manually select it by pressing `C-u \\[separedit]'."
          (commentp (not strp))
          (codep (and (plist-get block :regexps) t))
          (delimiter-regexp (concat (if strp "^\s*"
-                                     (separedit--comment-delimiter-regexp))
+                                     (or (plist-get block :comment-delimiter)
+                                         (separedit--comment-delimiter-regexp)))
                                    (plist-get (plist-get block :regexps) :body)))
          (edit-indirect-after-creation-hook #'separedit--buffer-creation-setup))
     (separedit--log "==> block-info: %S" block)
