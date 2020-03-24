@@ -823,6 +823,54 @@ Block info example:
                     :string-indent string-indent)
             (user-error "Not inside a edit block")))))))
 
+;;; Help mode variables / funcstions
+
+(defvar separedit--inhibit-read-only nil)
+
+(defvar separedit--help-variable-edit-info nil)
+
+(defun separedit-help-variable-edit-info ()
+  "Return help varible edit info (symbol value-bound type local-buffer) at point."
+  (unless (eq major-mode 'help-mode)
+    (user-error "Not in help buffer"))
+  (let* ((symbol
+          (save-excursion
+            (goto-char (point-min))
+            (if (or (re-search-forward
+                     "^\\_<\\([^[:space:]]+\\)\\_> is a variable defined in ‘[^’]+’.$"
+                     nil t 1)
+                    (re-search-forward
+                     "^\\_<\\([^[:space:]]+\\)\\_>’s value is .*$"
+                     nil t 1))
+                (intern (match-string-no-properties 1)))))
+         (bound
+          (catch 'break
+            (while (pcase-let ((`(,depth ,start . ,_) (syntax-ppss)))
+                     (if (and (zerop depth) (not start))
+                         (throw 'break (bounds-of-thing-at-point 'sexp))
+                       (goto-char start))))))
+         (type-buffer
+          (save-excursion
+            (goto-char (point-min))
+            (let ((buffer?
+                   (when (re-search-forward
+                          "^Local in buffer \\([^;]+\\); global value is[\s]?"
+                          nil t 1)
+                     (match-string-no-properties 1))))
+              (goto-char (car bound))
+              (backward-char)
+              (list (cond
+                     ((or (looking-back "^Value:[\s]?" 1)
+                          (looking-back "^Its value is[\s]?" 1)
+                          (looking-back (format "^%s’s value is[\s]?" symbol) 1))
+                      (if buffer? 'local 'global))
+                     ((or (looking-back "^Original value was[\s]?" 1)
+                          (looking-back "^Local in buffer \\([^;]+\\); global value is[\s]?" 1))
+                      'global))
+                    buffer?)))))
+    (when (and symbol bound (car type-buffer))
+      `(,symbol ,bound ,@type-buffer))))
+
 ;;; separedit-mode
 
 (defvar separedit-entry-key (kbd "C-c '")
@@ -845,6 +893,26 @@ It will override by the key that `separedit' binding in source buffer.")
             overriding-local-map))
       separedit-entry-key))
 
+(defun separedit-commit ()
+  "Commit changes."
+  (interactive)
+  (let ((inhibit-read-only separedit--inhibit-read-only))
+    (edit-indirect--barf-if-not-indirect)
+    (if separedit--help-variable-edit-info
+        (let* ((sym (nth 0 separedit--help-variable-edit-info))
+               (typ (nth 2 separedit--help-variable-edit-info))
+               (buf (nth 3 separedit--help-variable-edit-info))
+               (val (car (read-from-string (buffer-string)))))
+          (cond
+           ((and (eq typ 'local) buf) (with-current-buffer buf (eval `(setq-local ,sym ',val))))
+           ((and (eq typ 'global) (not buf)) (eval `(setq-default ,sym ',val)))
+           (t (message "Unknown variable type: %s" typ)))
+          ;; Make sure `edit-indirect--overlay' not be destroyed.
+          (when (overlay-buffer edit-indirect--overlay)
+            (edit-indirect--commit)))
+      (edit-indirect--commit))
+    (edit-indirect--clean-up)))
+
 (defun separedit--buffer-creation-setup ()
   "Function called after the edit-indirect buffer is created."
   (-if-let (entry-cmd
@@ -863,7 +931,7 @@ It will override by the key that `separedit' binding in source buffer.")
       (let ((km (copy-keymap edit-indirect-mode-map)))
         (separedit--log "==> [-buffer-creation-setup] major-mode: %s, entry-cmd: %s" major-mode entry-cmd)
         (define-key km (separedit--entry-key) entry-cmd)
-        (define-key km separedit-commit-key #'edit-indirect-commit)
+        (define-key km separedit-commit-key #'separedit-commit)
         (define-key km separedit-abort-key #'edit-indirect-abort)
         (make-local-variable 'minor-mode-overriding-map-alist)
         (push `(edit-indirect--overlay . ,km) minor-mode-overriding-map-alist)
@@ -1126,7 +1194,21 @@ If you just want to check `major-mode', use `derived-mode-p'."
   "Major mode for editing single-quoted string.")
 
 ;;;###autoload
-(defun separedit (&optional block)
+(defun separedit-dwim-help-variable ()
+  (interactive)
+  (-if-let* ((info (separedit-help-variable-edit-info))
+             (region (nth 1 info))
+             (edit-indirect-after-creation-hook #'separedit--buffer-creation-setup)
+             (edit-indirect-guess-mode-function
+              `(lambda (_bufer _beg _end)
+                 (emacs-lisp-mode)
+                 (setq-local separedit--inhibit-read-only t)
+                 (setq-local separedit--help-variable-edit-info ',info))))
+      (edit-indirect-region (car region) (cdr region) 'display-buffer)
+    (user-error "Not at variable value")))
+
+;;;###autoload
+(defun separedit-dwim-default (&optional block)
   "Edit comment or docstring or code BLOCK in them.
 
 Normally, the major mode of the edit buffer will be selected automatically,
@@ -1180,6 +1262,16 @@ but users can also manually select it by pressing `C-u \\[separedit]'."
                                         edit-indirect-before-commit-hook)))))
           (edit-indirect-region beg end 'display-buffer))
       (user-error "Not inside a edit block"))))
+
+;;;###autoload
+(defun separedit-dwim (&optional block)
+  (interactive)
+  (pcase major-mode
+    (`help-mode (separedit-dwim-help-variable))
+    (_ (separedit-dwim-default block))))
+
+;;;###autoload
+(defalias 'separedit 'separedit-dwim)
 
 (provide 'separedit)
 
