@@ -58,7 +58,7 @@
 
 ;;;
 
-(setq python-guess-indent nil)
+(setq python-indent-guess-indent-offset nil)
 
 (defun separedit-test--region-between-regexps (begin-regexp end-regexp)
   "Return region between BEGIN-REGEXP and END-REGEXP."
@@ -106,7 +106,9 @@ REGION-REGEXPS  regexp for detection block in source buffer"
     ;; Force enable face / text property / syntax highlighting
     (let ((noninteractive nil))
       (font-lock-mode 1)
-      (font-lock-ensure))
+      (unless (and (= 25.1 (string-to-number emacs-version))
+                   (memq init-mode '(python-mode)))
+        (font-lock-ensure)))
     (goto-char (point-min))
     (re-search-forward "<|>")
     (separedit (when region-regexps
