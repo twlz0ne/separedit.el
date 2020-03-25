@@ -848,33 +848,37 @@ Block info example:
                     :string-indent string-indent)
             (user-error "Not inside a edit block")))))))
 
-;;; Help mode variables / funcstions
+;;; Help/helpful mode variables / funcstions
 
 (defvar separedit--inhibit-read-only nil)
 
 (defvar separedit--help-variable-edit-info nil)
 
+(defun separedit-described-symbol ()
+  "Return the symbol described in help/helpful buffer."
+  (save-excursion
+    (goto-char (point-min))
+    (when (re-search-forward
+           (or (bound-and-true-p lisp-mode-symbol-regexp)
+               "\\(?:\\sw\\|\\s_\\|\\\\.\\)+")
+           nil t 1)
+      (intern (match-string-no-properties 0)))))
+
+(defun separedit-described-value-bound ()
+  "Return the bound of symbol value at point in help/hepful buffer."
+  (save-excursion
+    (catch 'break
+      (while (pcase-let ((`(,depth ,start . ,_) (syntax-ppss)))
+               (if (and (zerop depth) (not start))
+                   (throw 'break (bounds-of-thing-at-point 'sexp))
+                 (goto-char start)))))))
+
 (defun separedit-help-variable-edit-info ()
   "Return help varible edit info (symbol value-bound type local-buffer) at point."
   (unless (eq major-mode 'help-mode)
     (user-error "Not in help buffer"))
-  (let* ((symbol
-          (save-excursion
-            (goto-char (point-min))
-            (if (or (re-search-forward
-                     "^\\_<\\([^[:space:]]+\\)\\_> is a variable defined in ‘[^’]+’.$"
-                     nil t 1)
-                    (re-search-forward
-                     "^\\_<\\([^[:space:]]+\\)\\_>’s value is .*$"
-                     nil t 1))
-                (intern (match-string-no-properties 1)))))
-         (bound
-          (save-excursion
-            (catch 'break
-              (while (pcase-let ((`(,depth ,start . ,_) (syntax-ppss)))
-                       (if (and (zerop depth) (not start))
-                           (throw 'break (bounds-of-thing-at-point 'sexp))
-                         (goto-char start)))))))
+  (let* ((symbol (separedit-described-symbol))
+         (bound (separedit-described-value-bound))
          (type-buffer
           (save-excursion
             (goto-char (point-min))
@@ -894,6 +898,23 @@ Block info example:
                           (looking-back "^Local in buffer \\([^;]+\\); global value is[\s]?" 1))
                       'global))
                     buffer?)))))
+    (when (and symbol bound (car type-buffer))
+      `(,symbol ,bound ,@type-buffer))))
+
+(defun separedit-helpful-variable-edit-info ()
+  "Return helpful variable edit info (symbol value-bound type local-buffer) at point."
+  (unless (eq major-mode 'helpful-mode)
+    (user-error "Not in help buffer"))
+  (let* ((symbol (separedit-described-symbol))
+         (bound (separedit-described-value-bound))
+         (type-buffer
+          (save-excursion
+            (goto-char (car bound))
+            (forward-line -1)
+            (cond ((looking-at "^Value$") (list 'global nil))
+                  ((looking-at "^Value in #<buffer \\(.*\\)>$")
+                   (list 'local (match-string-no-properties 1)))
+                  ((looking-at "^Original Value$") (list 'global nil))))))
     (when (and symbol bound (car type-buffer))
       `(,symbol ,bound ,@type-buffer))))
 
@@ -1230,9 +1251,12 @@ If you just want to check `major-mode', use `derived-mode-p'."
   "Major mode for editing single-quoted string.")
 
 ;;;###autoload
-(defun separedit-dwim-help-variable ()
+(defun separedit-dwim-described-variable ()
+  "Edit value of variable at poin in help/helpful buffer."
   (interactive)
-  (-if-let* ((info (separedit-help-variable-edit-info))
+  (-if-let* ((info (pcase major-mode
+                     (`help-mode (separedit-help-variable-edit-info))
+                     (`helpful-mode (separedit-helpful-variable-edit-info))))
              (region (nth 1 info))
              (edit-indirect-after-creation-hook #'separedit--buffer-creation-setup)
              (point-info (separedit--point-info (car region) (cdr region)))
@@ -1306,9 +1330,10 @@ but users can also manually select it by pressing `C-u \\[separedit]'."
 ;;;###autoload
 (defun separedit-dwim (&optional block)
   (interactive)
-  (pcase major-mode
-    (`help-mode (separedit-dwim-help-variable))
-    (_ (separedit-dwim-default block))))
+  (cond
+   ((memq major-mode '(help-mode helpful-mode))
+    (separedit-dwim-described-variable))
+   (t (separedit-dwim-default block))))
 
 ;;;###autoload
 (defalias 'separedit 'separedit-dwim)
