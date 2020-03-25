@@ -980,7 +980,7 @@ It will override by the key that `separedit' binding in source buffer.")
                              (mapconcat
                               'identity
                               (-non-nil
-                               (list "\\[edit-indirect-commit]: Commit"
+                               (list "\\[separedit-commit]: Commit"
                                      "\\[edit-indirect-abort]: Abort"
                                      (format "\\[%s]: Enter" entry-cmd)))
                               ", "))))
