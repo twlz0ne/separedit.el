@@ -117,7 +117,7 @@ REGION-REGEXPS  regexp for detection block in source buffer"
     (funcall callback)))
 
 (defun --assert-help-value (help-content expected)
-  "Verify EXPEDTED is included in HELP-CONTENT.
+  "Verify EXPECTED is included in HELP-CONTENT.
 
 HELP-CONTENT is a copy of *Help* buffer string with point holder ‘<|>’ added in value form.
 EXPECTED is of the form (symbol value type local-buffer)"
@@ -127,6 +127,27 @@ EXPECTED is of the form (symbol value type local-buffer)"
    (should
     (equal expected
            (let ((edit-info (separedit-help-variable-edit-info)))
+             (cl-assert (and edit-info t) t "[Help] ‘edit-info’ should not be nil")
+             (list (nth 0 edit-info)
+                   (buffer-substring-no-properties
+                    (car (nth 1 edit-info)) (cdr (nth 1 edit-info)))
+                   (nth 2 edit-info)
+                   (nth 3 edit-info)))))))
+
+(define-derived-mode helpful-mode special-mode "Dummy Mode" "For Test")
+
+(defun --assert-helpful-value (help-content expected)
+  "Verify EXPECTED is included in HELP-CONTENT.
+
+HELP-CONTENT is a copy of *Helpful* buffer string with point holder ‘<|>’ added in value form.
+EXPECTED is of the form (symbol value type local-buffer)"
+  (separedit-test--with-buffer
+   'helpful-mode
+   help-content
+   (should
+    (equal expected
+           (let ((edit-info (separedit-helpful-variable-edit-info)))
+             (cl-assert (and edit-info t) t "[Helpful] ‘edit-info’ should not be nil")
              (list (nth 0 edit-info)
                    (buffer-substring-no-properties
                     (car (nth 1 edit-info)) (cdr (nth 1 edit-info)))

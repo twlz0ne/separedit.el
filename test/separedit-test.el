@@ -831,6 +831,56 @@ Local in buffer *.py; global value is
 [back]"
    '(company-backends3 "(company-cmake company-capf<|> company-files company-oddmuse company-dabbrev)" global "*.py")))
 
+(ert-deftest separedit-test-helpful-value-edit-info ()
+  (--assert-helpful-value
+   "tooltip-hook is an alias for tooltip-functions, defined in
+tooltip.el.gz.
+
+This variable is obsolete since 23.1; use tooltip-functions instead.
+
+Value
+(tooltip-help<|>-tips)
+
+View as literal Set
+
+Documentation
+Functions to call to display tooltips.
+
+..."
+   '(tooltip-hook "(tooltip-help<|>-tips)" global nil))
+  (--assert-helpful-value
+   "company-backends1 is a variable defined in company.el.
+
+Value in #<buffer *.py>
+(company-lsp company-capf<|>)
+
+Original Value
+(company-cmake company-capf company-files company-oddmuse company-dabbrev)
+
+Set Customize
+
+Documentation
+The list of active backends (completion engines).
+
+..."
+   '(company-backends1 "(company-lsp company-capf<|>)" local "*.py"))
+  (--assert-helpful-value
+   "company-backends2 is a variable defined in company.el.
+
+Value in #<buffer *.py>
+(company-lsp company-capf)
+
+Original Value
+(company-cmake company-capf<|> company-files company-oddmuse company-dabbrev)
+
+Set Customize
+
+Documentation
+The list of active backends (completion engines).
+
+..."
+   '(company-backends2 "(company-cmake company-capf<|> company-files company-oddmuse company-dabbrev)" global nil)))
+
 ;;; Interaction test
 
 (ert-deftest separedit-test-keybinding ()
