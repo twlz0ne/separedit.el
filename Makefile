@@ -11,12 +11,15 @@ ifeq (test, $(firstword $(MAKECMDGOALS)))
   $(eval $(SELECTOR):;@:)
 endif
 
+.cask/:
+	cask install
+
 all: compile test readme clean
 
 %.elc:%.el
 	$(EMACS) -batch -L . -l test/test-bootstrap.el -f batch-byte-compile $(ELS)
 
-compile:$(ELCS)
+compile: .cask/ $(ELCS)
 
 .PHONY: test readme
 
@@ -27,7 +30,7 @@ else
 	$(EMACS) -Q --batch -L . $(addprefix -l , $(TEST_ELS)) --eval "(ert-run-tests-batch-and-exit '$(SELECTOR))"
 endif
 
-readme:
+readme: .cask/
 	$(EMACS) -Q --batch -L . $(addprefix -l , $(TEST_ELS)) --eval "\
 	(let ((filename (expand-file-name \"README.md\")))\
 	 (with-temp-buffer\
