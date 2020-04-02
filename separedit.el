@@ -1333,7 +1333,13 @@ but users can also manually select it by pressing `C-u \\[separedit]'."
   (cond
    ((memq major-mode '(help-mode helpful-mode))
     (separedit-dwim-described-variable))
-   (t (separedit-dwim-default block))))
+   (t (separedit-dwim-default
+       (or block
+           (when (and (minibufferp (current-buffer))
+                      (not (separedit--point-at-string)))
+             (list :beginning (+ (point-min) (length (minibuffer-prompt)))
+                   :end       (point-max)
+                   :lang-mode 'emacs-lisp-mode)))))))
 
 ;;;###autoload
 (defalias 'separedit 'separedit-dwim)
