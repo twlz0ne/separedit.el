@@ -288,6 +288,11 @@ Each element of it is in the form of:
   :group 'separedit
   :type 'boolean)
 
+(defcustom separedit-write-file-when-execute-save nil
+  "If non-nil write file when executing ‘separedit-save’ in edit buffer."
+  :group 'separedit
+  :type 'boolean)
+
 (defcustom separedit-string-indent-offset-alist
   '((nix-mode . 2))
   "AList of indentation offset of string block start at a new line.
@@ -927,6 +932,9 @@ It will override by the key that `separedit' binding in source buffer.")
 (defvar separedit-commit-key (kbd "C-c C-c")
   "The default commit key in editing buffer.")
 
+(defvar separedit-save-key (kbd "C-x C-s")
+  "The default save key in editing buffer.")
+
 (defvar separedit-abort-key (kbd "C-c C-k")
   "The default abort key in editing buffer.")
 
@@ -940,13 +948,13 @@ It will override by the key that `separedit' binding in source buffer.")
             overriding-local-map))
       separedit-entry-key))
 
-(defun separedit-commit ()
-  "Commit changes."
-  (interactive)
-  (let ((inhibit-read-only separedit--inhibit-read-only)
-        (point-info (separedit--point-info)) ;; Still at edit buffer
-        (mark-beg (overlay-start edit-indirect--overlay))
-        (mark-end (overlay-end edit-indirect--overlay)))
+(defun separedit-in-edit-buffer-p ()
+  "Return t if in edit buffer."
+  (string-prefix-p "*edit-indirect " (buffer-name)))
+
+(defun separedit--apply-changes ()
+  "Apply changes to source buffer."
+  (let ((inhibit-read-only separedit--inhibit-read-only))
     (edit-indirect--barf-if-not-indirect)
     (if separedit--help-variable-edit-info
         (let* ((sym (nth 0 separedit--help-variable-edit-info))
@@ -960,9 +968,40 @@ It will override by the key that `separedit' binding in source buffer.")
           ;; Make sure `edit-indirect--overlay' not be destroyed.
           (when (overlay-buffer edit-indirect--overlay)
             (edit-indirect--commit)))
-      (edit-indirect--commit))
-    (edit-indirect--clean-up)
-    ;; Returned to source buffer
+      (edit-indirect--commit))))
+
+(defun separedit-save ()
+  "Save changes but without exiting edit buffer."
+  (interactive)
+  (when (separedit-in-edit-buffer-p)
+    (let ((source-buffer (overlay-buffer edit-indirect--overlay))
+          (edit-buffer-clone
+           ;; Clone a buffer to protect the folding of text in edit buffer.
+           (clone-buffer (concat (buffer-name) " <clone>")))
+          (function-backup
+           ;; Temprary disable the ‘edit-indirect--clean-up’ (but who calls
+           ;; this function after the clone buffer is killed?)
+           (symbol-function 'edit-indirect--clean-up)))
+      (unwind-protect
+          (with-current-buffer edit-buffer-clone
+            (fset 'edit-indirect--clean-up (lambda ()))
+            (separedit--apply-changes))
+        (kill-buffer edit-buffer-clone)
+        (fset 'edit-indirect--clean-up function-backup)
+        (if (and separedit-write-file-when-execute-save
+                 (buffer-file-name source-buffer))
+            (with-current-buffer source-buffer
+              (save-buffer))
+          (message "Updated %S" source-buffer))))))
+
+(defun separedit-commit ()
+  "Commit changes."
+  (interactive)
+  (let ((point-info (separedit--point-info)) ;; Still at edit buffer
+        (mark-beg (overlay-start edit-indirect--overlay))
+        (mark-end (overlay-end edit-indirect--overlay)))
+    (separedit--apply-changes)
+    (edit-indirect--clean-up) ;; Returned to source buffer
     (goto-char
      (save-excursion
        (save-restriction
@@ -989,6 +1028,7 @@ It will override by the key that `separedit' binding in source buffer.")
         (separedit--log "==> [-buffer-creation-setup] major-mode: %s, entry-cmd: %s" major-mode entry-cmd)
         (define-key km (separedit--entry-key) entry-cmd)
         (define-key km separedit-commit-key #'separedit-commit)
+        (define-key km separedit-save-key #'separedit-save)
         (define-key km separedit-abort-key #'edit-indirect-abort)
         (make-local-variable 'minor-mode-overriding-map-alist)
         (push `(edit-indirect--overlay . ,km) minor-mode-overriding-map-alist)
@@ -1001,7 +1041,7 @@ It will override by the key that `separedit' binding in source buffer.")
                              (mapconcat
                               'identity
                               (-non-nil
-                               (list "\\[separedit-commit]: Commit"
+                               (list "\\[separedit-commit]: Finish"
                                      "\\[edit-indirect-abort]: Abort"
                                      (format "\\[%s]: Enter" entry-cmd)))
                               ", "))))
@@ -1029,7 +1069,7 @@ It will override by the key that `separedit' binding in source buffer.")
   "Restore comment delimiter of each line when returning from edit buffer."
   (separedit--log "==> [separedit--restore-comment-delimiter] line delimiter: %s"
                   separedit--line-delimiter)
-  (when (and (string-prefix-p "*edit-indirect " (buffer-name))
+  (when (and (separedit-in-edit-buffer-p)
              separedit--line-delimiter
              (not (string-empty-p separedit--line-delimiter)))
     (let ((delimiter (if (string-suffix-p " " separedit--line-delimiter)
@@ -1096,7 +1136,7 @@ It will override by the key that `separedit' binding in source buffer.")
   |     ...             |    |                     |
   +-----\---------------+    +-\-------------------+
          indent                 indent"
-  (when (and (string-prefix-p "*edit-indirect " (buffer-name))
+  (when (and (separedit-in-edit-buffer-p)
              separedit--string-indent)
     (goto-char (point-min))
     (while (and (zerop (forward-line))
