@@ -1006,7 +1006,7 @@ It will override by the key that `separedit' binding in source buffer.")
     (goto-char
      (save-excursion
        (save-restriction
-         (narrow-to-region mark-beg mark-end)
+         (narrow-to-region mark-beg (min mark-end (point-max)))
          (apply #'separedit--restore-point point-info)
          (point))))))
 
