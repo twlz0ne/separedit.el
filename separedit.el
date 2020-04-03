@@ -831,7 +831,7 @@ Block info example:
                       (memq major-mode '(gfm-mode markdown-mode org-mode)))
               (separedit--comment-region))))
          (string-indent
-          (when separedit-preserve-string-indentation
+          (when (and strp separedit-preserve-string-indentation)
             (apply #'separedit--indent-of-string-block
                    strp
                    comment-or-string-region))))
