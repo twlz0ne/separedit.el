@@ -1375,6 +1375,19 @@ comment3
                       (goto-char (point-min))
                       (re-search-forward "<|>" nil t)))))))
 
+(ert-deftest separedit-test-auto-mode-alist-value-bound ()
+  "Seems there are something makes `syntax-ppss' wrong in the doc."
+  (test-with '(call-interactively #'describe-variable) "auto-mode-alist RET")
+  (switch-to-buffer "*Help*")
+  (goto-char (point-min))
+  (search-forward "tar-mode")
+  (let ((bound (separedit-described-value-bound)))
+    (should (eq 'tar-mode
+                (cdr (assoc "\\.txz\\'" (car (read-from-string
+                                              (buffer-substring-no-properties
+                                               (car bound)
+                                               (cdr bound))))))))))
+
 (provide 'separedit-test)
 
 ;;; separedit-test.el ends here

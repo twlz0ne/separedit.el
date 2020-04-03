@@ -874,7 +874,8 @@ Block info example:
   (save-excursion
     (catch 'break
       (while (pcase-let ((`(,depth ,start . ,_) (syntax-ppss)))
-               (if (and (zerop depth) (not start))
+               (if (or (and (zerop depth) (not start))
+                       (looking-back "^Value:\\(\n\\|\s\\)" 1))
                    (throw 'break (bounds-of-thing-at-point 'sexp))
                  (goto-char start)))))))
 
