@@ -1376,11 +1376,19 @@ but users can also manually select it by pressing `C-u \\[separedit]'."
     (separedit-dwim-described-variable))
    (t (separedit-dwim-default
        (or block
+           ;; minibuffer
            (when (and (minibufferp (current-buffer))
                       (not (separedit--point-at-string)))
              (list :beginning (+ (point-min) (length (minibuffer-prompt)))
                    :end       (point-max)
-                   :lang-mode 'emacs-lisp-mode)))))))
+                   :lang-mode 'emacs-lisp-mode))
+           ;; region
+           (when (region-active-p)
+             (list :beginning (region-beginning)
+                   :end       (region-end)
+                   :lang-mode (if (called-interactively-p 'any)
+                                  (intern (separedit--select-mode))
+                                separedit-default-mode))))))))
 
 ;;;###autoload
 (defalias 'separedit 'separedit-dwim)
