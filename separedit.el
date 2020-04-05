@@ -1325,7 +1325,7 @@ but users can also manually select it by pressing `C-u \\[separedit]'."
          (strp (plist-get block :string-quotes))
          (str-indent (plist-get block :string-indent))
          (commentp (not strp))
-         (codep (and (plist-get block :regexps) t))
+         (codep (and lang-mode t))
          (delimiter-regexp (concat (if strp "^\s*"
                                      (or (plist-get block :comment-delimiter)
                                          (separedit--comment-delimiter-regexp)))
