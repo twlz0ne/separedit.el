@@ -1368,6 +1368,12 @@ but users can also manually select it by pressing `C-u \\[separedit]'."
           (edit-indirect-region beg end 'display-buffer))
       (user-error "Not inside a edit block"))))
 
+(defun separedit-mark-region (beg end &optional edit-buffer-mode)
+  "Mark region BEG and END as a block."
+  (list :beginning beg
+        :end       end
+        :lang-mode (or edit-buffer-mode separedit-default-mode)))
+
 ;;;###autoload
 (defun separedit-dwim (&optional block)
   (interactive)
