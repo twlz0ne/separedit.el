@@ -34,8 +34,6 @@ readme:
 	   (insert\
 	    \"<!-- This file was generated from elisp commentary section by tool, DO NOT EDIT -->\n\n\"\
 	   (separedit-test--generate-readme))\
-	  (separedit--remove-comment-delimiter\
-	   (separedit--comment-delimiter-regexp 'emacs-lisp-mode))\
 	  (write-file filename)))"
 
 help:

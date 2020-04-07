@@ -338,7 +338,7 @@ FORMAT-STRING and ARGS is the same as for `message'."
   (when separedit-debug-p
     (if noninteractive
         (apply #'message format-string args)
-      (with-current-buffer (get-buffer-create "*comment-log*")
+      (with-current-buffer (get-buffer-create "*separedit-log*")
         (outline-mode)
         (buffer-disable-undo)
         (let ((inhibit-read-only t))
