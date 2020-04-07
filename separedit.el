@@ -25,40 +25,67 @@
 ;;; Commentary:
 
 ;; [![Build Status](https://travis-ci.com/twlz0ne/separedit.el.svg?branch=master)](https://travis-ci.com/twlz0ne/separedit.el)
+;; [![MELPA](https://melpa.org/packages/separedit-badge.svg)](https://melpa.org/#/separedit)
 
 ;; # separedit.el
 
-;; Edit comment or docstring or code block inside them with your favorite mode.
+;; Edit comment/string/docstring/code block in separate buffer with your favorite mode.
 
 ;;     +----------+         Edit           +-----------+         Edit           +-----------+
 ;;     |          | ---------------------> |   edit    | ---------------------> |   edit    | ...
 ;;     |          |  point-at-comment?     |   buffer  |  point-at-comment?     |   buffer  |
 ;;     |  source  |  point-at-string?      |           |  point-at-string?      |           | ...
 ;;     |  buffer  |  point-at-codeblock?   | (markdown |  point-at-codeblock?   | (markdown | ...
-;;     |          |                        |  orgmode  |                        |  orgmode  |
+;;     |          |  point-at-...?         |  orgmode  |  point-at-...?         |  orgmode  |
 ;;     |          | <--------------------- |   ...)    | <--------------------- |   ...)    | ...
 ;;     +----------+     Commit changes     +-----------+     Commit changes     +-----------+
 
 ;; ## Installation
 
-;; Clone this repository to `~/.emacs.d/site-lisp/separedit`.  Add the following to your `.emacs`:
+;; Clone this repository, or install from MELPA. Add the following to your `.emacs`:
 
-;; ```elisp
+;; ``` elisp
 ;; (require 'separedit)
-;; (define-key prog-mode-map (kbd "C-c '") #'separedit)
-;; (setq separedit-default-mode 'markdown-mode) ;; or org-mode
+
+;; ;; Key binding for modes you want edit
+;; ;; or simply bind ‘global-map’ for all.
+;; (define-key prog-mode-map        (kbd "C-c '") #'separedit)
+;; (define-key minibuffer-local-map (kbd "C-c '") #'separedit)
+;; (define-key help-mode-map        (kbd "C-c '") #'separedit)
+;; (define-key helpful-mode-map     (kbd "C-c '") #'separedit)
+
+;; ;; Default major-mode for edit buffer
+;; ;; can also be other mode e.g. ‘org-mode’.
+;; (setq separedit-default-mode 'markdown-mode)
+
+;; ;; Feature options
+;; ;; (setq separedit-preserve-string-indentation t)
+;; ;; (setq separedit-continue-fill-column t)
+;; ;; (setq separedit-write-file-when-execute-save t)
+;; ;; (setq separedit-remove-trailing-spaces-in-comment t)
 ;; ```
 
 ;; ## Usage
 
-;; - Move the cursor to a comment or string, or a code block inside them.
-;; - <kbd>C-c '</kbd>.
+;; - Move the cursor to a comment/string/code block or any supported place.
+;; - Press <kbd>C-c '</kbd>.
 
 ;;     or press <kbd>C-u C-c '</kbd> to starting edit with manually selected major mode.
 
-;; ## Edit comment
+;; Can also press <kbd>C-c '</kbd> on an active region.
 
-;; `separedit` use **continuity** as basis for determning whether it is a comment **block** or **line**.
+;; Following are default keys in edit buffer:
+
+;; | Key                | Function                                           | Summary                                                             |
+;; |:-------------------|:---------------------------------------------------|:--------------------------------------------------------------------|
+;; | <kbd>C-c C-c</kbd> | `separedit-commit`                                 | Commit changes and close edit buffer                                |
+;; | <kbd>C-x C-s</kbd> | `separedit-save`                                   | Commit changes (even write source file) without closing edit buffer |
+;; | <kbd>C-c C-k</kbd> | `separedit-abort`                                  | Discard changes and close edit buffer                               |
+;; | <kbd>C-c '</kbd>   | `separedit` or follow the settings of markdown/org | Open a new edit buffer                                              |
+
+;; ### Edit comment
+
+;; `separedit` use **continuity** as basis for determining whether it is a comment **block** or **line**.
 ;; Continuous means that there is no barrier (e.g. code or blank line) between the end of previous line and the beginning of next line, for example:
 
 ;;     /*
@@ -82,58 +109,189 @@
 ;;     code 4 // all this are comment lines
 
 ;; By setting `separedit-default-mode` to choose the mode (e.g. `markdown-mode` or `org-mode`) for edit buffer.
-;; In edit buffer, the comment delimiter will be removed, for example:
+;; In edit buffer, the comment delimiter will be removed, for example (█ represents the cursor):
 
 ;;     source buffer     ->    edit buffer   ->    edit buffer
 
 ;;     /*
-;;      * # Example            # Example
+;;      * # Example█           # Example
 ;;      *
 ;;      * ``` C                ``` C
-;;      * foo("bar");          foo("bar");         foo("bar");
+;;      * foo("bar");          foo("bar");█        foo("bar");
 ;;      * ```                  ```
 ;;      */
 
-;;     // * Example            * Example
+;;     // * Example█           * Example
 ;;     //
 ;;     // #+BEGIN_SRC C        #+BEGIN_SRC C
-;;     // foo("bar");          foo("bar");         foo("bar");
+;;     // foo("bar");          foo("bar");█        foo("bar");
 ;;     // #+END_SRC            #+END_SRC
 
-;; ## Edit string
+;; ### Edit string
 
 ;; `separedit` provides convenience for editing escaped strings, if there are nested string or code block, just continue press <kbd>C-c '</kbd> to enter a new edit buffer:
 
 ;;     source buffer     ->    edit buffer   ->    edit buffer
 
-;;     "a\"b\\\"c\\\"\""       a"b\"c\""           b"c"
+;;     "a█\"b\\\"c\\\"\""       a"b█\"c\""           b"c"
 
-;; ## Edit code block
+;; ### Edit code block
 
 ;; `separedit` also support for editing code block directly in comment or string:
 
 ;;     source buffer     ->    edit buffer
 
 ;;     ",--- elisp
-;;      | (foo \"bar\")        (foo "bar")
+;;      | (foo \"bar\")█       (foo "bar")
 ;;      `---"
 
 ;;     /*
 ;;      * ``` C
-;;      * foo("bar");          foo("bar");
+;;      * foo("bar");█         foo("bar");
 ;;      * ```
 ;;      */
 
 ;; If the language identifier of code block is omitted, the edit buffer uses the same mode as the source buffer.
 
-;; ## Screencasts
+;; ### Edit value form of variable in help/helpful buffer
 
-;; <p float="left" align="center">
-;;   <img src="images/separedit1.gif" />
-;;   <img src="images/separedit2.gif" />
-;; </p>
+;; Describe a variable, move cursor to the local/global value form, press <kbd>C-c '</kbd> to edit it.
 
-;; <i>P.S.</i> The language identifier of code block can be omitted in these cases.
+;; ### Edit minibuffer
+
+;; Don't get stuck in minibuffer, press <kbd>C-c '</kbd> to open a edit buffer.
+
+;; ## Customization
+
+;; ### Change key bindings in edit buffer
+
+;; If you don't like the default key bindings in edit buffer, you can change it:
+
+;; - `separedit-save-key`
+;; - `separedit-entry-key`
+;; - `separedit-abort-key`
+;; - `separedit-commit-key`
+
+;; ### Add support for a new major mode
+
+;; 1. Add the start/end delimiter of block style comment to `separedit-comment-encloser-alist`.
+;; 1. Add the delimiter of each comment line to `separedit-comment-delimiter-alist`.
+;; 1. Add the string (including docstring) quotes to `separedit-string-quotes-alist`.
+;; 1. Add definition to `separedit-string-indent-offset-alist` if there is base indent offset in docstring.
+;; 1. Add a mode name to `separedit-not-support-docstring-modes` if not support docstring.
+
+;; ### Add support for a new code block
+
+;; 1. Add a set of regexps matching the new code block to `separedit-block-regexp-plists`.
+;; 1. Add a language name to `separedit-code-lang-modes` if can't get mode by simply adding suffix `-mode`.
+
+;; ### Preserving indentation of block in string
+
+;; If `separedit-preserve-string-indentation` is non-nil, the indentation of string block will be preseved in edit buffer, e.g:
+
+;; ```
+;; source buffer                         edit buffer
+;; +--------------------+                +--------------------+
+;; | def func():        |                | Usage:             |
+;; |     '''            |                |     func()         |
+;; |     Usage:         |       ->       |                    |
+;; |         func()     |                |                    |
+;; |     '''            |                |                    |
+;; |     pass           |                |                    |
+;; +====================+                +====================+
+;; ```
+
+;; No only for the docsting, normal string are also supported:
+
+;; ```
+;; source buffer                         edit buffer
+;; +--------------------+                +--------------------+
+;; | emacs \            |                | (progn             |
+;; |    --batch \       |                |   ...)             |
+;; |    --eval "(progn  |       ->       |                    |
+;; |              ...)" |                |                    |
+;; |                    |                |                    |
+;; +====================+                +====================+
+;; ```
+
+;; ### Continue fill-column width in edit buffer
+
+;; If `separedit-continue-fill-column` is non-nil, use the remaining fill-width in edit buffer:
+
+;; ```
+;; source buffer                   edit buffer
+
+;;     //
+;;     // this is a                this is a
+;;     // comment block            comment block
+;;     //
+
+;; |<---->|<------------>|         |<------------->|
+;;    |         |                         |
+;;    |         '-- available width for --'
+;;    |                edit buffer
+;; used width
+;; ```
+
+;; You may also like to enable `auto-fill-mode` in edit buffer:
+
+;; ```elisp
+;; (add-hook 'separedit-buffer-creation-hook #'auto-fill-mode)
+;; ```
+
+;; ## Some extended usage
+
+;; ### Combine multipe adjacent blocks as a single edit block
+
+;; ``` elisp
+;; (defun separedit//region-of-el-commentary ()
+;;   (save-excursion
+;;     (goto-char (point-min))
+;;     (when (re-search-forward "^;;; Commentary:\n+")
+;;       (let ((begin (point)))
+;;         (when (re-search-forward  "\n;;; .*$" nil t)
+;;           (goto-char (match-beginning 0))
+;;           (list begin (point)))))))
+
+;; (defun separedit/edit-el-commentary ()
+;;   "Edit whole commentary section as a single block."
+;;   (interactive)
+;;   (let ((separedit-leave-blank-line-in-comment t))
+;;     (separedit-dwim
+;;      (apply #'separedit-mark-region
+;;             `(,@(separedit/region-of-el-commentary)
+;;               markdown-mode)))))
+;; ```
+
+;; ### Break long lines in comment
+
+;; ``` elisp
+;; (defun separedit/re-fill ()
+;;   (interactive)
+;;   (let ((separedit-continue-fill-column t))
+;;     (with-current-buffer (separedit-dwim)
+;;       (fill-region (point-min) (point-max))
+;;       (execute-kbd-macro (kbd "C-c C-k")))))
+;; ```
+
+;; ### Eval multiple-line sexp in comment
+
+;; ``` elisp
+;; (defun separedit/eval-last-sexp-in-comment ()
+;;   (interactive)
+;;   (let ((separedit-default-mode 'emacs-lisp-mode))
+;;     (with-current-buffer (separedit)
+;;       (prog1 (call-interactively #'eval-last-sexp)
+;;         (execute-kbd-macro (kbd "C-c C-k"))))))
+
+;; (define-key emacs-lisp-mode-map (kbd "C-x C-e")
+;;   (lambda ()
+;;     (interactive)
+;;     (call-interactively
+;;      (if (separedit--point-at-comment)
+;;          #'separedit/eval-last-sexp-in-comment
+;;        #'eval-last-sexp))))
+;; ```
 
 ;;; Change Log:
 
@@ -216,26 +374,26 @@ Taken from `markdown-code-lang-modes'."
   :type 'alist)
 
 (defcustom separedit-comment-encloser-alist
-  '((("/\\*+" "\\*/")       . (c-mode
-                               c++-mode
-                               csharp-mode
-                               css-mode
-                               go-mode
-                               java-mode
-                               js-mode
-                               nix-mode
-                               objc-mode
-                               php-mode
-                               rust-mode
-                               rustic-mode
-                               swift-mode
-                               typescript-mode))
+  '((("/\\*+" "\\*/")  . (c-mode
+                          c++-mode
+                          csharp-mode
+                          css-mode
+                          go-mode
+                          java-mode
+                          js-mode
+                          nix-mode
+                          objc-mode
+                          php-mode
+                          rust-mode
+                          rustic-mode
+                          swift-mode
+                          typescript-mode))
     (("{-" "-}")       . haskell-mode)
     (("{" "}")         . pascal-mode)
-    (("(\\*" "\\*)")       . (applescript-mode fsharp-mode ocaml-mode))
+    (("(\\*" "\\*)")   . (applescript-mode fsharp-mode ocaml-mode))
     (("#|" "#|")       . (common-lisp racket-mode scheme-mode))
     (("<!--" "-->")    . (html-mode xml-mode))
-    (("--\\[[" "--\\]\\]")   . lua-mode)
+    (("--\\[[" "--\\]\\]") . lua-mode)
     (("=begin" "=end") . ruby-mode))
   "Alist mapping comment encloser to their major mode."
   :group 'separedit
