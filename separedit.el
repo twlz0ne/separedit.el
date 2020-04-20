@@ -1549,7 +1549,10 @@ but users can also manually select it by pressing `C-u \\[separedit]'."
            ;; region
            (when (region-active-p)
              (list :beginning (region-beginning)
-                   :end       (region-end)
+                   :end (if (and (= ?\n (char-before (region-end)))
+                                 (not (= ?\n (char-after (region-end)))))
+                            (1- (region-end))
+                          (region-end))
                    :lang-mode (if (called-interactively-p 'any)
                                   (intern (separedit--select-mode))
                                 separedit-default-mode))))))))
