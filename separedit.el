@@ -608,19 +608,23 @@ If MODE is nil, use ‘major-mode’."
 ;;; Comment functions
 
 (defun separedit--comment-delimiter-regexp (&optional mode)
-  "Return comment delimiter regex of MODE."
+  "Return comment delimiter regex of MODE.
+
+If MODE is nil, it defaults to `major-mode'.
+If there is no comment delimiter regex for MODE, return `comment-start-skip'."
   (let* ((mode (or mode major-mode))
          (def (or (separedit--rassoc mode separedit-comment-delimiter-alist)
                   (separedit--rassoc (get mode 'derived-mode-parent)
                                      separedit-comment-delimiter-alist)
                   (separedit--rassoc (separedit--get-real-mode mode)
                                      separedit-comment-delimiter-alist))))
-    (when def
-      (if (symbolp (car def))
-          (separedit--comment-delimiter-regexp (car def))
-        (concat "^\s*\\(?:"
-                (mapconcat #'identity (car def) "\\|")
-                "\\)\s?")))))
+    (if def
+        (if (symbolp (car def))
+            (separedit--comment-delimiter-regexp (car def))
+          (concat "^\s*\\(?:"
+                  (mapconcat #'identity (car def) "\\|")
+                  "\\)\s?"))
+      comment-start-skip)))
 
 (defun separedit--point-at-comment-exclusive-one-line ()
   "Determine if comment exclusive one line and return the comment face."
