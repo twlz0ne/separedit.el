@@ -742,43 +742,40 @@ Style 2:
                                      (line-number-at-pos fend)))))
           (list (save-excursion
                   (goto-char fbeg)
-                  (if enclosed-p
-                      ;; Skip `/*' for C/C++
-                      (re-search-forward
-                       (separedit--comment-begin-encloser multi-line-p)
-                       nil t))
+                  (when enclosed-p
+                    (separedit--skip-comment-begin-encloser multi-line-p))
                   (point))
                 (save-excursion
                   (goto-char fend)
                   (when enclosed-p
-                    ;; Skip `*/' for C/C++
-                    (re-search-backward
-                     (separedit--comment-end-encloser multi-line-p)
-                     nil t)
-                    (when (and (not multi-line-p) (= (char-before) ?\s))
-                      (backward-char 1)))
+                    (separedit--skip-comment-end-encloser multi-line-p))
                   (point))))
       (user-error "Not inside a comment"))))
 
-(defun separedit--comment-begin-encloser (&optional multi-line-p mode)
-  "Return a regexp to match the beginning of enclosed comment.
+(defun separedit--skip-comment-begin-encloser (&optional multi-line-p mode)
+  "Search forward from point for the beginning encloser of comment.
 
 MULTI-LINE-P means whether the comment is multi-line.
 If MODE is nil, use ‘major-mode’."
-  (concat (caar (separedit--get-comment-encloser (or mode major-mode)))
-          "[\t\s]*"
-          (when multi-line-p
-            "\n")))
+  (re-search-forward
+   (concat
+    (caar (separedit--get-comment-encloser (or mode major-mode)))
+    "[\t\s]*"
+    (when multi-line-p
+      "\n?"))))
 
-(defun separedit--comment-end-encloser (&optional multi-line-p mode)
-  "Return a regexp to match the end of enclosed comment.
+(defun separedit--skip-comment-end-encloser (&optional multi-line-p mode)
+  "Search backward from point for the beginning encloser of comment.
 
 MULTI-LINE-P means whether the comment is multi-line.
 If MODE is nil, use ‘major-mode’."
-  (concat (when multi-line-p
-            "\n")
-          "[\t\s]*"
-          (cl-cadar (separedit--get-comment-encloser (or mode major-mode)))))
+  (when (re-search-backward
+         (cl-cadar (separedit--get-comment-encloser (or mode major-mode)))
+         nil t)
+    (while (looking-back "[\t\s]" nil)
+      (backward-char 1))
+    (when (and multi-line-p (= (char-before) ?\n))
+      (backward-char 1))))
 
 (defun separedit--get-comment-encloser (&optional mode)
   "Return a list in the form of ‘((begin-encloser end-enclose) mode1 mode2...)’ for MODE."
@@ -980,7 +977,7 @@ Block info example:
       :string-indent nil)
 
 :regexps        not nil means point at a code block.
-:string-quotes       not nil means point at a string block otherwise a comment block."
+:string-quotes  not nil means point at a string block otherwise a comment block."
   (let* ((pos (point))
          (strp (separedit--point-at-string))
          (comment-or-string-region
@@ -993,10 +990,14 @@ Block info example:
                       (memq major-mode '(gfm-mode markdown-mode org-mode)))
               (separedit--comment-region))))
          (string-indent
-          (when (and strp separedit-preserve-string-indentation)
-            (apply #'separedit--indent-of-string-block
-                   strp
-                   comment-or-string-region))))
+          (if (and strp separedit-preserve-string-indentation)
+              (apply #'separedit--indent-of-string-block
+                     strp
+                     comment-or-string-region)
+            (save-excursion
+              (goto-char (car comment-or-string-region))
+              (unless (= (point) (point-at-eol))
+                (current-column))))))
     (save-restriction
       (when comment-or-string-region
         (apply #'narrow-to-region comment-or-string-region))
@@ -1521,9 +1522,9 @@ but users can also manually select it by pressing `C-u \\[separedit]'."
                            (set (make-local-variable 'edit-indirect-before-commit-hook)
                                 (append '((lambda ()
                                             (separedit--restore-comment-delimiter)
+                                            (when ,str-indent
+                                              (separedit--restore-string-indent))
                                             (when ,strp
-                                              (when ,str-indent
-                                                (separedit--restore-string-indent))
                                               (separedit--restore-escape ,strp))))
                                         edit-indirect-before-commit-hook))
                            (separedit--restore-point ,@point-info))))
