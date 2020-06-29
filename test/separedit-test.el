@@ -523,6 +523,46 @@
      (list (save-excursion (re-search-backward "^\\s-* comment1$" nil t))
            (save-excursion (re-search-forward "^\\s-* comment3$" nil t)))))))
 
+(ert-deftest separedit-test-region-of-comment-c4 ()
+  (separedit-test--with-buffer
+   'c-mode
+   (separedit-test--indent-c
+    "// comment
+     // comment
+     // comment
+
+     // comment1
+     // comment2<|>
+     // comment3
+
+     // comment
+     // comment
+     // comment")
+   (should
+    (equal
+     (separedit--comment-region)
+     (list (save-excursion (re-search-backward "^// comment1$" nil t))
+           (save-excursion (re-search-forward "^// comment3$" nil t))))))
+  (separedit-test--with-buffer
+   'c-mode
+   (separedit-test--indent-c
+    "/*
+      * comment
+      */
+
+     // comment1
+     // comment2<|>
+     // comment3
+
+     /*
+      * comment
+      */")
+   (should
+    (equal
+     (separedit--comment-region)
+     (list (save-excursion (re-search-backward "^// comment1$" nil t))
+           (save-excursion (re-search-forward "^// comment3$" nil t)))))))
+
 (ert-deftest separedit-test-region-of-comment-pascal ()
   (separedit-test--with-buffer
    'pascal-mode
