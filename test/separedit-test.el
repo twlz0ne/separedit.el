@@ -565,6 +565,37 @@
      (list (save-excursion (goto-char (point-min)) (search-forward "{ "))
            (save-excursion (goto-char (point-max)) (search-backward " }")))))))
 
+(ert-deftest separedit-test-region-of-c-style-banner-comment ()
+  (separedit-test--with-buffer
+   'c-mode
+   "\
+/*******************************************************************************
+ * A brief history of JavaDoc-style (C-style) banner comments.
+ *
+ * This is the typical JavaDoc-style C-style 'banner' comment. It starts with
+ * a forward slash followed by some number, n, of asterisks, where n > 2. It's
+ * written this way to be more 'visible' to developers who are reading the
+ * source code.
+ *
+ * Often, developers are unaware that this is not (by default) a valid Doxygen
+ * comment block!
+ *
+ * However, as long as JAVADOC_BLOCK = YES is added to the Doxyfile, it will
+ * work as expected.
+ *
+ * This style of commenting behaves well with clang-format.
+ *
+ * @param theory Even if there is only one possible unified theory. it is just a
+ *               set of rules and equations.
+ ******************************************************************************/"
+   (should
+    (equal
+     (separedit--comment-region)
+     (list (save-excursion
+             (goto-char (point-min)) (re-search-forward "/\\*+\n"))
+           (save-excursion
+             (goto-char (point-max)) (re-search-backward "\n\s+\\*+/")))))))
+
 (ert-deftest separedit-test-comment-at-end-of-comment ()
   (separedit-test--with-buffer
    'emacs-lisp-mode

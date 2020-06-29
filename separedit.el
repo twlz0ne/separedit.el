@@ -374,7 +374,7 @@ Taken from `markdown-code-lang-modes'."
   :type 'alist)
 
 (defcustom separedit-comment-encloser-alist
-  '((("/\\*+" "\\*/")  . (c-mode
+  '((("/\\*+" "\\*+/") . (c-mode
                           c++-mode
                           csharp-mode
                           css-mode
@@ -769,13 +769,22 @@ If MODE is nil, use ‘major-mode’."
 
 MULTI-LINE-P means whether the comment is multi-line.
 If MODE is nil, use ‘major-mode’."
-  (when (re-search-backward
-         (cl-cadar (separedit--get-comment-encloser (or mode major-mode)))
-         nil t)
-    (while (looking-back "[\t\s]" nil)
-      (backward-char 1))
-    (when (and multi-line-p (= (char-before) ?\n))
-      (backward-char 1))))
+  (let ((encloser-end
+         (cl-cadar (separedit--get-comment-encloser (or mode major-mode)))))
+    (when (re-search-backward encloser-end nil t)
+      ;; Search backward greedy
+      (let (pos)
+        (save-excursion
+          (backward-char 1)
+          (while (looking-at encloser-end)
+            (setq pos (point))
+            (backward-char 1)))
+        (when pos
+          (goto-char pos)))
+      (while (looking-back "[\t\s]" nil)
+        (backward-char 1))
+      (when (and multi-line-p (= (char-before) ?\n))
+        (backward-char 1)))))
 
 (defun separedit--get-comment-encloser (&optional mode)
   "Return a list in the form of ‘((begin-encloser end-enclose) mode1 mode2...)’ for MODE."
