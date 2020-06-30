@@ -1477,6 +1477,27 @@ comment3
     (--with-callback 'pascal-mode init-str ""        (lambda () (should (--bufs= edit-str))))
     (--with-callback 'pascal-mode init-str "C-c C-c" (lambda () (should (--bufs= init-str))))))
 
+(ert-deftest separedit-test-c-style-doc-comment ()
+  (let ((init-str (--join\n "/** comment 1"
+                            " *  comment 2<|>"
+                            " *  comment 3"
+                            " */"))
+        (edit-str (--join\n "comment 1"
+                            "comment 2<|>"
+                            "comment 3")))
+    (--with-callback 'c-mode init-str ""        (lambda () (should (--bufs= edit-str))))
+    (--with-callback 'c-mode init-str "C-c C-c" (lambda () (should (--bufs= init-str)))))
+  (let ((init-str (--join\n "/* comment 4"
+                            " * comment 5<|>"
+                            " * comment 6"
+                            " */"))
+        (edit-str (--join\n "comment 4"
+                            "comment 5<|>"
+                            "comment 6")))
+    (--with-callback 'c-mode init-str ""        (lambda () (should (--bufs= edit-str))))
+    (--with-callback 'c-mode init-str "C-c C-c" (lambda () (should (--bufs= init-str)))))
+  )
+
 (provide 'separedit-test)
 
 ;;; separedit-test.el ends here

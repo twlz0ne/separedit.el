@@ -1253,6 +1253,14 @@ It will override by the key that `separedit' binding in source buffer.")
                        (concat separedit--line-delimiter " "))))
       (save-excursion
         (goto-char (point-min))
+        (when separedit--string-indent
+          ;; For the comment block like following:
+          ;;      ,-----------,
+          ;;    /*|comment    |
+          ;;  ,---'       ,---'
+          ;;  |  * comment|*/
+          ;;  '-----------'
+          (forward-line 1))
         (catch 'end-of-buffer
           (while (re-search-forward "^.*$" nil t)
             (let* ((str (string-trim-right (match-string 0)))
@@ -1519,23 +1527,24 @@ but users can also manually select it by pressing `C-u \\[separedit]'."
                                (t separedit-default-mode))))))
           (setq-local edit-indirect-guess-mode-function
                       `(lambda (_parent-buffer _beg _end)
-                         (let ((line-delimiter (and (or ,codep ,commentp) (separedit--remove-comment-delimiter ,delimiter-regexp))))
+                         (let* ((line-delimiter (and (or ,codep ,commentp) (separedit--remove-comment-delimiter ,delimiter-regexp)))
+                                (indent-len (when ,str-indent
+                                              (- ,str-indent (length line-delimiter)))))
                            (separedit--log "==> block(edit buffer): %S" (buffer-substring-no-properties (point-min) (point-max)))
                            (when ,strp
                              (separedit--log "==> quotes(edit buffer): %S" ,strp)
                              (separedit--remove-escape ,strp))
                            (separedit--log "==> mode(edit buffer): %S" ',mode)
                            (funcall ',mode)
-                           (when ,str-indent
-                             (set (make-local-variable 'separedit--string-indent) (separedit--remove-string-indent ,str-indent)))
+                           (when (and indent-len (>= indent-len 0))
+                             (set (make-local-variable 'separedit--string-indent) (separedit--remove-string-indent indent-len)))
                            (set (make-local-variable 'separedit-leave-blank-line-in-comment)
                                 ,separedit-leave-blank-line-in-comment)
                            (set (make-local-variable 'separedit--line-delimiter) line-delimiter)
                            (set (make-local-variable 'edit-indirect-before-commit-hook)
                                 (append '((lambda ()
+                                            (separedit--restore-string-indent)
                                             (separedit--restore-comment-delimiter)
-                                            (when ,str-indent
-                                              (separedit--restore-string-indent))
                                             (when ,strp
                                               (separedit--restore-escape ,strp))))
                                         edit-indirect-before-commit-hook))
