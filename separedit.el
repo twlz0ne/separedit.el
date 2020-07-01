@@ -472,7 +472,9 @@ Example of a string block with indentation offset:
 
 (defvar separedit--line-delimiter nil "Comment delimiter of each editing line.")
 
-(defvar separedit--string-indent nil "Indentation of each line in string.")
+(defvar separedit--indent-length nil "Indent length of each editing line.")
+
+(defvar separedit--indent-line1 nil "Whether to indent the 1st editing line of comment.")
 
 (defvar separedit-debug-p nil)
 
@@ -986,7 +988,7 @@ Block info example:
                 :footer \"```$\")
       :end 12
       :string-quotes nil
-      :string-indent nil)
+      :indent-length nil)
 
 :regexps        not nil means point at a code block.
 :string-quotes  not nil means point at a string block otherwise a comment block."
@@ -1001,6 +1003,7 @@ Block info example:
             (when (or (derived-mode-p 'prog-mode)
                       (memq major-mode '(gfm-mode markdown-mode org-mode)))
               (separedit--comment-region))))
+         (indent-line1 nil)
          (string-indent
           (if (and strp separedit-preserve-string-indentation)
               (apply #'separedit--indent-of-string-block
@@ -1008,8 +1011,16 @@ Block info example:
                      comment-or-string-region)
             (save-excursion
               (goto-char (car comment-or-string-region))
+              ;; Not at "/*|"
               (unless (= (point) (point-at-eol))
-                (current-column))))))
+                (if (= (point) (point-at-bol))
+                    ;; At "| * comment"
+                    (save-excursion
+                      (when (re-search-forward "[\s\t]+" nil t)
+                        (setq indent-line1 t)
+                        (current-column)))
+                  ;; At "/* |comment"
+                  (current-column)))))))
     (save-restriction
       (when comment-or-string-region
         (apply #'narrow-to-region comment-or-string-region))
@@ -1020,12 +1031,14 @@ Block info example:
                  (<= (plist-get code-info :beginning) pos)
                  (<= pos (plist-get code-info :end)))
             (append code-info (list :string-quotes strp
-                                    :string-indent string-indent))
+                                    :indent-line1 indent-line1
+                                    :indent-length string-indent))
           (if comment-or-string-region
               (list :beginning (point-min)
                     :end (point-max)
                     :string-quotes strp
-                    :string-indent string-indent)
+                    :indent-line1 indent-line1
+                    :indent-length string-indent)
             (user-error "Not inside a edit block")))))))
 
 ;;; Help/helpful mode variables / funcstions
@@ -1253,7 +1266,7 @@ It will override by the key that `separedit' binding in source buffer.")
                        (concat separedit--line-delimiter " "))))
       (save-excursion
         (goto-char (point-min))
-        (when separedit--string-indent
+        (when (and separedit--indent-length (not separedit--indent-line1))
           ;; For the comment block like following:
           ;;      ,-----------,
           ;;    /*|comment    |
@@ -1294,14 +1307,16 @@ It will override by the key that `separedit' binding in source buffer.")
              (with-temp-buffer
                (insert buffer-str)
                (goto-char (point-min))
-               (while (and (zerop (forward-line))
-                           (re-search-forward "[^\s\t\n\r]" nil t 1))
+               (when (looking-at-p "[^\s\t\n\r]")
+                 (forward-line))
+               (while (re-search-forward "[^\s\t\n\r]" nil t 1)
                  (goto-char (match-beginning 0))
                  (if (<= indent-length (current-column))
                      (delete-region (point-at-bol)
                                     (+ (point-at-bol) indent-length))
                    ;; Respect the origninal indentation
-                   (throw 'break nil)))
+                   (throw 'break nil))
+                 (forward-line))
                (buffer-string))))))
     (when indented-str
       (save-excursion
@@ -1321,12 +1336,15 @@ It will override by the key that `separedit' binding in source buffer.")
   +-----\---------------+    +-\-------------------+
          indent                 indent"
   (when (and (separedit-in-edit-buffer-p)
-             separedit--string-indent)
+             separedit--indent-length)
     (goto-char (point-min))
-    (while (and (zerop (forward-line))
-                (re-search-forward "[^\s\t\n\r]" nil t 1))
+    (when (and (not separedit--indent-line1)
+               (looking-at-p "[^\s\t\n\r]"))
+      (forward-line))
+    (while (re-search-forward "[^\s\t\n\r]" nil t 1)
         (goto-char (match-beginning 0))
-        (insert (make-string separedit--string-indent ?\s)))))
+        (insert (make-string separedit--indent-length ?\s))
+        (forward-line))))
 
 (defun separedit--remove-nested-escape ()
   "Remove escape of nested string."
@@ -1506,7 +1524,8 @@ but users can also manually select it by pressing `C-u \\[separedit]'."
          (point-info (separedit--point-info beg end))
          (lang-mode (plist-get block :lang-mode))
          (strp (plist-get block :string-quotes))
-         (str-indent (plist-get block :string-indent))
+         (indent-length (plist-get block :indent-length))
+         (indent-line1 (plist-get block :indent-line1))
          (commentp (not strp))
          (codep (and lang-mode t))
          (delimiter-regexp (concat (if strp "^\s*"
@@ -1528,8 +1547,8 @@ but users can also manually select it by pressing `C-u \\[separedit]'."
           (setq-local edit-indirect-guess-mode-function
                       `(lambda (_parent-buffer _beg _end)
                          (let* ((line-delimiter (and (or ,codep ,commentp) (separedit--remove-comment-delimiter ,delimiter-regexp)))
-                                (indent-len (when ,str-indent
-                                              (- ,str-indent (length line-delimiter)))))
+                                (indent-len (when ,indent-length
+                                              (- ,indent-length (length line-delimiter)))))
                            (separedit--log "==> block(edit buffer): %S" (buffer-substring-no-properties (point-min) (point-max)))
                            (when ,strp
                              (separedit--log "==> quotes(edit buffer): %S" ,strp)
@@ -1537,7 +1556,8 @@ but users can also manually select it by pressing `C-u \\[separedit]'."
                            (separedit--log "==> mode(edit buffer): %S" ',mode)
                            (funcall ',mode)
                            (when (and indent-len (>= indent-len 0))
-                             (set (make-local-variable 'separedit--string-indent) (separedit--remove-string-indent indent-len)))
+                             (set (make-local-variable 'separedit--indent-line1) ,indent-line1)
+                             (set (make-local-variable 'separedit--indent-length) (separedit--remove-string-indent indent-len)))
                            (set (make-local-variable 'separedit-leave-blank-line-in-comment)
                                 ,separedit-leave-blank-line-in-comment)
                            (set (make-local-variable 'separedit--line-delimiter) line-delimiter)
