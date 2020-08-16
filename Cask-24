@@ -1,0 +1,14 @@
+(source gnu)
+(source melpa)
+
+(package-file "separedit.el")
+
+(files "*.el")
+
+(depends-on "dash")
+(depends-on "edit-indirect")
+
+(development
+ (depends-on "markdown-mode"
+             :git "https://github.com/jrblevin/markdown-mode"
+             :ref "365697302345f8b9dc10bc975477452a282f7ae0"))

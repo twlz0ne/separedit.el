@@ -22,6 +22,11 @@ before_install:
   - wget 'https://raw.githubusercontent.com/flycheck/emacs-travis/master/emacs-travis.mk'
   - make -f emacs-travis.mk install_emacs
   - make -f emacs-travis.mk install_cask
+  - if [[ $EMACS_VERSION = 24.* ]]; then
+        ln -snf Cask-24 Cask;
+    else
+        ln -snf Cask-25 Cask;
+    fi
 
 install:
   - cask install
