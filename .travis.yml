@@ -1,5 +1,4 @@
-language: emacs-lisp
-sudo: required
+language: minimal
 dist: trusty
 
 matrix:
