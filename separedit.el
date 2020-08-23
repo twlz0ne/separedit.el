@@ -476,6 +476,8 @@ Example of a string block with indentation offset:
 
 (defvar separedit--indent-line1 nil "Whether to indent the 1st editing line of comment.")
 
+(defvar separedit--code-block-p nil "Wheter or not editing a code block.")
+
 (defvar separedit-debug-p nil)
 
 (defvar separedit-leave-blank-line-in-comment nil
@@ -1266,7 +1268,8 @@ It will override by the key that `separedit' binding in source buffer.")
                        (concat separedit--line-delimiter " "))))
       (save-excursion
         (goto-char (point-min))
-        (when (and separedit--indent-length (not separedit--indent-line1))
+        (when (and (not separedit--code-block-p)
+                   (not separedit--indent-line1) separedit--indent-length)
           ;; For the comment block like following:
           ;;      ,-----------,
           ;;    /*|comment    |
@@ -1561,6 +1564,7 @@ but users can also manually select it by pressing `C-u \\[separedit]'."
                            (set (make-local-variable 'separedit-leave-blank-line-in-comment)
                                 ,separedit-leave-blank-line-in-comment)
                            (set (make-local-variable 'separedit--line-delimiter) line-delimiter)
+                           (set (make-local-variable 'separedit--code-block-p) ,codep)
                            (set (make-local-variable 'edit-indirect-before-commit-hook)
                                 (append '((lambda ()
                                             (separedit--restore-string-indent)

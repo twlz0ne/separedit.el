@@ -1175,6 +1175,22 @@ Usage:<|>
     (separedit-test--execute-block-edit 'emacs-lisp-mode "aaa C-c C-c"     init-data (replace-regexp-in-string
                                                                                       "<|>" "<|>aaa" init-data))))
 
+(ert-deftest separedit-test-code-in-doc-4-no-indent ()
+  (let ((init-data "(defun hello (name)
+  \"Greet a person.
+
+Usage:
+
+,---elisp
+| (hello \\\"foo\\\") ;; <|>
+`---\"
+  (message \"hello, %s\" name))")
+        (code-in-doc "(hello \"foo\") ;; <|>"))
+    (separedit-test--execute-block-edit 'emacs-lisp-mode ""                init-data code-in-doc)
+    (separedit-test--execute-block-edit 'emacs-lisp-mode "C-c C-c"         init-data init-data)
+    (separedit-test--execute-block-edit 'emacs-lisp-mode "aaa C-c C-c"     init-data (replace-regexp-in-string
+                                                                                      "<|>" "<|>aaa" init-data))))
+
 (ert-deftest separedit-test-preserve-string-indent-1 ()
   "String block with both of STAR & END quotes at a new line"
   (let ((separedit-preserve-string-indentation t)
