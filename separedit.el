@@ -1550,7 +1550,7 @@ but users can also manually select it by pressing `C-u \\[separedit]'."
           (setq-local edit-indirect-guess-mode-function
                       `(lambda (_parent-buffer _beg _end)
                          (let* ((line-delimiter (and (or ,codep ,commentp) (separedit--remove-comment-delimiter ,delimiter-regexp)))
-                                (indent-len (when ,indent-length
+                                (indent-len (when (and ,indent-length (not ,codep))
                                               (- ,indent-length (length line-delimiter)))))
                            (separedit--log "==> block(edit buffer): %S" (buffer-substring-no-properties (point-min) (point-max)))
                            (when ,strp
