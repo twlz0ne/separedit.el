@@ -5,7 +5,7 @@
 ;; Author: Gong Qijian <gongqijian@gmail.com>
 ;; Created: 2019/04/06
 ;; Version: 0.2.0
-;; Package-Requires: ((emacs "24.4") (dash "2.0") (edit-indirect "0.1.5"))
+;; Package-Requires: ((emacs "24.4") (dash "2.0") (dash-functional "1.2") (edit-indirect "0.1.5"))
 ;; URL: https://github.com/twlz0ne/separedit.el
 ;; Keywords: tools languages docs
 
@@ -302,6 +302,7 @@
 
 (require 'cl-lib)
 (require 'dash)
+(require 'dash-functional)
 (require 'edit-indirect)
 (require 'calc-misc)
 (require 'subr-x)
@@ -830,13 +831,16 @@ Search process will skip characters COMMENT-DELIMITER at beginning of each line.
               (plist-get it :header))
             separedit-block-regexp-plists
             "\\|")
-           "\\)")))
+           "\\)"))
+         code-block-indent)
     (catch 'break
       (save-excursion
         (separedit--log "==> [code-block-beginning] comment-delimiter: %S" comment-delimiter)
         (separedit--log "==> [code-block-beginning] regexp-group: %S" regexp-group)
         (when (re-search-backward regexp-group nil t)
+          (setq code-block-indent (current-column))
           (save-match-data
+            (separedit--log "==> [code-block-beginning] cbindent: %s" code-block-indent)
             (separedit--log "==> [code-block-beginning] matched1: %s" (match-string-no-properties 2))
             (separedit--log "==> [code-block-beginning] language: %s" (separedit-get-mode-lang major-mode)))
           (separedit--beginning-of-next-line)
@@ -855,6 +859,7 @@ Search process will skip characters COMMENT-DELIMITER at beginning of each line.
                                     it)
                                   separedit-block-regexp-plists)))))
                    (list
+                    :code-block-indent code-block-indent
                     :beginning (point-at-bol)
                     :lang-mode
                     (or (plist-get block-regexp :mode)
@@ -990,7 +995,8 @@ Block info example:
                 :footer \"```$\")
       :end 12
       :string-quotes nil
-      :indent-length nil)
+      :indent-length nil
+      :code-block-indent 4)
 
 :regexps        not nil means point at a code block.
 :string-quotes  not nil means point at a string block otherwise a comment block."
@@ -1240,20 +1246,36 @@ It will override by the key that `separedit' binding in source buffer.")
         (separedit--log "==> [-buffer-creation-setup] hooks finished"))
     (warn "Unknown major-mode: %s" major-mode)))
 
-(defun separedit--remove-comment-delimiter (regexp)
-  "Remove comment delimiter of each line by REGEXP when entering comment edit buffer."
+(defun separedit--remove-comment-delimiter (regexp &optional max-width)
+  "Remove comment delimiter of each line when entering comment edit buffer.
+
+REGEXP          regexp expression that matches the delimiter
+MAX-WIDTH       maximum width that can be removed"
   (let ((line-delimiter)
-        (inhibit-read-only t))
+        (inhibit-read-only t)
+        match-len
+        replace-str)
     (save-excursion
       (goto-char (point-max))
       (catch 'break
         (while (and (< (point-min) (point)) (re-search-backward regexp nil t))
+          (setq match-len (length (match-string 0)))
+          (setq replace-str
+                (if (and max-width (> match-len max-width))
+                    (setq replace-str (substring (match-string 0) max-width))
+                  ""))
           (unless line-delimiter
-            (setq line-delimiter (match-string 0)))
-          (replace-match "")
+            (setq line-delimiter
+                  (if max-width
+                      (if (zerop max-width)
+                          ""
+                        (substring (match-string 0) 0 (- (length (match-string 0))
+                                                         (length replace-str))))
+                    (match-string 0))))
+          (replace-match replace-str)
           (when (eq (point) (point-min))
             (throw 'break nil))
-          (backward-char))))
+          (goto-char (1- (point-at-bol))))))
     line-delimiter))
 
 (defun separedit--restore-comment-delimiter ()
@@ -1531,6 +1553,11 @@ but users can also manually select it by pressing `C-u \\[separedit]'."
          (indent-line1 (plist-get block :indent-line1))
          (commentp (not strp))
          (codep (and lang-mode t))
+         (cbindent (when (and strp
+                              (funcall
+                               (-orfn #'not #'string-empty-p)
+                               (plist-get (plist-get block :regexps) :body)))
+                     (plist-get block :code-block-indent)))
          (delimiter-regexp (concat (if strp "^\s*"
                                      (or (plist-get block :comment-delimiter)
                                          (separedit--comment-delimiter-regexp)))
@@ -1549,8 +1576,10 @@ but users can also manually select it by pressing `C-u \\[separedit]'."
                                (t separedit-default-mode))))))
           (setq-local edit-indirect-guess-mode-function
                       `(lambda (_parent-buffer _beg _end)
-                         (let* ((line-delimiter (and (or ,codep ,commentp) (separedit--remove-comment-delimiter ,delimiter-regexp)))
-                                (indent-len (when (and ,indent-length (not ,codep))
+                         (let* ((line-delimiter
+                                 (when (or ,codep ,commentp)
+                                   (separedit--remove-comment-delimiter ,delimiter-regexp ,cbindent)))
+                                (indent-len (when (and ,indent-length (not ,codep) (not ,cbindent))
                                               (- ,indent-length (length line-delimiter)))))
                            (separedit--log "==> block(edit buffer): %S" (buffer-substring-no-properties (point-min) (point-max)))
                            (when ,strp

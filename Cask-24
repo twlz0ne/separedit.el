@@ -6,6 +6,7 @@
 (files "*.el")
 
 (depends-on "dash")
+(depends-on "dash-functional")
 (depends-on "edit-indirect")
 
 (development

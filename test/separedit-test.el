@@ -1128,10 +1128,13 @@ The list of active backends (completion engines).
 Usage:
 
     ```elisp
-    (hello \\\"foo\\\") ;; <|>
+    (let ((name \\\"foo\\\"))
+      (hello name)) ;; <|>
     ```\"
   (message \"hello, %s\" name))")
-        (code-in-doc "(hello \"foo\") ;; <|>"))
+        (code-in-doc "\
+(let ((name \"foo\"))
+  (hello name)) ;; <|>"))
     (separedit-test--execute-block-edit 'emacs-lisp-mode ""                init-data code-in-doc)
     (separedit-test--execute-block-edit 'emacs-lisp-mode "C-c C-c"         init-data init-data)
     (separedit-test--execute-block-edit 'emacs-lisp-mode "aaa C-c C-c"     init-data (replace-regexp-in-string
