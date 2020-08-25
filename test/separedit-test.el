@@ -1205,11 +1205,9 @@ Usage:
                             "    String block 11<|>"
                             "    String block 11"
                             "    '''"))
-        (edit-str (--join\n ""
-                            "String block 11"
+        (edit-str (--join\n "String block 11"
                             "String block 11<|>"
-                            "String block 11"
-                            "    ")))
+                            "String block 11")))
     (--with-callback 'python-mode init-str ""        (lambda () (should (--bufs= edit-str))))
     (--with-callback 'python-mode init-str "C-c C-c" (lambda () (should (--bufs= init-str)))))
   (let ((separedit-preserve-string-indentation t)
@@ -1218,11 +1216,9 @@ Usage:
                             "        String block 12<|>"
                             "    String block 12"
                             "    '''"))
-        (edit-str (--join\n ""
-                            "String block 12"
+        (edit-str (--join\n "String block 12"
                             "    String block 12<|>"
-                            "String block 12"
-                            "    ")))
+                            "String block 12")))
     (--with-callback 'python-mode init-str ""        (lambda () (should (--bufs= edit-str))))
     (--with-callback 'python-mode init-str "C-c C-c" (lambda () (should (--bufs= init-str)))))
   (let ((separedit-preserve-string-indentation t)
@@ -1232,8 +1228,7 @@ Usage:
                             "    '''"))
         (edit-str (--join\n "String block 13"
                             "String block 13<|>"
-                            "String block 13"
-                            "    ")))
+                            "String block 13")))
     (--with-callback 'python-mode init-str ""        (lambda () (should (--bufs= edit-str))))
     (--with-callback 'python-mode init-str "C-c C-c" (lambda () (should (--bufs= init-str)))))
 
@@ -1245,11 +1240,9 @@ Usage:
                             "      String block 11<|>"
                             "      String block 11"
                             "    '''"))
-        (edit-str (--join\n ""
-                            "  String block 11"
+        (edit-str (--join\n "  String block 11"
                             "  String block 11<|>"
-                            "  String block 11"
-                            "    ")))
+                            "  String block 11")))
     (--with-callback 'python-mode init-str ""        (lambda () (should (--bufs= edit-str))))
     (--with-callback 'python-mode init-str "C-c C-c" (lambda () (should (--bufs= init-str))))))
 
@@ -1261,11 +1254,9 @@ Usage:
                             "    String block 21<|>"
                             "    String block 21"
                             "    '''"))
-        (edit-str (--join\n ""
-                            "String block 21"
+        (edit-str (--join\n "String block 21"
                             "String block 21<|>"
-                            "String block 21"
-                            "    ")))
+                            "String block 21")))
     (--with-callback 'python-mode init-str ""        (lambda () (should (--bufs= edit-str))))
     (--with-callback 'python-mode init-str "C-c C-c" (lambda () (should (--bufs= init-str)))))
   (let ((separedit-preserve-string-indentation t)
@@ -1274,11 +1265,9 @@ Usage:
                             "        String block 22<|>"
                             "    String block 22"
                             "    '''"))
-        (edit-str (--join\n ""
-                            "String block 22"
+        (edit-str (--join\n "String block 22"
                             "    String block 22<|>"
-                            "String block 22"
-                            "    ")))
+                            "String block 22")))
     (--with-callback 'python-mode init-str ""        (lambda () (should (--bufs= edit-str))))
     (--with-callback 'python-mode init-str "C-c C-c" (lambda () (should (--bufs= init-str)))))
   (let ((separedit-preserve-string-indentation t)
@@ -1288,8 +1277,7 @@ Usage:
                             "    '''"))
         (edit-str (--join\n "String block 23"
                             "String block 23<|>"
-                            "String block 23"
-                            "    ")))
+                            "String block 23")))
     (--with-callback 'python-mode init-str ""        (lambda () (should (--bufs= edit-str))))
     (--with-callback 'python-mode init-str "C-c C-c" (lambda () (should (--bufs= init-str)))))
 
@@ -1301,11 +1289,9 @@ Usage:
                             "      String block 21<|>"
                             "      String block 21"
                             "    '''"))
-        (edit-str (--join\n ""
-                            "String block 21"
+        (edit-str (--join\n "String block 21"
                             "String block 21<|>"
-                            "String block 21"
-                            "    ")))
+                            "String block 21")))
     (--with-callback 'python-mode init-str ""        (lambda () (should (--bufs= edit-str))))
     (--with-callback 'python-mode init-str "C-c C-c" (lambda () (should (--bufs= init-str))))))
 
@@ -1330,11 +1316,9 @@ Usage:
                             "  Dont preserve indent 1<|>"
                             "  Dont preserve indent 1"
                             "    '''"))
-        (edit-str (--join\n ""
-                            "  Dont preserve indent 1"
+        (edit-str (--join\n "  Dont preserve indent 1"
                             "  Dont preserve indent 1<|>"
-                            "  Dont preserve indent 1"
-                            "    ")))
+                            "  Dont preserve indent 1")))
     (--with-callback 'python-mode init-str ""        (lambda () (should (--bufs= edit-str))))
     (--with-callback 'python-mode init-str "C-c C-c" (lambda () (should (--bufs= init-str)))))
   (let ((separedit-preserve-string-indentation t)
@@ -1342,13 +1326,10 @@ Usage:
                             "    Dont preserve indent 2"
                             "Dont preserve indent 2<|>"
                             "    Dont preserve indent 2"
-                            "    '''"
-                            "    pass"))
-        (edit-str (--join\n ""
-                            "    Dont preserve indent 2"
+                            "    '''"))
+        (edit-str (--join\n "    Dont preserve indent 2"
                             "Dont preserve indent 2<|>"
-                            "    Dont preserve indent 2"
-                            "    ")))
+                            "    Dont preserve indent 2")))
     (--with-callback 'python-mode init-str ""        (lambda () (should (--bufs= edit-str))))
     (--with-callback 'python-mode init-str "C-c C-c" (lambda () (should (--bufs= init-str)))))
   (let ((separedit-preserve-string-indentation t)
@@ -1358,8 +1339,7 @@ Usage:
                             "    '''"))
         (edit-str (--join\n "Dont preserve indent 3"
                             "    Dont preserve indent 3<|>"
-                            "Dont preserve indent 3"
-                            "    ")))
+                            "Dont preserve indent 3")))
     (--with-callback 'python-mode init-str ""        (lambda () (should (--bufs= edit-str))))
     (--with-callback 'python-mode init-str "C-c C-c" (lambda () (should (--bufs= init-str))))))
 

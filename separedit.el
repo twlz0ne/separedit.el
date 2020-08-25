@@ -918,7 +918,8 @@ LANG is a string, and the returned major mode is a symbol."
           (t aval))))
 
 (defun separedit--indent-of-string-block (quotes beg end)
-  "Return the indentation of string block between BEN and END quoted by QUOTES."
+  "Return the indent info of string block between BEN and END quoted by QUOTES.
+Return value is in the form of (indent-length indent-line1)."
   (save-excursion
     (goto-char beg)
     (let ((str-start (buffer-substring-no-properties (point) (point-at-eol)))
@@ -938,14 +939,14 @@ LANG is a string, and the returned major mode is a symbol."
              ;;   "\
              ;;   String block does not need preserve indetation
              ;;   "
-             nil)
+             (cons nil nil))
             ((and (string= str-start "") beg-at-newline end-at-newline)
              ;; For
              ;;
              ;;   '''
              ;;   string block need preserve indetation
              ;;   '''
-             (- (current-column) (length quotes)))
+             (cons (- (current-column) (length quotes)) t))
             ((and (string= str-start "") (not beg-at-newline) end-at-newline)
              ;; For
              ;;
@@ -953,16 +954,18 @@ LANG is a string, and the returned major mode is a symbol."
              ;;   string block need preserve indetation
              ;;   '''
              (goto-char end)
-             (+ (current-column)
-                (or (cdr (assoc major-mode separedit-string-indent-offset-alist))
-                    0)))
+             (cons
+              (+ (current-column)
+                 (or (cdr (assoc major-mode separedit-string-indent-offset-alist))
+                     0))
+              t))
             ((not (string= str-start ""))
              ;; For situations like:
              ;;
              ;;   emacs --batch --eval "(progn
              ;;                           ...)"
              ;;
-             (current-column))))))
+             (cons (current-column) nil))))))
 
 (defun separedit--restore-point (line rcolumn)
   "Restore point to LINE and RCOLUMN."
@@ -1045,9 +1048,11 @@ Block info example:
          (indent-line1 nil)
          (string-indent
           (if (and strp separedit-preserve-string-indentation)
-              (apply #'separedit--indent-of-string-block
-                     strp
-                     comment-or-string-region)
+              (let ((indent-info (apply #'separedit--indent-of-string-block
+                                        strp
+                                        comment-or-string-region)))
+                (setq indent-line1 (cdr indent-info))
+                (car indent-info))
             (save-excursion
               (goto-char (car comment-or-string-region))
               ;; Not at "/*|"
@@ -1076,8 +1081,17 @@ Block info example:
                                     :indent-line1 indent-line1
                                     :indent-length indent-length))
           (if comment-or-string-region
-              (list :beginning (point-min)
-                    :end (point-max)
+              (list :beginning (if (and strp (eq (char-after (point-min)) ?\n))
+                                   (1+ (point-min))
+                                 (point-min))
+                    :end (if strp
+                             (save-excursion
+                               (goto-char (point-max))
+                               (when (looking-back "\n\s*" 1)
+                                 (forward-line -1)
+                                 (goto-char (point-at-eol)))
+                               (point))
+                           (point-max))
                     :string-quotes strp
                     :indent-line1 indent-line1
                     :indent-length indent-length)
@@ -1366,7 +1380,8 @@ MAX-WIDTH       maximum width that can be removed"
              (with-temp-buffer
                (insert buffer-str)
                (goto-char (point-min))
-               (when (looking-at-p "[^\s\t\n\r]")
+               (when (and (not separedit--indent-line1)
+                          (looking-at-p "[^\s\t\n\r]"))
                  (forward-line))
                (while (re-search-forward "[^\s\t\n\r]" nil t 1)
                  (goto-char (match-beginning 0))
