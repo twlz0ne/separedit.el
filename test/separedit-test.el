@@ -1518,7 +1518,16 @@ comment3
                             "comment 6")))
     (--with-callback 'c-mode init-str ""        (lambda () (should (--bufs= edit-str))))
     (--with-callback 'c-mode init-str "C-c C-c" (lambda () (should (--bufs= init-str)))))
-  )
+  (let ((init-str (--join\n "/**"
+                            " * comment 7"
+                            " * comment 8<|>"
+                            " * comment 9"
+                            " */"))
+        (edit-str (--join\n "comment 7"
+                            "comment 8<|>"
+                            "comment 9")))
+    (--with-callback 'c-mode init-str ""        (lambda () (should (--bufs= edit-str))))
+    (--with-callback 'c-mode init-str "C-c C-c" (lambda () (should (--bufs= init-str))))))
 
 (ert-deftest separedit-test-c-style-comment-indent ()
   (let ((init-str (--join\n "/** comment 1"

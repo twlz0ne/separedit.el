@@ -1055,8 +1055,9 @@ Block info example:
                 (if (= (point) (point-at-bol))
                     ;; At "| * comment"
                     (save-excursion
-                      (when (re-search-forward "[\s\t]+" nil t)
+                      (when (re-search-forward "[^\s\t]" nil t)
                         (setq indent-line1 t)
+                        (backward-char)
                         (current-column)))
                   ;; At "/* |comment"
                   (current-column)))))))
@@ -1605,8 +1606,8 @@ but users can also manually select it by pressing `C-u \\[separedit]'."
           (setq-local edit-indirect-guess-mode-function
                       `(lambda (_parent-buffer _beg _end)
                          (let* ((line-delimiter
-                                 (when (or ,codep ,commentp)
-                                   (separedit--remove-comment-delimiter ,delimiter-regexp ,indent-length)))
+                                 (when (or ,(and strp codep) ,commentp)
+                                   (separedit--remove-comment-delimiter ,delimiter-regexp ,(unless commentp indent-length))))
                                 (indent-len (when ,indent-length
                                               (- ,indent-length (length line-delimiter)))))
                            (separedit--log "==> block(edit buffer): %S" (buffer-substring-no-properties (point-min) (point-max)))
