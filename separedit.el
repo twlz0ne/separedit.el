@@ -1602,10 +1602,16 @@ but users can also manually select it by pressing `C-u \\[separedit]'."
          (indent-line1 (plist-get block :indent-line1))
          (commentp (not strp))
          (codep (and lang-mode t))
-         (delimiter-regexp (concat (if strp "^\s*"
-                                     (or (plist-get block :comment-delimiter)
-                                         (separedit--comment-delimiter-regexp)))
-                                   (plist-get (plist-get block :regexps) :body)))
+         (delimiter-regexp
+          (let ((regexp (concat (if strp "^\s*"
+                                  (or (plist-get block :comment-delimiter)
+                                      (separedit--comment-delimiter-regexp)))
+                                (plist-get (plist-get block :regexps) :body))))
+            (replace-regexp-in-string
+               "\\(\s+\\)$"
+               (lambda (match)
+                 (format "\\\\(?:%s\\\\|\\\\)" (match-string 1 match)))
+               regexp)))
          (edit-indirect-after-creation-hook #'separedit--buffer-creation-setup))
     (separedit--log "==> block-info: %S" block)
     ;; (separedit--log "==> block: %S" (buffer-substring-no-properties beg end))
