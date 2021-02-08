@@ -349,7 +349,7 @@ Taken from `markdown-code-lang-modes'."
   :type 'list)
 
 (defcustom separedit-comment-delimiter-alist
-  '((("//+" "\\*+")    . (c-mode
+  '((("//+!\\(?:<\\)?" "//+\\(?:<\\)?" "\\*+") . (c-mode
                           c++-mode
                           csharp-mode
                           css-mode
@@ -358,10 +358,10 @@ Taken from `markdown-code-lang-modes'."
                           js-mode
                           objc-mode
                           php-mode
+                          rust-mode
+                          rustic-mode
                           swift-mode
                           typescript-mode))
-    (("//+!" "//+" "\\*+") . (rust-mode
-                              rustic-mode))
     (("--")            . (applescript-mode haskell-mode lua-mode))
     (("//+")           . (pascal-mode fsharp-mode))
     ((";+")            . (emacs-lisp-mode
@@ -376,7 +376,7 @@ Taken from `markdown-code-lang-modes'."
   :type 'alist)
 
 (defcustom separedit-comment-encloser-alist
-  '((("/\\*+" "\\*+/") . (c-mode
+  '((("/\\*+\\(?:!\\)?" "\\*+/") . (c-mode
                           c++-mode
                           csharp-mode
                           css-mode

@@ -1561,6 +1561,70 @@ comment3
     (--with-callback 'c-mode init-str "C-c C-c" (lambda () (should (--bufs= init-str)))))
   )
 
+(ert-deftest separedit-test-doxygen-style-c-comment ()
+  (let ((init-str (--join\n "/**"
+                            " * comment11<|>"
+                            " */"))
+        (edit-str "comment11<|>"))
+    (--with-callback 'c-mode init-str ""        (lambda () (should (--bufs= edit-str))))
+    (--with-callback 'c-mode init-str "C-c C-c" (lambda () (should (--bufs= init-str)))))
+  (let ((init-str (--join\n "/*!"
+                            " * comment12<|>"
+                            " */"))
+        (edit-str "comment12<|>"))
+    (--with-callback 'c-mode init-str ""        (lambda () (should (--bufs= edit-str))))
+    (--with-callback 'c-mode init-str "C-c C-c" (lambda () (should (--bufs= init-str)))))
+  (let ((init-str (--join\n "/*!"
+                            "   comment13<|>"
+                            " */"))
+        (edit-str "comment13<|>"))
+    (--with-callback 'c-mode init-str ""        (lambda () (should (--bufs= edit-str))))
+    (--with-callback 'c-mode init-str "C-c C-c" (lambda () (should (--bufs= init-str)))))
+  (let ((init-str (--join\n "/*! \file structcmd.h"
+                            "    \brief A documented file."
+                            "    Details<|>"
+                            " */"))
+        (edit-str (--join\n "\file structcmd.h"
+                            "\brief A documented file."
+                            "Details<|>")))
+    (--with-callback 'c-mode init-str ""        (lambda () (should (--bufs= edit-str))))
+    (--with-callback 'c-mode init-str "C-c C-c" (lambda () (should (--bufs= init-str)))))
+
+  ;;;
+
+  (let ((init-str (--join\n "/// comment21"
+                            "/// comment21<|>"
+                            "/// comment21"))
+        (edit-str (--join\n "comment21"
+                            "comment21<|>"
+                            "comment21")))
+    (--with-callback 'c-mode init-str ""        (lambda () (should (--bufs= edit-str))))
+    (--with-callback 'c-mode init-str "C-c C-c" (lambda () (should (--bufs= init-str)))))
+  (let ((init-str (--join\n "//! comment22"
+                            "//! comment22<|>"
+                            "//! comment22"))
+        (edit-str (--join\n "comment22"
+                            "comment22<|>"
+                            "comment22")))
+    (--with-callback 'c-mode init-str ""        (lambda () (should (--bufs= edit-str))))
+    (--with-callback 'c-mode init-str "C-c C-c" (lambda () (should (--bufs= init-str)))))
+  (let ((init-str (--join\n "//!< comment23"
+                            "//!< comment23<|>"
+                            "//!< comment23"))
+        (edit-str (--join\n "comment23"
+                            "comment23<|>"
+                            "comment23")))
+    (--with-callback 'c-mode init-str ""        (lambda () (should (--bufs= edit-str))))
+    (--with-callback 'c-mode init-str "C-c C-c" (lambda () (should (--bufs= init-str)))))
+  (let ((init-str (--join\n "///< comment24"
+                            "///< comment24<|>"
+                            "///< comment24"))
+        (edit-str (--join\n "comment24"
+                            "comment24<|>"
+                            "comment24")))
+    (--with-callback 'c-mode init-str ""        (lambda () (should (--bufs= edit-str))))
+    (--with-callback 'c-mode init-str "C-c C-c" (lambda () (should (--bufs= init-str))))))
+
 (provide 'separedit-test)
 
 ;;; separedit-test.el ends here
