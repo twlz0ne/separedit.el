@@ -988,6 +988,44 @@ The list of active backends (completion engines).
                                                   "C-c C-c" 'separedit-commit
                                                   "C-c C-k" 'edit-indirect-abort)))))))
 
+(ert-deftest separedit-test-text-mode-keybinding ()
+  (let ((init-str (--join\n "// # xml<|>"
+                            "// "
+                            "// ``` nxml"
+                            "// <root></root>"
+                            "// ```"))
+        (edit-str (--join\n "# xml<|>"
+                            ""
+                            "``` nxml"
+                            "<root></root>"
+                            "```")))
+    (let ((separedit-default-mode 'text-mode))
+      (--with-callback 'c-mode init-str "" (lambda ()
+                                             (should (--key= "C-c '"   'separedit))
+                                             (should (--key= "C-c C-c" 'separedit-commit))
+                                             (should (--key= "C-c C-k" 'edit-indirect-abort)))))
+    (let ((separedit-default-mode 'markdown-mode))
+      (--with-callback 'c-mode init-str "" (lambda ()
+                                             (should (--key= "C-c '"   'markdown-edit-code-block))
+                                             (should (--key= "C-c C-c" 'separedit-commit))
+                                             (should (--key= "C-c C-k" 'edit-indirect-abort))))))
+  (let ((init-str (--join\n "// # xml"
+                            "// "
+                            "// ``` nxml"
+                            "// <root><|></root>"
+                            "// ```"))
+        (edit-str "<root><|></root>"))
+    (let ((separedit-default-mode 'text-mode))
+      (--with-callback 'c-mode init-str "" (lambda ()
+                                             (should (--key= "C-c '"   'separedit))
+                                             (should (--key= "C-c C-c" 'separedit-commit))
+                                             (should (--key= "C-c C-k" 'edit-indirect-abort)))))
+    (let ((separedit-default-mode 'markdown-mode))
+      (--with-callback 'c-mode init-str "" (lambda ()
+                                             (should (--key= "C-c '"   'separedit))
+                                             (should (--key= "C-c C-c" 'separedit-commit))
+                                             (should (--key= "C-c C-k" 'edit-indirect-abort)))))))
+
 (ert-deftest separedit-test-code-block-matching ()
   (let ((init-data (separedit-test--indent-c
                     "// ``` emacs-lisp

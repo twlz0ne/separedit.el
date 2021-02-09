@@ -1258,18 +1258,16 @@ It will override by the key that `separedit' binding in source buffer.")
 (defun separedit--buffer-creation-setup ()
   "Function called after the edit-indirect buffer is created."
   (-if-let (entry-cmd
-            (pcase (or (derived-mode-p 'prog-mode) major-mode)
-              ((or `separedit-single-quote-string-mode
-                   `separedit-double-quote-string-mode
-                   `fundamental-mode
-                   `prog-mode)
-               #'separedit)
-              (`markdown-mode
-               #'markdown-edit-code-block)
-              (`gfm-mode
-               #'gfm-edit-code-block)
-              (`org-mode
-               #'org-edit-special)))
+            (pcase major-mode
+              (`markdown-mode #'markdown-edit-code-block)
+              (`gfm-mode #'gfm-edit-code-block)
+              (`org-mode #'org-edit-special)
+              (_ (when (derived-mode-p 'separedit-single-quote-string-mode
+                                       'separedit-double-quote-string-mode
+                                       'fundamental-mode
+                                       'text-mode
+                                       'prog-mode)
+                   #'separedit))))
       (let ((km (copy-keymap edit-indirect-mode-map)))
         (separedit--log "==> [-buffer-creation-setup] major-mode: %s, entry-cmd: %s" major-mode entry-cmd)
         (define-key km (separedit--entry-key) entry-cmd)
