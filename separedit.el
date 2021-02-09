@@ -368,7 +368,8 @@ Taken from `markdown-code-lang-modes'."
                           lisp-interaction-mode
                           common-lisp
                           racket-mode
-                          scheme-mode))
+                          scheme-mode
+                          fennel-mode))
     (("#+")            . (nix-mode python-mode ruby-mode)))
   "Alist of comment delimiter regexp."
   :group 'separedit
