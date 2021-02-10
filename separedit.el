@@ -1262,6 +1262,7 @@ It will override by the key that `separedit' binding in source buffer.")
               ((or `separedit-single-quote-string-mode
                    `separedit-double-quote-string-mode
                    `fundamental-mode
+                   `text-mode
                    `prog-mode)
                #'separedit)
               (`markdown-mode
