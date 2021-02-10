@@ -1601,6 +1601,7 @@ but users can also manually select it by pressing `C-u \\[separedit]'."
          (indent-line1 (plist-get block :indent-line1))
          (commentp (not strp))
          (codep (and lang-mode t))
+         (local-fill-column fill-column)
          (delimiter-regexp
           (let ((regexp (concat (if strp "^\s*"
                                   (or (plist-get block :comment-delimiter)
@@ -1642,6 +1643,7 @@ but users can also manually select it by pressing `C-u \\[separedit]'."
                              (set (make-local-variable 'separedit--indent-length) (separedit--remove-string-indent indent-len)))
                            (set (make-local-variable 'separedit-leave-blank-line-in-comment)
                                 ,separedit-leave-blank-line-in-comment)
+                           (set (make-local-variable 'fill-column) ,local-fill-column)
                            (set (make-local-variable 'separedit--line-delimiter) line-delimiter)
                            (set (make-local-variable 'separedit--code-block-p) ,codep)
                            (set (make-local-variable 'edit-indirect-before-commit-hook)

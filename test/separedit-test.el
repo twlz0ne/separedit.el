@@ -1663,6 +1663,56 @@ comment3
     (--with-callback 'c-mode init-str ""        (lambda () (should (--bufs= edit-str))))
     (--with-callback 'c-mode init-str "C-c C-c" (lambda () (should (--bufs= init-str))))))
 
+(ert-deftest separedit-test-local-fill-column ()
+  (let ((dir-local-fill-column (+ fill-column 10))
+        (buf-local-fill-column (+ fill-column 20))
+        (default-directory (make-temp-file "test-fill-column--" 'tmpdir "/"))
+        (comment-prefix "// "))
+    (with-temp-buffer
+      (insert (format "%s" `((nil . ((fill-column . ,dir-local-fill-column))))))
+      (write-region (point-min) (point-max) ".dir-locals.el"))
+    (with-current-buffer (find-file-noselect "main.c")
+      (when (= 25.1 (string-to-number emacs-version))
+        ;; local variables will lose efficasy after c-mode enabled on 25.1
+        (add-hook 'c-mode-hook #'hack-local-variables-apply))
+      (c-mode)
+      (insert (concat comment-prefix "comment<|>"))
+      (let ((noninteractive nil))
+        (font-lock-mode 1)
+        (unless (and (= 25.1 (string-to-number emacs-version))
+                     (memq major-mode '(python-mode)))
+          (font-lock-ensure)))
+      ;;
+      ;; dir local fill-column
+      ;;
+      (save-excursion
+        (goto-char (point-max))
+        (separedit)
+        (should (= fill-column dir-local-fill-column))
+        (test-with nil "C-c C-k"))
+      (save-excursion
+        (let ((separedit-continue-fill-column t))
+          (goto-char (point-max))
+          (separedit)
+          (should (= fill-column (- dir-local-fill-column (length comment-prefix))))
+          (test-with nil "C-c C-k")))
+      ;;
+      ;; buffer local fill-column
+      ;;
+      (save-excursion
+        (setq-local fill-column buf-local-fill-column)
+        (goto-char (point-max))
+        (separedit)
+        (should (= fill-column buf-local-fill-column))
+        (test-with nil "C-c C-k"))
+      (save-excursion
+        (let ((separedit-continue-fill-column t))
+          (setq-local fill-column buf-local-fill-column)
+          (goto-char (point-max))
+          (separedit)
+          (should (= fill-column (- buf-local-fill-column (length comment-prefix))))
+          (test-with nil "C-c C-k"))))))
+
 (provide 'separedit-test)
 
 ;;; separedit-test.el ends here
