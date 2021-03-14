@@ -612,6 +612,10 @@ If MODE is nil, use ‘major-mode’."
 
 ;;; Comment functions
 
+(defvar separedit-comment-faces '(font-lock-comment-face
+                                  font-lock-comment-delimiter-face)
+  "List of comment face.")
+
 (defun separedit--comment-delimiter-regexp (&optional mode)
   "Return comment delimiter regex of MODE.
 
@@ -641,12 +645,20 @@ If there is no comment delimiter regex for MODE, return `comment-start-skip'."
            (and (ignore-errors (forward-char 1) t)
                 (separedit--point-at-comment))))))
 
+(defun separedit--comment-faces ()
+  "Return comment faces of current mode."
+  (append separedit-comment-faces
+          (when (apply #'derived-mode-p separedit-not-support-docstring-modes)
+            '(font-lock-doc-face))))
+
 (defun separedit--point-at-comment (&optional point)
   "Return the face if POINT at comment."
   (let ((face (get-text-property (or point (point)) 'face)))
-    (or (memq face '(font-lock-comment-face font-lock-comment-delimiter-face))
-        (when (apply #'derived-mode-p separedit-not-support-docstring-modes)
-          (memq face '(font-lock-doc-face))))))
+    (when face
+      (let ((comment-faces (separedit--comment-faces)))
+        (if (consp face)
+            (cl-intersection face comment-faces)
+          (memq face comment-faces))))))
 
 (defun separedit--comment-beginning (&optional pos)
   "Look at the first line of comment from point POS.

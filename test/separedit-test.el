@@ -1663,6 +1663,33 @@ comment3
     (--with-callback 'c-mode init-str ""        (lambda () (should (--bufs= edit-str))))
     (--with-callback 'c-mode init-str "C-c C-c" (lambda () (should (--bufs= init-str))))))
 
+(ert-deftest separedit-test-doxygen-style-c-comment-issue24 ()
+  (let ((separedit-remove-trailing-spaces-in-comment t)
+        (init-str "\
+/**
+ * @brief This the entry for this program.<|>
+ *
+ * Detailed description goes here. And it's long enough
+ * to span multiple lines.
+ *
+ * @param argc Count of arguments.
+ * @param argv Arguments array.
+ */
+int main(int argc, char *argv[])
+{
+     return 0;
+}")
+        (edit-str "\
+@brief This the entry for this program.<|>
+
+Detailed description goes here. And it's long enough
+to span multiple lines.
+
+@param argc Count of arguments.
+@param argv Arguments array."))
+    (--with-callback 'c-mode init-str ""        (lambda () (should (--bufs= edit-str))))
+    (--with-callback 'c-mode init-str "C-c C-c" (lambda () (should (--bufs= init-str))))))
+
 (ert-deftest separedit-test-local-fill-column ()
   (let ((dir-local-fill-column (+ fill-column 10))
         (buf-local-fill-column (+ fill-column 20))
