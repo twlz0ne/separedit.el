@@ -569,13 +569,13 @@ Return nil if reached the end of the buffer."
   (nth 3 (syntax-ppss)))
 
 (defun separedit--string-beginning ()
-  "Return beginning of string at point."
+  "Return beginning (including quote mark) of string at point."
   (save-excursion
     (while (separedit--point-at-string) (backward-char))
     (point)))
 
 (defun separedit--string-end ()
-  "Return end of string at point."
+  "Return end (including quote mark) of string at point."
   (save-excursion
     (while (separedit--point-at-string) (forward-char))
     (point)))
@@ -653,7 +653,10 @@ If there is no comment delimiter regex for MODE, return `comment-start-skip'."
 
 (defun separedit--point-at-comment (&optional point)
   "Return the face if POINT at comment."
-  (let ((face (get-text-property (or point (point)) 'face)))
+  (let ((face (get-text-property (or point (if (and (eobp) (not (bolp)))
+                                               (1- (point))
+                                             (point)))
+                                 'face)))
     (when face
       (let ((comment-faces (separedit--comment-faces)))
         (if (consp face)
@@ -1047,16 +1050,20 @@ Block info example:
                         rest code
                         ```"
   (let* ((pos (point))
-         (strp (separedit--point-at-string))
+         (strp nil)
          (comment-or-string-region
-          (if strp
-              (let ((region (separedit--string-region)))
-                (setq strp (separedit--string-quotes
-                            (separedit--string-beginning)))
-                region)
-            (when (or (derived-mode-p 'prog-mode)
-                      (memq major-mode '(gfm-mode markdown-mode org-mode)))
-              (separedit--comment-region))))
+          (if (separedit--point-at-comment)
+              (when (or (derived-mode-p 'prog-mode)
+                        (memq major-mode '(gfm-mode markdown-mode org-mode)))
+                (ignore-error user-error (separedit--comment-region)))
+            (let ((region (ignore-error user-error (separedit--string-region))))
+              (if region
+                  (prog1 region
+                    (setq strp (separedit--string-quotes
+                                (save-excursion
+                                  (goto-char (car region))
+                                  (separedit--string-beginning)))))
+                (user-error "Not inside a edit block")))))
          (indent-line1 nil)
          (string-indent
           (if (and strp separedit-preserve-string-indentation)
@@ -1079,8 +1086,7 @@ Block info example:
                   ;; At "/* |comment"
                   (current-column)))))))
     (save-restriction
-      (when comment-or-string-region
-        (apply #'narrow-to-region comment-or-string-region))
+      (apply #'narrow-to-region comment-or-string-region)
       (let* ((delimiter (unless strp (separedit--comment-delimiter-regexp)))
              (code-info (separedit--code-block-end
                          (separedit--code-block-beginning delimiter)))
@@ -1092,22 +1098,20 @@ Block info example:
             (append code-info (list :string-quotes strp
                                     :indent-line1 indent-line1
                                     :indent-length indent-length))
-          (if comment-or-string-region
-              (list :beginning (if (and strp (eq (char-after (point-min)) ?\n))
-                                   (1+ (point-min))
-                                 (point-min))
-                    :end (if strp
-                             (save-excursion
-                               (goto-char (point-max))
-                               (when (looking-back "\n\s*" 1)
-                                 (forward-line -1)
-                                 (goto-char (point-at-eol)))
-                               (point))
-                           (point-max))
-                    :string-quotes strp
-                    :indent-line1 indent-line1
-                    :indent-length indent-length)
-            (user-error "Not inside a edit block")))))))
+          (list :beginning (if (and strp (eq (char-after (point-min)) ?\n))
+                               (1+ (point-min))
+                             (point-min))
+                :end (if strp
+                         (save-excursion
+                           (goto-char (point-max))
+                           (when (looking-back "\n\s*" 1)
+                             (forward-line -1)
+                             (goto-char (point-at-eol)))
+                           (point))
+                       (point-max))
+                :string-quotes strp
+                :indent-line1 indent-line1
+                :indent-length indent-length))))))
 
 ;;; Help/helpful mode variables / funcstions
 
