@@ -597,8 +597,8 @@ If MODE is nil, use ‘major-mode’."
             (when (funcall looking-fn s)
               (throw 'break s))))))))
 
-(defun separedit--string-region (&optional pos)
-  "Return region of string at point POS."
+(cl-defmethod separedit--string-region (&optional pos)
+  "Return the region of string at point POS."
   (let ((pos (or pos (point))))
     (save-excursion
       (goto-char pos)
@@ -608,6 +608,39 @@ If MODE is nil, use ‘major-mode’."
                  (quotes-len (length (separedit--string-quotes fbeg))))
             (list (+ (or fbeg (point-min)) quotes-len)
                   (- (or fend (point-max)) quotes-len)))
+        (user-error "Not inside a string")))))
+
+(cl-defmethod separedit--string-region (&context (major-mode nix-mode)
+                                        &optional pos)
+  "Return the region of nix string at point POS.
+
+According to the desgin (see https://github.com/NixOS/nix-mode/issues/96), the
+string can not be determined when the cursor is on the interpolated variable,
+for example:
+
+    (with-temp-buffer
+      (insert \"''foo ${bar} quux''\")
+      (nix-mode)
+      (font-lock-ensure)
+      (goto-char (length \"''foo ${b\"))
+      (nth 3 (syntax-ppss)))
+    ;; => nil"
+  (let ((pos (or pos (point))))
+    (save-excursion
+      (goto-char pos)
+      (-if-let* ((beg (save-excursion
+                        (when (re-search-backward "\\(\"\\|''\\)" nil t)
+                          (goto-char (match-end 1))
+                          (when (or (looking-at-p "\\${")
+                                    (separedit--point-at-string))
+                            (point)))))
+                 (end (save-excursion
+                        (when (re-search-forward "\\(\"\\|''\\)" nil t)
+                          (goto-char (match-beginning 1))
+                          (when (or (looking-back "}" pos)
+                                    (separedit--point-at-string))
+                            (point))))))
+          (list beg end)
         (user-error "Not inside a string")))))
 
 ;;; Comment functions

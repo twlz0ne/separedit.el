@@ -9,4 +9,5 @@
 (depends-on "edit-indirect")
 
 (development
- (depends-on "markdown-mode"))
+ (depends-on "markdown-mode")
+ (depends-on "nix-mode"))

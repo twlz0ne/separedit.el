@@ -776,6 +776,56 @@
                       content-string
                       (apply #'buffer-substring-no-properties (separedit--string-region 20)))))))
 
+(ert-deftest separedit-test-string-region-nix ()
+  (should (string= "foo ${bar} quux"
+                   (separedit-test--with-buffer 'nix-mode
+                     "test = \"foo ${bar} quux\";"
+                     (apply #'buffer-substring-no-properties (separedit--string-region 10)))))
+  (should (string= "foo ${bar} quux"
+                   (separedit-test--with-buffer 'nix-mode
+                     "test = \"foo ${bar} quux\";"
+                     (apply #'buffer-substring-no-properties (separedit--string-region 15)))))
+  (should (string= "foo ${bar} quux"
+                   (separedit-test--with-buffer 'nix-mode
+                     "test = \"foo ${bar} quux\";"
+                     (apply #'buffer-substring-no-properties (separedit--string-region 20)))))
+  (should (string= "Not inside a string"
+                   (separedit-test--with-buffer 'nix-mode
+                     "test = \"foo ${bar} quux\";"
+                     (condition-case err
+                         (separedit--string-region (point-min))
+                       (user-error (cadr err))))))
+  (should (string= "Not inside a string"
+                   (separedit-test--with-buffer 'nix-mode
+                     "test = \"foo ${bar} quux\";"
+                     (condition-case err
+                         (separedit--string-region (point-max))
+                       (user-error (cadr err))))))
+  (should (string= "foo ${bar} quux"
+                   (separedit-test--with-buffer 'nix-mode
+                     "test = ''foo ${bar} quux'';"
+                     (apply #'buffer-substring-no-properties (separedit--string-region 10)))))
+  (should (string= "foo ${bar} quux"
+                   (separedit-test--with-buffer 'nix-mode
+                     "test = ''foo ${bar} quux'';"
+                     (apply #'buffer-substring-no-properties (separedit--string-region 17)))))
+  (should (string= "foo ${bar} quux"
+                   (separedit-test--with-buffer 'nix-mode
+                     "test = ''foo ${bar} quux'';"
+                     (apply #'buffer-substring-no-properties (separedit--string-region 22)))))
+  (should (string= "Not inside a string"
+                   (separedit-test--with-buffer 'nix-mode
+                     "test = ''foo ${bar} quux'';"
+                     (condition-case err
+                         (separedit--string-region (point-min))
+                       (user-error (cadr err))))))
+  (should (string= "Not inside a string"
+                   (separedit-test--with-buffer 'nix-mode
+                     "test = ''foo ${bar} quux'';"
+                     (condition-case err
+                         (separedit--string-region (point-max))
+                       (user-error (cadr err)))))))
+
 (ert-deftest separedit-test-nested-escape ()
   (with-temp-buffer
     (separedit-double-quote-string-mode)
