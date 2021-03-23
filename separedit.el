@@ -564,9 +564,10 @@ Return nil if reached the end of the buffer."
   :group 'separedit
   :type 'alist)
 
-(defun separedit--point-at-string ()
-  "Determine if point at string or not."
-  (nth 3 (syntax-ppss)))
+(defun separedit--point-at-string (&optional pos)
+  "Determine if point POS at string or not."
+  (save-excursion
+    (nth 3 (syntax-ppss pos))))
 
 (defun separedit--string-beginning ()
   "Return beginning (including quote mark) of string at point."
@@ -628,18 +629,20 @@ for example:
   (let ((pos (or pos (point))))
     (save-excursion
       (goto-char pos)
-      (-if-let* ((beg (save-excursion
-                        (when (re-search-backward "\\(\"\\|''\\)" nil t)
-                          (goto-char (match-end 1))
-                          (when (or (looking-at-p "\\${")
-                                    (separedit--point-at-string))
-                            (point)))))
-                 (end (save-excursion
-                        (when (re-search-forward "\\(\"\\|''\\)" nil t)
-                          (goto-char (match-beginning 1))
-                          (when (or (looking-back "}" pos)
-                                    (separedit--point-at-string))
-                            (point))))))
+      (-if-let* ((beg
+                  (catch 'beg
+                    (save-excursion
+                      (while (re-search-backward "\\(\"\\|''\\)" nil t)
+                        (unless (or (separedit--point-at-string (1- (point)))
+                                    (looking-back "}" nil))
+                          (throw 'beg (match-end 1)))))))
+                 (end
+                  (catch 'end
+                    (save-excursion
+                      (while (re-search-forward "\\(\"\\|''\\)" nil t)
+                        (unless (or (separedit--point-at-string)
+                                    (looking-at-p "\\${"))
+                          (throw 'end (match-beginning 1))))))))
           (list beg end)
         (user-error "Not inside a string")))))
 

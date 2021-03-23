@@ -777,6 +777,7 @@
                       (apply #'buffer-substring-no-properties (separedit--string-region 20)))))))
 
 (ert-deftest separedit-test-string-region-nix ()
+  ;; Single-line string
   (should (string= "foo ${bar} quux"
                    (separedit-test--with-buffer 'nix-mode
                      "test = \"foo ${bar} quux\";"
@@ -801,30 +802,61 @@
                      (condition-case err
                          (separedit--string-region (point-max))
                        (user-error (cadr err))))))
-  (should (string= "foo ${bar} quux"
+
+  ;; Multi-line string
+  (let ((separedit-preserve-string-indentation t)
+        (init-str "
+preBuild = ''
+  makeFlagsArray=(
+    prefix=\"$out/share\"
+    ORG_ADD_CONTRIB=\"org* ox*\"
+    GITVERSION=\"${version}\"
+    ORGVERSION=\"${version}\"
+  );
+'';\n")
+        (expected-str "
+  makeFlagsArray=(
+    prefix=\"$out/share\"
+    ORG_ADD_CONTRIB=\"org* ox*\"
+    GITVERSION=\"${version}\"
+    ORGVERSION=\"${version}\"
+  );\n"))
+    (should (string= expected-str
+                     (separedit-test--with-buffer 'nix-mode
+                       init-str
+                       (re-search-forward "out")
+                       (apply #'buffer-substring-no-properties (separedit--string-region)))))
+    (should (string= expected-str
+                     (separedit-test--with-buffer 'nix-mode
+                       init-str
+                       (re-search-forward "ADD_")
+                       (apply #'buffer-substring-no-properties (separedit--string-region)))))
+    (should (string= expected-str
+                     (separedit-test--with-buffer 'nix-mode
+                       init-str
+                       (re-search-forward "\\${ver")
+                       (apply #'buffer-substring-no-properties (separedit--string-region)))))
+    (should (string= "Not inside a string"
+                     (separedit-test--with-buffer 'nix-mode
+                       init-str
+                       (re-search-forward "prebuild = ")
+                       (condition-case err
+                           (separedit--string-region (point-min))
+                         (user-error (cadr err))))))
+    (should (string= "Not inside a string"
+                     (separedit-test--with-buffer 'nix-mode
+                       init-str
+                       (re-search-forward "'';")
+                       (condition-case err
+                           (separedit--string-region (point-max))
+                         (user-error (cadr err)))))))
+
+  ;; Known issue when the cursor is between two strings
+  (should (string= "value1\"; key2=\"value2"
                    (separedit-test--with-buffer 'nix-mode
-                     "test = ''foo ${bar} quux'';"
-                     (apply #'buffer-substring-no-properties (separedit--string-region 10)))))
-  (should (string= "foo ${bar} quux"
-                   (separedit-test--with-buffer 'nix-mode
-                     "test = ''foo ${bar} quux'';"
-                     (apply #'buffer-substring-no-properties (separedit--string-region 17)))))
-  (should (string= "foo ${bar} quux"
-                   (separedit-test--with-buffer 'nix-mode
-                     "test = ''foo ${bar} quux'';"
-                     (apply #'buffer-substring-no-properties (separedit--string-region 22)))))
-  (should (string= "Not inside a string"
-                   (separedit-test--with-buffer 'nix-mode
-                     "test = ''foo ${bar} quux'';"
-                     (condition-case err
-                         (separedit--string-region (point-min))
-                       (user-error (cadr err))))))
-  (should (string= "Not inside a string"
-                   (separedit-test--with-buffer 'nix-mode
-                     "test = ''foo ${bar} quux'';"
-                     (condition-case err
-                         (separedit--string-region (point-max))
-                       (user-error (cadr err)))))))
+                     "{ key1=\"value1\"; key2=\"value2\"; }"
+                     (re-search-forward "value1\";")
+                     (apply #'buffer-substring-no-properties (separedit--string-region))))))
 
 (ert-deftest separedit-test-nested-escape ()
   (with-temp-buffer
@@ -1318,6 +1350,7 @@ Usage:
 (ert-deftest separedit-test-preserve-string-indent-1 ()
   "String block with both of STAR & END quotes at a new line"
   (let ((separedit-preserve-string-indentation t)
+
         (init-str (--join\n "    '''"
                             "    String block 11"
                             "    String block 11<|>"
