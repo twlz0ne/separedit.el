@@ -1782,14 +1782,14 @@ to span multiple lines.
       (insert (format "%s" `((nil . ((fill-column . ,dir-local-fill-column))))))
       (write-region (point-min) (point-max) ".dir-locals.el"))
     (with-current-buffer (find-file-noselect "main.c")
-      (when (= 25.1 (string-to-number emacs-version))
-        ;; local variables will lose efficasy after c-mode enabled on 25.1
+      (when (= 25 emacs-major-version)
+        ;; local variables will lose efficasy after c-mode enabled on 25
         (add-hook 'c-mode-hook #'hack-local-variables-apply))
       (c-mode)
       (insert (concat comment-prefix "comment<|>"))
       (let ((noninteractive nil))
         (font-lock-mode 1)
-        (unless (and (= 25.1 (string-to-number emacs-version))
+        (unless (and (= 25 emacs-major-version)
                      (memq major-mode '(python-mode)))
           (font-lock-ensure)))
       ;;
