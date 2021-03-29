@@ -53,22 +53,39 @@
   (message "==> selected-packages: %s" package-selected-packages)
   (message "==> package-archives: %s" package-archives)
 
+  ;; FIX: Failed to download 'xxx' archive
+  (when (and noninteractive (<= 25.1 (string-to-number emacs-version) 26.1))
+    (require 'gnutls)
+    (with-eval-after-load 'gnutls
+      (message "==> downgrade network security level to 'low")
+      (setq network-security-level 'low)))
+
   ;; Fix: bad-signature "archive-contents.sig"
   ;; https://elpa.gnu.org/packages/gnu-elpa-keyring-update.html
-  (let ((gnupg-dir (expand-file-name "gnupg" package-user-dir)))
-    (message
-     (shell-command-to-string
-      (format "mkdir -p %s && gpg --homedir %s --receive-keys 066DAFCB81E42C40"
-              gnupg-dir gnupg-dir))))
+  (when (and noninteractive (< (string-to-number emacs-version) 26.1))
+    (let ((gnupg-dir (expand-file-name "gnupg" package-user-dir)))
+      (message "==> update gpg key")
+      (message
+       (shell-command-to-string
+        (format "mkdir -p %s && gpg --homedir %s --receive-keys 066DAFCB81E42C40"
+                gnupg-dir gnupg-dir)))
 
-  ;; ;; FIX: Failed to download 'xxx' archive
-  ;; (when (and noninteractive (<= 25.1 (string-to-number emacs-version) 26.1))
-  ;;   (require 'gnutls)
-  ;;   (with-eval-after-load 'gnutls
-  ;;     (message "==> downgrade network security level")
-  ;;     (setq network-security-level 'low)))
+      ;; Fix gpg error:
+      ;; $ gpg --homedir %s --receive-keys 066DAFCB81E42C40
+      ;; gpg: key 066DAFCB81E42C40: new key but contains no user ID - skipped
+      ;; gpg: Total number processed: 1
+      ;; gpg:           w/o user IDs: 1
+      (let* ((default-directory (expand-file-name ".cask/" user-emacs-directory))
+             (tar "gnu-elpa-keyring-update-2019.3.tar"))
+        (unless (file-exists-p tar)
+          (message "==> download %s" tar)
+          (url-copy-file (concat "https://elpa.gnu.org/packages/" tar) tar))
+        (unless (featurep 'gnu-elpa-keyring-update)
+          (with-current-buffer (find-file-noselect tar)
+            (message "==> install %s" tar)
+            (package-install-from-buffer)))
+        (gnu-elpa-keyring-update))))
 
-  ;; (package-initialize)
   (package-refresh-contents)
 
   (mapc (lambda (pkg)
