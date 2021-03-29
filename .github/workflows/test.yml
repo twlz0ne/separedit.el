@@ -1,0 +1,69 @@
+name: CI
+
+on:
+  push:
+    paths-ignore:
+      - '**.md'
+  pull_request:
+    paths-ignore:
+      - '**.md'
+
+jobs:
+  test:
+    runs-on: ubuntu-latest
+    continue-on-error: ${{matrix.allow_failures}}
+
+    strategy:
+      fail-fast: false
+      matrix:
+        emacs_version:
+          - 24.4
+          - 24.5
+          - 25.1
+          - 25.2
+          - 25.3
+          - 26.1
+          - 26.2
+          - 26.3
+          - 27.1
+
+        allow_failures: [false]
+
+        include:
+          - emacs_version: snapshot
+            allow_failures: true
+
+    steps:
+    - name: Set up Python
+      uses: actions/setup-python@v2
+      with:
+        python-version: 3.6
+        architecture: x64
+
+    - name: Set up Emacs
+      uses: purcell/setup-emacs@master
+      with:
+        version: ${{matrix.emacs_version}}
+
+    - name: Set up Cask
+      uses: conao3/setup-cask@master
+      with:
+        version: 0.8.6
+
+    - name: Check out the source code
+      uses: actions/checkout@v2
+
+    - name: Install dependencies
+      run: |
+        if [[ ${{matrix.emacs_version}} == 24.* ]]; then
+            ln -snf Cask-24 Cask
+        else
+            ln -snf Cask-25 Cask
+        fi
+        cask install
+
+    - name: Byte compile
+      run: make compile
+
+    - name: Run tests
+      run: make test

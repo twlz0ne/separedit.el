@@ -1,6 +1,6 @@
 <!-- This file was generated from elisp commentary section by tool, DO NOT EDIT -->
 
-[![Build Status](https://travis-ci.com/twlz0ne/separedit.el.svg?branch=master)](https://travis-ci.com/twlz0ne/separedit.el)
+[![CI](https://github.com/twlz0ne/separedit.el/workflows/CI/badge.svg)](https://github.com/twlz0ne/separedit.el/actions?query=workflow%3ACI)
 [![MELPA](https://melpa.org/packages/separedit-badge.svg)](https://melpa.org/#/separedit)
 
 # separedit.el
