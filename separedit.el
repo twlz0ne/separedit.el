@@ -1091,8 +1091,8 @@ Block info example:
           (if (separedit--point-at-comment)
               (when (or (derived-mode-p 'prog-mode)
                         (memq major-mode '(gfm-mode markdown-mode org-mode)))
-                (ignore-error user-error (separedit--comment-region)))
-            (let ((region (ignore-error user-error (separedit--string-region))))
+                (condition-case nil (separedit--comment-region) (user-error nil)))
+            (let ((region (condition-case nil (separedit--string-region) (user-error nil))))
               (if region
                   (prog1 region
                     (setq strp (separedit--string-quotes
