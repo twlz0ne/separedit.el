@@ -15,20 +15,13 @@ emacs_bins=(
     # /Applications/Emacs-26.1.app/Contents/MacOS/Emacs
     # /Applications/Emacs-25.3.app/Contents/MacOS/Emacs
     # /Applications/Emacs-25.2.app/Contents/MacOS/Emacs
-    # /Applications/Emacs-25.1.app/Contents/MacOS/Emacs
-    # /Applications/Emacs-24.5.app/Contents/MacOS/Emacs
-    /Applications/Emacs-24.4.app/Contents/MacOS/Emacs
+    /Applications/Emacs-25.1.app/Contents/MacOS/Emacs
 )
 
 for bin in "${emacs_bins[@]}"; do
     ver=$($bin --batch --eval '(princ (format "%s.%s" emacs-major-version emacs-minor-version))')
     echo "==> $ver: $bin"
     export EMACS=$bin
-    if [[ $ver = 24.* ]]; then
-        ln -snf Cask-24 Cask
-    else
-        ln -snf Cask-25 Cask
-    fi
     $bin --batch -l test/test-bootstrap.el -l test/test-checkinstall.el
     make clean ; make test $1
 done

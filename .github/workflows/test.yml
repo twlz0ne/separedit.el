@@ -17,8 +17,6 @@ jobs:
       fail-fast: false
       matrix:
         emacs_version:
-          - 24.4
-          - 24.5
           - 25.1
           - 25.2
           - 25.3
@@ -54,13 +52,7 @@ jobs:
       uses: actions/checkout@v2
 
     - name: Install dependencies
-      run: |
-        if [[ ${{matrix.emacs_version}} == 24.* ]]; then
-            ln -snf Cask-24 Cask
-        else
-            ln -snf Cask-25 Cask
-        fi
-        cask install
+      run: cask install
 
     - name: Byte compile
       run: make compile
