@@ -1823,6 +1823,25 @@ to span multiple lines.
           (should (= fill-column (- buf-local-fill-column (length comment-prefix))))
           (test-with nil "C-c C-k"))))))
 
+(ert-deftest separedit-test-tab-indent-issue25 ()
+  (let ((init-str "\t/// Comment<|>")
+        (edit-str "Comment<|>"))
+    (let ((tab-width 2))
+      (--with-callback 'c-mode init-str ""        (lambda () (--bufs= edit-str)))
+      (--with-callback 'c-mode init-str "C-c C-c" (lambda ()
+                                                    (should (= 2 tab-width))
+                                                    (--bufs= init-str))))
+    (let ((tab-width 4))
+      (--with-callback 'c-mode init-str ""        (lambda () (--bufs= edit-str)))
+      (--with-callback 'c-mode init-str "C-c C-c" (lambda ()
+                                                    (should (= 4 tab-width))
+                                                    (--bufs= init-str))))
+    (let ((tab-width 8))
+      (--with-callback 'c-mode init-str ""        (lambda () (--bufs= edit-str)))
+      (--with-callback 'c-mode init-str "C-c C-c" (lambda ()
+                                                    (should (= 8 tab-width))
+                                                    (--bufs= init-str))))))
+
 (provide 'separedit-test)
 
 ;;; separedit-test.el ends here

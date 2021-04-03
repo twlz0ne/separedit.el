@@ -666,7 +666,7 @@ If there is no comment delimiter regex for MODE, return `comment-start-skip'."
     (if def
         (if (symbolp (car def))
             (separedit--comment-delimiter-regexp (car def))
-          (concat "^\s*\\(?:"
+          (concat "^[\s\t]*\\(?:"
                   (mapconcat #'identity (car def) "\\|")
                   "\\)\s?"))
       comment-start-skip)))
@@ -1653,8 +1653,9 @@ but users can also manually select it by pressing `C-u \\[separedit]'."
          (commentp (not strp))
          (codep (and lang-mode t))
          (local-fill-column fill-column)
+         (local-tab-width tab-width)
          (delimiter-regexp
-          (let ((regexp (concat (if strp "^\s*"
+          (let ((regexp (concat (if strp "^[\s\t]*"
                                   (or (plist-get block :comment-delimiter)
                                       (separedit--comment-delimiter-regexp)))
                                 (plist-get (plist-get block :regexps) :body))))
@@ -1681,8 +1682,13 @@ but users can also manually select it by pressing `C-u \\[separedit]'."
                                  (when (or ,(and strp codep) ,commentp)
                                    (separedit--remove-comment-delimiter ,delimiter-regexp ,(unless commentp indent-length))))
                                 (indent-len (when ,indent-length
-                                              (- ,indent-length (length line-delimiter)))))
+                                              (- ,indent-length
+                                                 (if (stringp line-delimiter)
+                                                     (let ((tab-width ,local-tab-width))
+                                                       (string-width line-delimiter))
+                                                   0)))))
                            (separedit--log "==> block(edit buffer): %S" (buffer-substring-no-properties (point-min) (point-max)))
+                           (separedit--log "==> line-delimiter: %S" line-delimiter)
                            (separedit--log "==> indent-len: %s" indent-len)
                            (when ,strp
                              (separedit--log "==> quotes(edit buffer): %S" ,strp)
