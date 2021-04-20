@@ -363,9 +363,9 @@ Taken from `markdown-code-lang-modes'."
                           typescript-mode))
     (("--")            . (applescript-mode haskell-mode lua-mode))
     (("//+")           . (pascal-mode fsharp-mode))
-    ((";+")            . (emacs-lisp-mode
-                          lisp-interaction-mode
-                          common-lisp
+    ((";+\\(?:###autoload\\)?") . (emacs-lisp-mode
+                                   lisp-interaction-mode))
+    ((";+")            . (common-lisp
                           racket-mode
                           scheme-mode
                           fennel-mode))
@@ -1694,7 +1694,11 @@ but users can also manually select it by pressing `C-u \\[separedit]'."
                              (separedit--log "==> quotes(edit buffer): %S" ,strp)
                              (separedit--remove-escape ,strp))
                            (separedit--log "==> mode(edit buffer): %S" ',mode)
-                           (funcall ',mode)
+                           (if (and line-delimiter
+                                    (memq ',major-mode '(emacs-lisp-mode lisp-interaction-mode))
+                                    (string-match-p ";;;###autoload\s*?" line-delimiter))
+                               (funcall ',major-mode)
+                             (funcall ',mode))
                            (when (and indent-len (>= indent-len 0))
                              (set (make-local-variable 'separedit--indent-line1) ,indent-line1)
                              (set (make-local-variable 'separedit--indent-length) (separedit--remove-string-indent indent-len)))
