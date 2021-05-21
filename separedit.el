@@ -271,7 +271,7 @@
 ;;   (let ((separedit-continue-fill-column t))
 ;;     (with-current-buffer (separedit-dwim)
 ;;       (fill-region (point-min) (point-max))
-;;       (execute-kbd-macro (kbd "C-c C-k")))))
+;;       (execute-kbd-macro (kbd "C-c C-c")))))
 ;; ```
 
 ;; ### Eval multiple-line sexp in comment
@@ -279,10 +279,11 @@
 ;; ``` elisp
 ;; (defun separedit/eval-last-sexp-in-comment ()
 ;;   (interactive)
-;;   (let ((separedit-default-mode 'emacs-lisp-mode))
+;;   (let ((separedit-default-mode 'emacs-lisp-mode)
+;;         (separedit-inhibit-edit-window-p t))
 ;;     (with-current-buffer (separedit)
-;;       (prog1 (call-interactively #'eval-last-sexp)
-;;         (execute-kbd-macro (kbd "C-c C-k"))))))
+;;       (unwind-protect (call-interactively #'eval-last-sexp)
+;;         (edit-indirect-abort)))))
 
 ;; (define-key emacs-lisp-mode-map (kbd "C-x C-e")
 ;;   (lambda ()
