@@ -492,6 +492,19 @@ Example of a string block with indentation offset:
   :group 'separedit
   :type 'hook)
 
+(defvar separedit-inhibit-edit-window-p nil
+  "Non-nil for open the edit buffer in background.
+
+For example:
+
+   (let ((separedit-inhibit-edit-window-p t))
+     (with-current-buffer (separedi)
+       (unwind-protect
+           (progn
+             ;; DO SOMETHING
+             )
+         (edit-indirect-abort))))")
+
 (defvar separedit--line-delimiter nil "Comment delimiter of each editing line.")
 
 (defvar separedit--indent-length nil "Indent length of each editing line.")
@@ -1736,7 +1749,8 @@ but users can also manually select it by pressing `C-u \\[separedit]'."
                                               (separedit--restore-escape ,strp))))
                                         edit-indirect-before-commit-hook))
                            (separedit--restore-point ,@point-info))))
-          (edit-indirect-region beg end 'display-buffer))
+          (edit-indirect-region beg end (unless separedit-inhibit-edit-window-p
+                                          'display-buffer)))
       (user-error "Not inside a edit block"))))
 
 (defun separedit-mark-region (beg end &optional edit-buffer-mode)
