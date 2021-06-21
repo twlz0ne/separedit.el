@@ -447,10 +447,11 @@ Taken from `markdown-code-lang-modes'."
 
 Each element of it is in the form of:
 
-    (:header REGEX ;; to match the header    line of block
-     :body   REGEX ;; to match the each body line of block
-     :fotter REGEX ;; to match the footer    line of block
-     :mode   MODE) ;; major mode for edit buffer (optional)"
+    (:header      REGEX ;; to match the header    line of block
+     :body        REGEX ;; to match the each body line of block
+     :footer      REGEX ;; to match the footer    line of block
+     :keep-footer BOOL  ;; whether to display the footer in edit buffer (optional)
+     :mode        MODE) ;; major mode for edit buffer (optional)"
   :group 'separedit
   :type 'alist)
 
@@ -965,13 +966,14 @@ Search process will skip characters COMMENT-DELIMITER at beginning of each line.
   (when (and code-info (plist-get code-info :beginning))
     (save-excursion
       (goto-char (plist-get code-info :beginning))
-      (let ((regexp (concat (plist-get code-info :comment-delimiter)
-                            (plist-get
-                             (plist-get code-info :regexps)
-                             :footer))))
+      (let* ((code-pl (plist-get code-info :regexps))
+             (keep-footer-p (plist-get code-pl :keep-footer))
+             (regexp (concat (plist-get code-info :comment-delimiter)
+                             (plist-get code-pl :footer))))
         (separedit--log "==> [code=block-end] regexp: %s" regexp)
         (when (re-search-forward regexp nil t)
-          (separedit--end-of-previous-line)
+          (unless keep-footer-p
+            (separedit--end-of-previous-line))
           (plist-put code-info
                      :end (point-at-eol)))))))
 
