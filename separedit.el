@@ -442,7 +442,13 @@ Taken from `markdown-code-lang-modes'."
     (:header "Local Variables:$"
      :body   ""
      :footer "End:$"
-     :mode   emacs-lisp-mode))
+     :mode   emacs-lisp-mode)
+
+    (:header "@\\(?:swagger\\|openapi\\)$"
+     :body   ""
+     :footer ".*\\'"
+     :keep-footer t
+     :mode yaml-mode))
   "Lists of regexp to match code block.
 
 Each element of it is in the form of:
