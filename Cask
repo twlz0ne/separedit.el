@@ -10,4 +10,5 @@
 
 (development
  (depends-on "markdown-mode")
- (depends-on "nix-mode"))
+ (depends-on "nix-mode")
+ (depends-on "yaml-mode"))

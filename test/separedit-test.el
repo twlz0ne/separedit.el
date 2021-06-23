@@ -1842,6 +1842,27 @@ to span multiple lines.
                                                     (should (= 8 tab-width))
                                                     (--bufs= init-str))))))
 
+(ert-deftest separedit-test-swagger-jsdoc ()
+  (let ((init-str "\
+/**
+ * @swagger
+ * /:
+ *   get:
+ *     description: Welcome to swagger-jsdoc!
+ *     responses:
+ *       200:
+ *         description: Returns a mysterious string.<|>
+ */")
+        (edit-str "\
+/:
+  get:
+    description: Welcome to swagger-jsdoc!
+    responses:
+      200:
+        description: Returns a mysterious string.<|>"))
+    (--with-callback 'js-mode init-str ""        (lambda () (--bufs= edit-str)))
+    (--with-callback 'js-mode init-str "C-c C-c" (lambda () (--bufs= init-str)))))
+
 (provide 'separedit-test)
 
 ;;; separedit-test.el ends here
