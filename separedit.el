@@ -608,20 +608,17 @@ Return nil if reached the end of the buffer."
 
 (defun separedit--point-at-string (&optional pos)
   "Determine if point POS at string or not."
-  (save-excursion
-    (nth 3 (syntax-ppss pos))))
+  (nth 3 (syntax-ppss pos)))
 
 (defun separedit--string-beginning ()
-  "Return beginning (including quote mark) of string at point."
-  (save-excursion
-    (while (separedit--point-at-string) (backward-char))
-    (point)))
+  "Backward to the beginning of string and return the point."
+  (while (separedit--point-at-string) (backward-char))
+  (point))
 
 (defun separedit--string-end ()
-  "Return end (including quote mark) of string at point."
-  (save-excursion
-    (while (separedit--point-at-string) (forward-char))
-    (point)))
+  "Forward to the end of string and return the point."
+  (while (separedit--point-at-string) (forward-char))
+  (point))
 
 (defun separedit--string-quotes (pos &optional backwardp mode)
   "Return quote characters around string at POS.
@@ -642,16 +639,16 @@ If MODE is nil, use ‘major-mode’."
 
 (cl-defmethod separedit--string-region (&optional pos)
   "Return the region of string at point POS."
-  (let ((pos (or pos (point))))
-    (save-excursion
-      (goto-char pos)
-      (if (separedit--point-at-string)
-          (let* ((fbeg (separedit--string-beginning))
-                 (fend (separedit--string-end))
-                 (quotes-len (length (separedit--string-quotes fbeg))))
-            (list (+ (or fbeg (point-min)) quotes-len)
-                  (- (or fend (point-max)) quotes-len)))
-        (user-error "Not inside a string")))))
+  (save-excursion
+    (when pos
+      (goto-char pos))
+    (if (separedit--point-at-string)
+        (let* ((fbeg (save-excursion (separedit--string-beginning)))
+               (fend (save-excursion (separedit--string-end)))
+               (quotes-len (length (separedit--string-quotes fbeg))))
+          (list (+ (or fbeg (point-min)) quotes-len)
+                (- (or fend (point-max)) quotes-len)))
+      (user-error "Not inside a string"))))
 
 (cl-defmethod separedit--string-region (&context (major-mode nix-mode)
                                         &optional pos)
@@ -668,25 +665,25 @@ for example:
       (goto-char (length \"''foo ${b\"))
       (nth 3 (syntax-ppss)))
     ;; => nil"
-  (let ((pos (or pos (point))))
-    (save-excursion
-      (goto-char pos)
-      (-if-let* ((beg
-                  (catch 'beg
-                    (save-excursion
-                      (while (re-search-backward "\\(\"\\|''\\)" nil t)
-                        (unless (or (separedit--point-at-string (1- (point)))
-                                    (looking-back "}" nil))
-                          (throw 'beg (match-end 1)))))))
-                 (end
-                  (catch 'end
-                    (save-excursion
-                      (while (re-search-forward "\\(\"\\|''\\)" nil t)
-                        (unless (or (separedit--point-at-string)
-                                    (looking-at-p "\\${"))
-                          (throw 'end (match-beginning 1))))))))
-          (list beg end)
-        (user-error "Not inside a string")))))
+  (save-excursion
+    (when pos
+      (goto-char pos))
+    (-if-let* ((beg
+                (catch 'beg
+                  (save-excursion
+                    (while (re-search-backward "\\(\"\\|''\\)" nil t)
+                      (unless (or (separedit--point-at-string (1- (point)))
+                                  (looking-back "}" nil))
+                        (throw 'beg (match-end 1)))))))
+               (end
+                (catch 'end
+                  (save-excursion
+                    (while (re-search-forward "\\(\"\\|''\\)" nil t)
+                      (unless (or (separedit--point-at-string)
+                                  (looking-at-p "\\${"))
+                        (throw 'end (match-beginning 1))))))))
+        (list beg end)
+      (user-error "Not inside a string"))))
 
 ;;; Comment functions
 
