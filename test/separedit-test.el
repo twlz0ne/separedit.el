@@ -776,6 +776,32 @@
                       content-string
                       (apply #'buffer-substring-no-properties (separedit--string-region 20)))))))
 
+(ert-deftest separedit-test-string-region-lua ()
+  (let* ((content-string "\"\double quote<|> string\"")
+         (expected-string (substring content-string 1 -1)))
+    (should (string= expected-string
+                     (separedit-test--with-buffer 'lua-mode
+                      content-string
+                      (apply #'buffer-substring-no-properties (separedit--string-region))))))
+  (let* ((content-string "'single quote<|> string'")
+         (expected-string (substring content-string 1 -1)))
+    (should (string= expected-string
+                     (separedit-test--with-buffer 'lua-mode
+                      content-string
+                      (apply #'buffer-substring-no-properties (separedit--string-region))))))
+  (let* ((content-string "[[double brackets<|> string]]")
+         (expected-string (substring content-string 2 -2)))
+    (should (string= expected-string
+                     (separedit-test--with-buffer 'lua-mode
+                      content-string
+                      (apply #'buffer-substring-no-properties (separedit--string-region))))))
+  (let* ((content-string "[=[double brackets[[<|> nested]] string]=]")
+         (expected-string (substring content-string 3 -3)))
+    (should (string= expected-string
+                     (separedit-test--with-buffer 'lua-mode
+                      content-string
+                      (apply #'buffer-substring-no-properties (separedit--string-region)))))))
+
 (ert-deftest separedit-test-string-region-nix ()
   ;; Single-line string
   (should (string= "foo ${bar} quux"

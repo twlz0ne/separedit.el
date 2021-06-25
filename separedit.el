@@ -597,12 +597,20 @@ Return nil if reached the end of the buffer."
 (defcustom separedit-string-quotes-alist
   '((python-mode     . ("\"\"\"" "'''" "\"" "'"))
     (js-mode         . ("\"" "'" "`"))
+    (lua-mode        . ("\"" "'" (or (seq "[" (zero-or-more "=") "[")
+                                     (seq "]" (zero-or-more "=") "]"))))
     (nix-mode        . ("''" "\""))
     (typescript-mode . ("\"" "'" "`"))
     (separedit-double-quote-string-mode . t)
     (separedit-single-quote-string-mode . ("'"))
     (t               . ("\"")))
-  "Alist of string quotes."
+  "Alist of string quotes.
+
+Each item may be one of the following forms:
+
+- Specific mode:        (MAJOR-MODE . (A-LIST-OF-STRING-OR-RX-FORM))
+- Default:              (t          . (A-LIST-OF-STRING-OR-RX-FORM))
+- Reference default:    (MAJOR-MODE . t)"
   :group 'separedit
   :type 'alist)
 
@@ -627,15 +635,14 @@ If BACKWARDP is not nil, search backward.
 If MODE is nil, use ‘major-mode’."
   (let* ((mode (or mode major-mode))
          (looking-fn (if backwardp 'looking-back 'looking-at))
-         (quotes (separedit-get-mode-quotes mode)))
+         (quotes (separedit-get-mode-quotes mode))
+         (regexp (when quotes
+                   (rx-to-string `(or ,@(separedit-get-mode-quotes mode))))))
     (save-excursion
       (when pos
         (goto-char pos))
-      (catch 'break
-        (while quotes
-          (let ((s (pop quotes)))
-            (when (funcall looking-fn s)
-              (throw 'break s))))))))
+      (when (and regexp (funcall looking-fn regexp))
+        (match-string 0)))))
 
 (cl-defmethod separedit--string-region (&optional pos)
   "Return the region of string at point POS."
