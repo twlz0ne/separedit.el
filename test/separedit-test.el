@@ -1060,6 +1060,38 @@ The list of active backends (completion engines).
 ..."
    '(company-backends2 "(company-cmake company-capf<|> company-files company-oddmuse company-dabbrev)" global nil)))
 
+(ert-deftest separedit-test-heredoc ()
+  (let ((heredocs
+         `((sh-mode     "SH<|>"     ,(concat "cat <<EOF\n"
+                                             "SH<|>\n"
+                                             "EOF\n"))
+           (perl-mode   "PERL<|>"   ,(concat "print <<'EOF';\n"
+                                             "PERL<|>\n"
+                                             "EOF\n"))
+           (php-mode    "PHP<|>"    ,(concat "$foo = <<<EOF\n"
+                                             "PHP<|>\n"
+                                             "EOF;\n"))
+           (ruby-mode   "RUBY<|>"   ,(concat "print <<~EOF;\n"
+                                             "RUBY<|>\n"
+                                             "EOF\n"))
+           (racket-mode "RACKET<|>" ,(concat "(displayln #<<EOF\n"
+                                             "RACKET<|>\n"
+                                             "EOF\n)\n"))
+           (tuareg-mode "OCAML<|>"  ,(concat "print_string {eof|\n"
+                                             "OCAML<|>\n"
+                                             "|eof}\n;;\n")))))
+    (dolist (heredoc heredocs)
+      (eval `(separedit-test--with-buffer
+              ',(nth 0 heredoc) ,(nth 2 heredoc)
+              (let ((region (if (and (<= emacs-major-version 27)
+                                     (derived-mode-p 'perl-mode))
+                                (separedit--comment-region)
+                              (separedit--string-region))))
+                (should (equal ,(nth 1 heredoc)
+                               (buffer-substring-no-properties
+                                (car region)
+                                (cadr region))))))))))
+
 ;;; Interaction test
 
 (ert-deftest separedit-test-keybinding ()

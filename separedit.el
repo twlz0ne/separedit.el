@@ -513,6 +513,27 @@ For example:
              )
          (edit-indirect-abort))))")
 
+(defvar separedit-heredoc-endwith-trailing-newline-modes
+  '(sh-mode perl-mode ruby-mode racket-mode)
+  "List of mode that the heredoc end with a trailing newline.
+
+For example (`|' represents the cursor):
+
+    cat <<EOF                            echo <<<EOF
+    end with a trailing newline    vs    end with a trailing semicolon
+    EOF                                  EOF|;
+    |")
+
+(defvar separedit-perl-heredoc-lookback-regexp
+  (rx (seq "<<"
+           (opt (any "\"'"))
+           (group (zero-or-more "_")
+                  (group (one-or-more alnum))
+                  (zero-or-more "_"))
+           (opt (any "\"'"))
+           ";" point))
+  "Regexp to match the header of heredoc before point.")
+
 (defvar separedit--line-delimiter nil "Comment delimiter of each editing line.")
 
 (defvar separedit--indent-length nil "Indent length of each editing line.")
@@ -616,16 +637,29 @@ Each item may be one of the following forms:
 
 (defun separedit--point-at-string (&optional pos)
   "Determine if point POS at string or not."
-  (nth 3 (syntax-ppss pos)))
+  (or (nth 3 (syntax-ppss pos))
+      (and (derived-mode-p 'perl-mode)
+           (memq (face-at-point) '(perl-heredoc))
+           (not (or (separedit--string-quotes pos)
+                    (separedit--string-quotes pos t))))))
 
-(defun separedit--string-beginning ()
+(defun separedit--string-beginning (&optional disregard-heredoc-p)
   "Backward to the beginning of string and return the point."
   (while (separedit--point-at-string) (backward-char))
+  (unless disregard-heredoc-p
+    (unless (separedit--string-quotes (point))
+      (forward-line)))
   (point))
 
-(defun separedit--string-end ()
+(defun separedit--string-end (&optional disregard-heredoc-p)
   "Forward to the end of string and return the point."
   (while (separedit--point-at-string) (forward-char))
+  (unless disregard-heredoc-p
+    (unless (separedit--string-quotes (point) t)
+      (if (apply #'derived-mode-p separedit-heredoc-endwith-trailing-newline-modes)
+          (forward-line -2)
+        (forward-line -1))
+      (goto-char (point-at-eol))))
   (point))
 
 (defun separedit--string-quotes (pos &optional backwardp mode)
@@ -644,21 +678,25 @@ If MODE is nil, use ‘major-mode’."
       (when (and regexp (funcall looking-fn regexp))
         (match-string 0)))))
 
-(cl-defmethod separedit--string-region (&optional pos)
-  "Return the region of string at point POS."
+(cl-defmethod separedit--string-region (&optional pos disregard-heredoc-p)
+  "Return the region of string at point POS.
+
+If DISREGARD-HEREDOC-P is non-nil, don't exclude the heredoc markers."
   (save-excursion
     (when pos
       (goto-char pos))
     (if (separedit--point-at-string)
-        (let* ((fbeg (save-excursion (separedit--string-beginning)))
-               (fend (save-excursion (separedit--string-end)))
+        (let* ((fbeg (save-excursion
+                       (separedit--string-beginning disregard-heredoc-p)))
+               (fend (save-excursion
+                       (separedit--string-end disregard-heredoc-p)))
                (quotes-len (length (separedit--string-quotes fbeg))))
           (list (+ (or fbeg (point-min)) quotes-len)
                 (- (or fend (point-max)) quotes-len)))
       (user-error "Not inside a string"))))
 
 (cl-defmethod separedit--string-region (&context (major-mode nix-mode)
-                                        &optional pos)
+                                        &optional pos _)
   "Return the region of nix string at point POS.
 
 According to the desgin (see https://github.com/NixOS/nix-mode/issues/96), the
@@ -805,7 +843,7 @@ Example:
       (backward-char 1))
     (point)))
 
-(defun separedit--comment-region (&optional pos)
+(cl-defmethod separedit--comment-region (&optional pos)
   "Return the region of continuous comments at POS.
 
 Style 1:
@@ -853,6 +891,22 @@ Style 2:
                     (separedit--skip-comment-end-encloser multi-line-p))
                   (point))))
       (user-error "Not inside a comment"))))
+
+(cl-defmethod separedit--comment-region (&context (major-mode perl-mode)
+                                         &optional pos)
+  "Fix heredoc region detection of perl-mode for Emacs 27 and lower."
+  (let ((region (cl-call-next-method pos))
+        heredoc-mark)
+    (if (and (<= emacs-major-version 27)
+             (derived-mode-p 'perl-mode)
+             (save-excursion
+               (goto-char (car region))
+               (when (re-search-backward
+                      separedit-perl-heredoc-lookback-regexp nil t)
+                 (setq heredoc-mark (match-string 1)))))
+        (list (1+ (car region))
+              (- (cadr region) (1+ (length heredoc-mark))))
+      region)))
 
 (defun separedit--skip-comment-begin-encloser (&optional multi-line-p mode)
   "Search forward from point for the beginning encloser of comment.
