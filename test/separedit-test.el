@@ -1060,7 +1060,7 @@ The list of active backends (completion engines).
 ..."
    '(company-backends2 "(company-cmake company-capf<|> company-files company-oddmuse company-dabbrev)" global nil)))
 
-(ert-deftest separedit-test-heredoc ()
+(ert-deftest separedit-test-heredoc-region ()
   (let ((heredocs
          `((sh-mode     "SH<|>"     ,(concat "cat <<EOF\n"
                                              "SH<|>\n"
@@ -1091,6 +1091,45 @@ The list of active backends (completion engines).
                                (buffer-substring-no-properties
                                 (car region)
                                 (cadr region))))))))))
+
+(ert-deftest separedit-test-heredoc-language ()
+  (cl-labels ((--with-buffer
+               (mode expected-str init-str)
+               (with-temp-buffer
+                 (insert init-str)
+                 (equal expected-str
+                        (separedit-looking-back-heredoc-language mode)))))
+    (--with-buffer 'sh-mode "SH" "<<SH")
+    (--with-buffer 'sh-mode "SH" "<<-SH")
+    (--with-buffer 'sh-mode "SH" "<<__SH__")
+    (--with-buffer 'sh-mode "SH" "<<\"SH\"")
+    (--with-buffer 'sh-mode "SH" "<<'SH'")
+    (--with-buffer 'sh-mode "SH" "<<'SH' > /path/file")
+    (--with-buffer 'sh-mode "SH" "<<'SH' | sed 's/1/2/g'")
+
+    (--with-buffer 'perl-mode "PL" "<<PL;")
+    (--with-buffer 'perl-mode "PL" "<<__PL__;")
+    (--with-buffer 'perl-mode "PL" "<<\"PL\";")
+    (--with-buffer 'perl-mode "PL" "<<'PL';")
+
+    (--with-buffer 'php-mode "PHP" "<<<PHP")
+    (--with-buffer 'php-mode "PHP" "<<<__PHP__")
+    (--with-buffer 'php-mode "PHP" "<<<\"PHP\"")
+    (--with-buffer 'php-mode "PHP" "<<<'PHP'")
+
+    (--with-buffer 'ruby-mode "RB" "<<RB")
+    (--with-buffer 'ruby-mode "RB" "<<-RB")
+    (--with-buffer 'ruby-mode "RB" "<<~RB")
+    (--with-buffer 'ruby-mode "RB" "<<__RB__")
+    (--with-buffer 'ruby-mode "RB" "<<\"RB\"")
+    (--with-buffer 'ruby-mode "RB" "<<'RB'")
+
+    (--with-buffer 'racket-mode "RK" "#<<RK")
+    (--with-buffer 'racket-mode "RK" "#<<__RK__;")
+    (--with-buffer 'racket-mode "RK" "#<<\"RK\"")
+    (--with-buffer 'racket-mode "RK" "#<<'RK'")
+    (--with-buffer 'tuareg-mode "ML" "{ML|")
+    (--with-buffer 'tuareg-mode "ML" "{__ML__|")))
 
 ;;; Interaction test
 
