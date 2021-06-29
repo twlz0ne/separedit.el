@@ -12,4 +12,8 @@
  (depends-on "lua-mode")
  (depends-on "markdown-mode")
  (depends-on "nix-mode")
+ (depends-on "php-mode")
+ (depends-on "racket-mode")
+ (depends-on "ruby-mode")
+ (depends-on "tuareg")
  (depends-on "yaml-mode"))

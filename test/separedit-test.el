@@ -1060,6 +1060,77 @@ The list of active backends (completion engines).
 ..."
    '(company-backends2 "(company-cmake company-capf<|> company-files company-oddmuse company-dabbrev)" global nil)))
 
+(ert-deftest separedit-test-heredoc-region ()
+  (let ((heredocs
+         `((sh-mode     "SH<|>"     ,(concat "cat <<EOF\n"
+                                             "SH<|>\n"
+                                             "EOF\n"))
+           (perl-mode   "PERL<|>"   ,(concat "print <<'EOF';\n"
+                                             "PERL<|>\n"
+                                             "EOF\n"))
+           (php-mode    "PHP<|>"    ,(concat "$foo = <<<EOF\n"
+                                             "PHP<|>\n"
+                                             "EOF;\n"))
+           (ruby-mode   "RUBY<|>"   ,(concat "print <<~EOF;\n"
+                                             "RUBY<|>\n"
+                                             "EOF\n"))
+           (racket-mode "RACKET<|>" ,(concat "(displayln #<<EOF\n"
+                                             "RACKET<|>\n"
+                                             "EOF\n)\n"))
+           (tuareg-mode "OCAML<|>"  ,(concat "print_string {eof|\n"
+                                             "OCAML<|>\n"
+                                             "|eof}\n;;\n")))))
+    (dolist (heredoc heredocs)
+      (eval `(separedit-test--with-buffer
+              ',(nth 0 heredoc) ,(nth 2 heredoc)
+              (let ((region (if (and (<= emacs-major-version 27)
+                                     (derived-mode-p 'perl-mode))
+                                (separedit--comment-region)
+                              (separedit--string-region))))
+                (should (equal ,(nth 1 heredoc)
+                               (buffer-substring-no-properties
+                                (car region)
+                                (cadr region))))))))))
+
+(ert-deftest separedit-test-heredoc-language ()
+  (cl-labels ((--with-buffer
+               (mode expected-str init-str)
+               (with-temp-buffer
+                 (insert init-str)
+                 (equal expected-str
+                        (separedit-looking-back-heredoc-language mode)))))
+    (--with-buffer 'sh-mode "SH" "<<SH")
+    (--with-buffer 'sh-mode "SH" "<<-SH")
+    (--with-buffer 'sh-mode "SH" "<<__SH__")
+    (--with-buffer 'sh-mode "SH" "<<\"SH\"")
+    (--with-buffer 'sh-mode "SH" "<<'SH'")
+    (--with-buffer 'sh-mode "SH" "<<'SH' > /path/file")
+    (--with-buffer 'sh-mode "SH" "<<'SH' | sed 's/1/2/g'")
+
+    (--with-buffer 'perl-mode "PL" "<<PL;")
+    (--with-buffer 'perl-mode "PL" "<<__PL__;")
+    (--with-buffer 'perl-mode "PL" "<<\"PL\";")
+    (--with-buffer 'perl-mode "PL" "<<'PL';")
+
+    (--with-buffer 'php-mode "PHP" "<<<PHP")
+    (--with-buffer 'php-mode "PHP" "<<<__PHP__")
+    (--with-buffer 'php-mode "PHP" "<<<\"PHP\"")
+    (--with-buffer 'php-mode "PHP" "<<<'PHP'")
+
+    (--with-buffer 'ruby-mode "RB" "<<RB")
+    (--with-buffer 'ruby-mode "RB" "<<-RB")
+    (--with-buffer 'ruby-mode "RB" "<<~RB")
+    (--with-buffer 'ruby-mode "RB" "<<__RB__")
+    (--with-buffer 'ruby-mode "RB" "<<\"RB\"")
+    (--with-buffer 'ruby-mode "RB" "<<'RB'")
+
+    (--with-buffer 'racket-mode "RK" "#<<RK")
+    (--with-buffer 'racket-mode "RK" "#<<__RK__;")
+    (--with-buffer 'racket-mode "RK" "#<<\"RK\"")
+    (--with-buffer 'racket-mode "RK" "#<<'RK'")
+    (--with-buffer 'tuareg-mode "ML" "{ML|")
+    (--with-buffer 'tuareg-mode "ML" "{__ML__|")))
+
 ;;; Interaction test
 
 (ert-deftest separedit-test-keybinding ()
