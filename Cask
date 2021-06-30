@@ -9,6 +9,7 @@
 (depends-on "edit-indirect")
 
 (development
+ (depends-on "f")
  (depends-on "lua-mode")
  (depends-on "markdown-mode")
  (depends-on "nix-mode")

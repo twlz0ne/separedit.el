@@ -10,11 +10,13 @@
 (defvar test-checkinstall-selected-sources nil)
 
 (defconst test-checkinstall-source-alist
-  '(("gnu"          . "http://elpa.gnu.org/packages/")
-    ("melpa"        . "http://melpa.org/packages/")
-    ("melpa-Stable" . "http://stable.melpa.org/packages/")
-    ("marmalade"    . "http://marmalade-repo.org/packages/")
-    ("org"          . "http://orgmode.org/elpa/")))
+  (if (load "~/.emacs.d/elpa.el" t)
+      package-archives
+    '(("gnu"          . "http://elpa.gnu.org/packages/")
+      ("melpa"        . "http://melpa.org/packages/")
+      ("melpa-Stable" . "http://stable.melpa.org/packages/")
+      ("marmalade"    . "http://marmalade-repo.org/packages/")
+      ("org"          . "http://orgmode.org/elpa/"))))
 
 (defmacro source (name)
   `(let ((it (assoc ,(format "%s" name) test-checkinstall-source-alist)))
