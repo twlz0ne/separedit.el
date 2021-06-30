@@ -15,5 +15,6 @@
  (depends-on "php-mode")
  (depends-on "racket-mode")
  (depends-on "ruby-mode")
+ (depends-on "s")
  (depends-on "tuareg")
  (depends-on "yaml-mode"))

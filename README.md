@@ -16,6 +16,25 @@ Edit comment/string/docstring/code block in separate buffer with your favorite m
     |          | <--------------------- |   ...)    | <--------------------- |   ...)    | ...
     +----------+     Commit changes     +-----------+     Commit changes     +-----------+
 
+- [Installation](#installation)
+- [Usage](#usage)
+    - [Edit comment](#edit-comment)
+    - [Edit string](#edit-string)
+    - [Edit code block](#edit-code-block)
+    - [Edit heredoc](#edit-heredoc)
+    - [Edit value form of variable in help/helpful buffer](#edit-value-form-of-variable-in-helphelpful-buffer)
+    - [Edit minibuffer](#edit-minibuffer)
+- [Customization](#customization)
+    - [Change key bindings in edit buffer](#change-key-bindings-in-edit-buffer)
+    - [Add support for a new major mode](#add-support-for-a-new-major-mode)
+    - [Add support for a new code block](#add-support-for-a-new-code-block)
+    - [Preserving indentation of block in string](#preserving-indentation-of-block-in-string)
+    - [Continue fill-column width in edit buffer](#continue-fill-column-width-in-edit-buffer)
+- [Some extended usage](#some-extended-usage)
+    - [Combine multipe adjacent blocks as a single edit block](#combine-multipe-adjacent-blocks-as-a-single-edit-block)
+    - [Break long lines in comment](#break-long-lines-in-comment)
+    - [Eval multiple-line sexp in comment](#eval-multiple-line-sexp-in-comment)
+
 ## Installation
 
 Clone this repository, or install from MELPA. Add the following to your `.emacs`:

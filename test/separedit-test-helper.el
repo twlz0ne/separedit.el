@@ -320,6 +320,43 @@ Version 2016-07-04"
                                     "'" "\""                 ;; use `format' to add escape characters.
                                     (buffer-substring-no-properties (point-min) (point-max))))))))
 
+(defun separedit--generate-markdown-toc (&optional start-level)
+  "Generate markdown ToC."
+  (require 's)
+  (let ((headings)
+        (faces (mapcar (lambda (num)
+                         (intern (format "markdown-header-face-%s" num)))
+                       (reverse (number-sequence
+                                 (if start-level start-level 1) 6)))))
+    (save-excursion
+      (goto-char (point-min))
+      (while (search-forward-regexp markdown-regex-header nil 'noerror)
+        (push (or (match-string 1) (match-string 5)) headings)))
+    (->> (reverse headings)
+      ;; rename duplicates
+      (-group-by #'identity)
+      (--map (-map-indexed (lambda (index text)
+                             (cons text (if (zerop index) text
+                                          (format "%s %s" text index))))
+                           (cdr it)))
+      ;; generate links
+      (-flatten)
+      (--map (let ((level (memq (get-char-property 0 'face (car it)) faces)))
+               (when level
+                 (format "%s- [%s](#%s)"
+                         (make-string (* (1- (length level)) 4) ?\s)
+                         (substring-no-properties (car it))
+                         (->> (substring-no-properties (cdr it))
+                           (downcase)
+                           (replace-regexp-in-string " " "-")
+                           (replace-regexp-in-string "[[:punct:]]"
+                                                     (lambda (s)
+                                                       (if (member s '("-" "_"))
+                                                           s
+                                                         ""))))))))
+      (-non-nil)
+      (s-join "\n"))))
+
 (defun separedit-test--generate-readme ()
   (with-temp-buffer
     (insert-file-contents "separedit.el")
@@ -332,6 +369,17 @@ Version 2016-07-04"
         (insert str)
         (separedit--remove-comment-delimiter
          (separedit--comment-delimiter-regexp 'emacs-lisp-mode))
+        (markdown-mode)
+        ;; Force enable face / text property / syntax highlighting
+        (let ((noninteractive nil))
+          (font-lock-mode 1)
+          (font-lock-ensure))
+        (goto-char (point-min))
+        (if (re-search-forward "^{{TOC}}$" nil t)
+            (progn
+              (replace-match "")
+              (insert (separedit--generate-markdown-toc 2)))
+          (error "Can't find the ToC placeholder."))
         (buffer-string)))))
 
 ;;; separedit-test-helper.el ends here
