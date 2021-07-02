@@ -9,6 +9,9 @@
 # 
 set -e
 
+# Proxy for quelpa
+export PROXY=127.0.0.1:7890
+
 emacs_bins=(
     ~/.local/bin/emacs
     # /Applications/Emacs-26.3.app/Contents/MacOS/Emacs

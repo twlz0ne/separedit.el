@@ -18,6 +18,38 @@
       ("marmalade"    . "http://marmalade-repo.org/packages/")
       ("org"          . "http://orgmode.org/elpa/"))))
 
+(defun ensure-quelpa ()
+  (message "==> ensure-quelpa")
+  (setq quelpa-dir (expand-file-name ".cask/quelpa"))
+  (unless (file-exists-p quelpa-dir)
+    (make-directory quelpa-dir))
+  (unless (package-installed-p 'quelpa)
+    (package-install 'quelpa))
+  (require 'quelpa)
+  (quelpa-checkout-melpa)
+  (setq quelpa-update-melpa-p nil)
+  (require 'subr-x)
+  (when-let ((proxy (getenv "PROXY")))
+    (advice-add 'quelpa :around
+                `(lambda (fn arg &rest plist)
+                   (with-temp-buffer
+                     (let ((process-environment (cl-copy-list process-environment))
+                           (url-proxy-services
+                            '(("http"     . ,proxy)
+                              ("https"    . ,proxy)
+                              ("ftp"      . ,proxy)
+                              ("no_proxy" . ,(concat "^"
+                                                     "\\(localhost"
+                                                     "\\|127.0.0.1"
+                                                     "\\|192.168.*"
+                                                     "\\|10.*\\)")))))
+                       (setenv "http_proxy" ,proxy)
+                       (setenv "https_proxy" ,proxy)
+                       (message "Proxy: t")
+                       (apply fn arg plist)))))))
+
+
+
 (defmacro source (name)
   `(let ((it (assoc ,(format "%s" name) test-checkinstall-source-alist)))
      (add-to-list 'test-checkinstall-selected-sources it)))
@@ -34,25 +66,25 @@
   `(progn
      ,@args))
 
-(defmacro depends-on (package-name)
-  `(let ((msg ,(format "==> check package `%s'" package-name))
-         (pkg ',(intern package-name)))
-    (condition-case err
-      (progn
-        (require pkg)
-        (message "%-50s [ ✓ ]" msg))
-    (error
-     (message "%-50s [ ✗ ]" msg)
-     (add-to-list 'test-checkinstall-selected-packages pkg)))))
+(defmacro depends-on (package-name &rest args)
+  (let ((msg (format "==> check package `%s'" package-name))
+        (pkg (intern package-name)))
+    `(condition-case err
+         (progn
+           (require ',pkg)
+           (message "%-50s [ ✓ ]" ,msg))
+       (error
+        (message "%-50s [ ✗ ]" ,msg)
+        (add-to-list 'test-checkinstall-selected-packages '(,pkg ,@args))))))
+
+
 
 (message "==> Start checkinstall...")
 (load (expand-file-name "Cask"))
 
 (when test-checkinstall-selected-packages
   (message "==> cask install ...")
-  (setq package-selected-packages (reverse test-checkinstall-selected-packages))
   (setq package-archives test-checkinstall-selected-sources)
-  (message "==> selected-packages: %s" package-selected-packages)
   (message "==> package-archives: %s" package-archives)
 
   ;; FIX: Failed to download 'xxx' archive
@@ -88,11 +120,32 @@
             (package-install-from-buffer)))
         (gnu-elpa-keyring-update))))
 
+  (message "==> package-refresh-contents")
   (package-refresh-contents)
 
-  (mapc (lambda (pkg)
-          (message "==> installing %s..." pkg)
-          (package-install pkg))
-        package-selected-packages))
+  (mapc
+   (pcase-lambda (`(,pkg . ,args))
+     (message "==> installing %s..." pkg)
+     (when (stringp (car args))
+       (pop args)) ;; FIXME
+     (if args
+         (let* ((url)
+                (fetcher
+                 (catch 'break
+                   (dolist (key '(:bzr :cvs :darcs :git :hg :svn))
+                     (when (setq url (plist-get args key))
+                       (throw 'break (substring (symbol-name key) 1)))))))
+           (when fetcher
+             (unless (featurep 'quelpa)
+               (ensure-quelpa))
+             (quelpa (list pkg
+                           :url url
+                           :fetcher (make-symbol fetcher)
+                           :commit (plist-get args :ref)
+                           :branch (plist-get args :branch)
+                           :files (plist-get args :files)))))
+       (package-install pkg))
+     (add-to-list 'package-selected-packages pkg))
+   (reverse test-checkinstall-selected-packages)))
 
 ;;; test-checkinstall.el ends here
