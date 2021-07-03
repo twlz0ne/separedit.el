@@ -1960,6 +1960,32 @@ to span multiple lines.
     (--with-callback 'js-mode init-str ""        (lambda () (--bufs= edit-str)))
     (--with-callback 'js-mode init-str "C-c C-c" (lambda () (--bufs= init-str)))))
 
+(ert-deftest separedit-test-heredoc-edit ()
+  (let ((heredocs
+         `((sh-mode     "# SH<|>"     ,(concat "cat <<EOF\n"
+                                               "# SH<|>\n"
+                                               "EOF\n"))
+           (perl-mode   "# PERL<|>"   ,(concat "print <<'EOF';\n"
+                                               "# PERL<|>\n"
+                                               "EOF\n"))
+           (php-mode    "// PHP<|>"    ,(concat "$foo = <<<EOF\n"
+                                                "// PHP<|>\n"
+                                                "EOF;\n"))
+           (ruby-mode   "# RUBY<|>"   ,(concat "print <<~EOF\n"
+                                               "# RUBY<|>\n"
+                                               "EOF\n"))
+           (racket-mode ";; RACKET<|>" ,(concat "(displayln #<<EOF\n"
+                                                ";; RACKET<|>\n"
+                                                "EOF\n)\n"))
+           (tuareg-mode "(* OCAML<|> *)"  ,(concat "print_string {eof|\n"
+                                                   "(* OCAML<|> *)\n"
+                                                   "|eof}\n;;\n")))))
+    (dolist (heredoc heredocs)
+      (eval `(--with-callback ',(nth 0 heredoc) ,(nth 2 heredoc) ""
+                              (lambda () (--bufs= ,(nth 1 heredoc)))))
+      (eval `(--with-callback ',(nth 0 heredoc) ,(nth 2 heredoc) "C-c C-c"
+                              (lambda () (--bufs= ,(nth 2 heredoc))))))))
+
 (provide 'separedit-test)
 
 ;;; separedit-test.el ends here

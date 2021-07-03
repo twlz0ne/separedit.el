@@ -1234,12 +1234,12 @@ Block info example:
                                   (goto-char (car region))
                                   (separedit--string-beginning)))))
                 (user-error "Not inside a edit block")))))
-         (heredoc-mode (separedit-get-lang-mode
-                        (save-excursion
-                          (goto-char (car comment-or-string-region))
-                          (when (and (bolp) (not (bobp)))
-                            (backward-char))
-                          (or (separedit-looking-back-heredoc-language) ""))))
+         (heredoc-lang (save-excursion
+                         (goto-char (car comment-or-string-region))
+                         (when (and (bolp) (not (bobp)))
+                           (backward-char))
+                         (separedit-looking-back-heredoc-language)))
+         (heredoc-mode (if heredoc-lang (separedit-get-lang-mode heredoc-lang)))
          (indent-line1 nil)
          (string-indent
           (if (and strp separedit-preserve-string-indentation)
@@ -1286,7 +1286,7 @@ Block info example:
                            (point))
                        (point-max))
                 :lang-mode heredoc-mode
-                :string-quotes strp
+                :string-quotes (if heredoc-lang "" strp)
                 :indent-line1 indent-line1
                 :indent-length indent-length))))))
 
