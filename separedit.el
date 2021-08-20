@@ -554,7 +554,7 @@ For example (`|' represents the cursor):
   '((perl-mode    . "<<['\"]?_*\\([[:alnum:]]+\\)_*[\"']?;")
     (php-mode     . "<<<['\"]?_*\\([[:alnum:]]+\\)_*[\"']?")
     (racket-mode  . "#<<['\"]?_*\\([[:alnum:]]+\\)_*[\"']?")
-    (ruby-mode    . "<<[-~]?['\"]?_*\\([[:alnum:]]+\\)_*[\"']?")
+    (ruby-mode    . "<<[-~]?['\"]?_*\\([[:alnum:]]+\\)_*[\"']?\\(?:\\..*\\)?")
     (sh-mode      . "<<-?\s*['\"]?_*\\([[:alnum:]]+\\)_*[\"']?\\(?:.*\\)?")
     (tuareg-mode  . "{_*\\([[:alnum:]]+\\)_*|"))
   "Alist of (MAJOR-MODE . REGEXP) to capture the language name in the begin

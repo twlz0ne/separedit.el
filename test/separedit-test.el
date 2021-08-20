@@ -1071,7 +1071,7 @@ The list of active backends (completion engines).
            (php-mode    "PHP<|>"    ,(concat "$foo = <<<EOF\n"
                                              "PHP<|>\n"
                                              "EOF;\n"))
-           (ruby-mode   "RUBY<|>"   ,(concat "print <<~EOF;\n"
+           (ruby-mode   "RUBY<|>"   ,(concat "print <<~EOF\n"
                                              "RUBY<|>\n"
                                              "EOF\n"))
            (racket-mode "RACKET<|>" ,(concat "(displayln #<<EOF\n"
