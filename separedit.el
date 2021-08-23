@@ -704,6 +704,11 @@ If MODE is nil, use ‘major-mode’."
       (when (and regexp (funcall looking-fn regexp))
         (match-string 0)))))
 
+(cl-defgeneric separedit--string-region (&optional pos disregard-heredoc-p)
+  "Return the region of string at point POS.
+
+If DISREGARD-HEREDOC-P is non-nil, don't exclude the heredoc markers.")
+
 (cl-defmethod separedit--string-region (&optional pos disregard-heredoc-p)
   "Return the region of string at point POS.
 
@@ -868,6 +873,9 @@ Example:
                (not (> (point) (point-at-bol))))
       (backward-char 1))
     (point)))
+
+(cl-defgeneric separedit--comment-region (&optional pos)
+  "Return the region of continuous comments at POS.")
 
 (cl-defmethod separedit--comment-region (&optional pos)
   "Return the region of continuous comments at POS.
