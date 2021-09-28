@@ -764,7 +764,10 @@ for example:
 ;;; Comment functions
 
 (defvar separedit-comment-faces '(font-lock-comment-face
-                                  font-lock-comment-delimiter-face)
+                                  font-lock-comment-delimiter-face
+                                  typescript-jsdoc-tag
+                                  typescript-jsdoc-type
+                                  typescript-jsdoc-value)
   "List of comment face.")
 
 (defun separedit--comment-delimiter-regexp (&optional mode)
