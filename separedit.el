@@ -427,6 +427,7 @@ Taken from `markdown-code-lang-modes'."
                           rustic-mode
                           swift-mode
                           typescript-mode))
+    (separedit--get-web-mode-comment-encloser . web-mode)
     (("{-" "-}")       . haskell-mode)
     (("{" "}")         . pascal-mode)
     (("(\\*" "\\*)")   . (applescript-mode fsharp-mode ocaml-mode))
@@ -767,7 +768,13 @@ for example:
                                   font-lock-comment-delimiter-face
                                   typescript-jsdoc-tag
                                   typescript-jsdoc-type
-                                  typescript-jsdoc-value)
+                                  typescript-jsdoc-value
+                                  web-mode-block-comment-face
+                                  web-mode-comment-face
+                                  web-mode-css-comment-face
+                                  web-mode-javascript-comment-face
+                                  web-mode-json-comment-face
+                                  web-mode-part-comment-face)
   "List of comment face.")
 
 (defun separedit--comment-delimiter-regexp (&optional mode)
@@ -952,7 +959,7 @@ MULTI-LINE-P means whether the comment is multi-line.
 If MODE is nil, use ‘major-mode’."
   (re-search-forward
    (concat
-    (caar (separedit--get-comment-encloser (or mode major-mode)))
+    (car (separedit--get-comment-encloser (or mode major-mode)))
     "[\t\s]*"
     (when multi-line-p
       "\n?"))))
@@ -963,7 +970,7 @@ If MODE is nil, use ‘major-mode’."
 MULTI-LINE-P means whether the comment is multi-line.
 If MODE is nil, use ‘major-mode’."
   (let ((encloser-end
-         (cl-cadar (separedit--get-comment-encloser (or mode major-mode)))))
+         (cadr (separedit--get-comment-encloser (or mode major-mode)))))
     (when (re-search-backward encloser-end nil t)
       ;; Search backward greedy
       (let (pos)
@@ -980,13 +987,33 @@ If MODE is nil, use ‘major-mode’."
         (backward-char 1)))))
 
 (defun separedit--get-comment-encloser (&optional mode)
-  "Return a list in the form of ‘((begin-encloser end-enclose) mode1 mode2...)’ for MODE."
-  (separedit--rassoc (or mode major-mode)
-                     separedit-comment-encloser-alist))
+  "Return comment ‘(begin-encloser end-encloser)’ for MODE."
+  (let ((pair (separedit--rassoc (or mode major-mode)
+                                separedit-comment-encloser-alist)))
+    (if (functionp (car pair))
+        (funcall (car pair))
+      (car pair))))
+
+(defun separedit--get-web-mode-comment-encloser ()
+  "Return web-mode comment encloser."
+  (pcase (bound-and-true-p web-mode-engine)
+    ("none" (pcase (bound-and-true-p web-mode-content-type)
+              ((or "html" "xml")
+               (separedit--get-comment-encloser 'html-mode))
+              ((or "css" "javascript" "jsx" "typescript")
+               (separedit--get-comment-encloser 'js-mode))))
+    ("angular" (separedit--get-comment-encloser 'js-mode))
+    ("aspx"   '("<%--\\(?:\s+\\|\s*$\\)"          "\\(?:^\s*\\|\s\\)--%>"))
+    ("blade"  '("{{--\\(?:\s+\\|\s*$\\)"          "\\(?:^\s*\\|\s\\)--}}"))
+    ("django" '("{#\\(?:\s+\\|\s*$\\)"            "\\(?:^\s*\\|\s\\)#}"))
+    ("erb"    '("<%#\\(?:\s+\\|\s*$\\)"           "\\(?:^\s*\\|\s\\)%>"))
+    ("go"     '("{{/\\*+\\(?:\s+\\|\s*$\\)"       "\\(?:^\s*\\|\s\\)\\*}}"))
+    ("jsp"    '("<%--\\(?:\s+\\|\s*$\\)"          "\\(?:^\s*\\|\s\\)--%>"))
+    ("php"    '("<\\?php /\\*+\\(?:\s+\\|\s*$\\)" "\\(?:^\s*\\|\s\\)\\*\\?>"))))
 
 (defun separedit--enclosed-comment-p (&optional comment-beginning comment-close)
   "Determine if the comment from COMMENT-BEGINNING to COMMENT-CLOSE is enclosed."
-  (-when-let (encloser (car (separedit--get-comment-encloser major-mode)))
+  (-when-let (encloser (separedit--get-comment-encloser major-mode))
     (save-restriction
       (narrow-to-region (or comment-beginning (point-min))
                         (or comment-close     (point-max)))
