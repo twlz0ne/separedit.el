@@ -1986,6 +1986,22 @@ to span multiple lines.
       (eval `(--with-callback ',(nth 0 heredoc) ,(nth 2 heredoc) "C-c C-c"
                               (lambda () (--bufs= ,(nth 2 heredoc))))))))
 
+(ert-deftest separedit-test-c/c++-macro ()
+  (let ((init-str "\
+#define FOO(a, b) \\
+  do { <|> \\
+    auto _a = (a); \\
+    auto _b = (b); \\
+  } while (false)")
+        (edit-str "\
+  do { <|>
+    auto _a = (a);
+    auto _b = (b);
+  } while (false)")
+        )
+    (--with-callback 'c-mode init-str ""        (lambda () (--bufs= edit-str)))
+    (--with-callback 'c-mode init-str "C-c C-c" (lambda () (--bufs= init-str)))))
+
 (provide 'separedit-test)
 
 ;;; separedit-test.el ends here
