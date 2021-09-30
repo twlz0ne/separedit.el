@@ -474,6 +474,7 @@ Taken from `markdown-code-lang-modes'."
      :delimiter-remove-fn separedit--remove-c/c++-macro-delimiter
      :delimiter-restore-fn separedit--restore-c/c++-macro-delimiter
      :straight t
+     :keep-header t
      :keep-footer t))
   "Lists of regexp to match code block.
 
@@ -485,7 +486,8 @@ Each element of it is in the form of:
      :straight    BOOL  ;; block not in string and comment (optional)
      :delimiter-remove-fn FN ;; function to remove delimiter (optional)
      :delimiter-restore-fn FN ;; function to restore delimiter (optional)
-     :keep-footer BOOL  ;; whether to display the footer in edit buffer (optional)
+     :keep-footer BOOL  ;; display the footer in edit buffer (optional)
+     :keep-footer BOOL  ;; display the footer in edit buffer (optional)
      :modes       MODES ;; major modes the regex apply to (optional)
      :edit-mode   MODE) ;; major mode for edit buffer (optional)"
   :group 'separedit
@@ -1079,7 +1081,6 @@ If BLOCK-REGEXP-PLISTS non-nil, use it instead of `separedit-block-regexp-plists
             (separedit--log "==> [code-block-beginning] cbindent: %s" code-block-indent)
             (separedit--log "==> [code-block-beginning] matched1: %s" (match-string-no-properties 2))
             (separedit--log "==> [code-block-beginning] language: %s" (separedit-get-mode-lang major-mode)))
-          (separedit--beginning-of-next-line)
           (throw 'break
                  (let* ((leading-spaces (match-string-no-properties 1))
                         (matched-group
@@ -1100,7 +1101,10 @@ If BLOCK-REGEXP-PLISTS non-nil, use it instead of `separedit-block-regexp-plists
                            (funcall (-orfn #'not #'string-empty-p) comment-delimiter)
                            (funcall (-orfn #'not #'string-empty-p) (plist-get block-regexp :body)))
                       code-block-indent)
-                    :beginning (point-at-bol)
+                    :beginning (progn
+                                 (unless (plist-get block-regexp :keep-header)
+                                   (separedit--beginning-of-next-line))
+                                 (point-at-bol))
                     :lang-mode
                     (or (plist-get block-regexp :edit-mode)
                         (separedit-get-lang-mode
@@ -1658,7 +1662,8 @@ MAX-WIDTH       maximum width that can be removed"
              (goto-char (point-at-eol))
              (not (eobp)))
       (insert " \\")
-      (forward-line))))
+      (forward-line))
+    (c-indent-region (point-min) (point-max))))
 
 (defun separedit--remove-string-indent (indent-length)
   "Remove INDENT-LENGTH length of indentation from string.

@@ -1987,20 +1987,26 @@ to span multiple lines.
                               (lambda () (--bufs= ,(nth 2 heredoc))))))))
 
 (ert-deftest separedit-test-c/c++-macro ()
-  (let ((init-str "\
+  (let* ((init-str "\
 #define FOO(a, b) \\
   do { <|> \\
     auto _a = (a); \\
     auto _b = (b); \\
   } while (false)")
-        (edit-str "\
+         (edit-str "\
+#define FOO(a, b)
   do { <|>
     auto _a = (a);
     auto _b = (b);
   } while (false)")
-        )
+         (final-str
+          (with-temp-buffer
+            (c-mode)
+            (insert init-str)
+            (c-indent-region (point-min) (point-max))
+            (buffer-string))))
     (--with-callback 'c-mode init-str ""        (lambda () (--bufs= edit-str)))
-    (--with-callback 'c-mode init-str "C-c C-c" (lambda () (--bufs= init-str)))))
+    (--with-callback 'c-mode init-str "C-c C-c" (lambda () (--bufs= final-str)))))
 
 (provide 'separedit-test)
 
