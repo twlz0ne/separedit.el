@@ -399,6 +399,7 @@ Taken from `markdown-code-lang-modes'."
                           rustic-mode
                           swift-mode
                           typescript-mode))
+    (separedit--web-mode-comment-delimiter-regexp . web-mode)
     (("--")            . (applescript-mode haskell-mode lua-mode))
     (("//+")           . (pascal-mode fsharp-mode))
     ((";+\\(?:###autoload\\)?") . (emacs-lisp-mode
@@ -408,7 +409,12 @@ Taken from `markdown-code-lang-modes'."
                           scheme-mode
                           fennel-mode))
     (("#+")            . (nix-mode python-mode ruby-mode)))
-  "Alist of comment delimiter regexp."
+  "Alist of comment delimiter regexp.
+
+Each element should be in one of the following forms:
+
+   - (FUNCTION    . MODE-OR-MODE-LIST)
+   - (STRING-LIST . MODE-OR-MODE-LIST)"
   :group 'separedit
   :type 'alist)
 
@@ -803,13 +809,29 @@ If there is no comment delimiter regex for MODE, return `comment-start-skip'."
                                      separedit-comment-delimiter-alist)
                   (separedit--rassoc (separedit--get-real-mode mode)
                                      separedit-comment-delimiter-alist))))
-    (if def
-        (if (symbolp (car def))
-            (separedit--comment-delimiter-regexp (car def))
-          (concat "^[\s\t]*\\(?:"
-                  (mapconcat #'identity (car def) "\\|")
-                  "\\)\s?"))
-      comment-start-skip)))
+    (pcase (car def)
+      ((and fn (pred functionp)) (funcall fn))
+      ((and strs (pred consp)) (concat "^[\s\t]*\\(?:"
+                                       (mapconcat #'identity strs "\\|")
+                                       "\\)\s?"))
+      (_ comment-start-skip))))
+
+(defun separedit--web-mode-comment-delimiter-regexp ()
+  "Return web-mode comment delimiter regex."
+  (pcase (bound-and-true-p web-mode-engine)
+    ("none" (pcase (bound-and-true-p web-mode-content-type)
+              ((or "html" "xml")
+               (separedit--comment-delimiter-regexp 'html-mode))
+              ((or "css" "javascript" "jsx" "typescript")
+               (separedit--comment-delimiter-regexp 'js-mode))))
+    ("angular" (separedit--comment-delimiter-regexp 'js-mode))
+    ("aspx"    (separedit--comment-delimiter-regexp 'js-mode))
+    ("blade"   (separedit--comment-delimiter-regexp 'php-mode))
+    ("django"  (separedit--comment-delimiter-regexp 'python-mode))
+    ("erb"     (separedit--comment-delimiter-regexp 'ruby-mode))
+    ("go"      (separedit--comment-delimiter-regexp 'go-mode))
+    ("jsp"     (separedit--comment-delimiter-regexp 'java-mode))
+    ("php"     (separedit--comment-delimiter-regexp 'php-mode))))
 
 (defun separedit--point-at-comment-exclusive-one-line ()
   "Determine if comment exclusive one line and return the comment face."
