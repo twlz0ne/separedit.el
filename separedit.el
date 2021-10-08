@@ -1332,7 +1332,9 @@ Block info example:
                   (when block-regexps
                     (setq straight-block
                           (separedit--code-block-end
-                           (separedit--code-block-beginning nil block-regexps)))))
+                           (save-excursion ;; correct detection of header (e.g.
+                             (end-of-line) ;; c/c++ macro) when the point on it.
+                             (separedit--code-block-beginning nil block-regexps))))))
                 (unless straight-block
                   (user-error "Not inside a edit block"))))))
          (heredoc-lang
