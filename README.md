@@ -22,6 +22,7 @@ Edit comment/string/docstring/code block in separate buffer with your favorite m
     - [Edit string](#edit-string)
     - [Edit code block](#edit-code-block)
     - [Edit heredoc](#edit-heredoc)
+    - [Edit C/C++ macro](#edit-cc-macro)
     - [Edit value form of variable in help/helpful buffer](#edit-value-form-of-variable-in-helphelpful-buffer)
     - [Edit minibuffer](#edit-minibuffer)
 - [Customization](#customization)
@@ -161,6 +162,14 @@ The heredoc marker can be used to specify the language:
     CSS
 
 Both `LANG` and `__LANG__` are supported, see `separedit-heredoc-language-regexp-alist` for more detail.
+
+### Edit C/C++ macro
+
+    #define█FOO(a, b)    \      ->      #define█FOO(a, b)
+    do {                 \              do {
+        auto _a = (a);   \                  auto _a = (a);
+        auto _b = (b);   \                  auto _b = (b);
+    } while (false)                     } while (false)
 
 ### Edit value form of variable in help/helpful buffer
 
