@@ -680,6 +680,7 @@ Return nil if reached the end of the buffer."
     (typescript-mode . ("\"" "'" "`"))
     (separedit-double-quote-string-mode . t)
     (separedit-single-quote-string-mode . ("'"))
+    (sh-mode         . ("'" "\""))
     (t               . ("\"")))
   "Alist of string quotes.
 
@@ -710,7 +711,7 @@ Each item may be one of the following forms:
 (defun separedit--string-end (&optional disregard-heredoc-p)
   "Forward to the end of string and return the point."
   (while (separedit--point-at-string) (forward-char))
-  (unless disregard-heredoc-p
+  (unless (or disregard-heredoc-p (separedit--string-quotes (1- (point))))
     (unless (separedit--string-quotes (point) t)
       (if (apply #'derived-mode-p separedit-heredoc-endwith-trailing-newline-modes)
           (forward-line -2)
