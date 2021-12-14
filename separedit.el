@@ -412,7 +412,7 @@ Taken from `markdown-code-lang-modes'."
     (("//+")           . (pascal-mode fsharp-mode))
     ((";+\\(?:###autoload\\)?") . (emacs-lisp-mode
                                    lisp-interaction-mode))
-    ((";+")            . (common-lisp
+    ((";+")            . (lisp-mode
                           racket-mode
                           scheme-mode
                           fennel-mode))
@@ -445,7 +445,7 @@ Each element should be in one of the following forms:
     (("{-" "-}")       . haskell-mode)
     (("{" "}")         . pascal-mode)
     (("(\\*" "\\*)")   . (applescript-mode fsharp-mode ocaml-mode))
-    (("#|" "#|")       . (common-lisp racket-mode scheme-mode))
+    (("#|" "|#")       . (lisp-mode racket-mode scheme-mode))
     (("<!--" "-->")    . (html-mode xml-mode))
     (("--\\[[" "--\\]\\]") . lua-mode)
     (("=begin" "=end") . ruby-mode))
