@@ -669,6 +669,19 @@ Return nil if reached the end of the buffer."
              (symbol-function mode))
         mode)))
 
+(defun separedit--get-mode-comment (mode symbol)
+  "Get comment of MODE by SYMBOL."
+  (or (get mode symbol)
+      (if (equal mode major-mode)
+          (put mode symbol (symbol-value symbol))
+        (with-temp-buffer
+          (funcall mode)
+          (put mode 'comment-start      comment-start)
+          (put mode 'comment-start-skip comment-start-skip)
+          (put mode 'comment-end        comment-end)
+          (put mode 'comment-end-skip   comment-end-skip)
+          (get mode symbol)))))
+
 ;;; String / Docstring functions
 
 (defcustom separedit-string-quotes-alist
@@ -823,7 +836,9 @@ If there is no comment delimiter regex for MODE, return `comment-start-skip'."
       ((and strs (pred consp)) (concat "^[\s\t]*\\(?:"
                                        (mapconcat #'identity strs "\\|")
                                        "\\)\s?"))
-      (_ comment-start-skip))))
+      (_ (concat "^[\s\t]*\\(?:"
+                 (separedit--get-mode-comment mode 'comment-start-skip)
+                 "\\)\s?")))))
 
 (defun separedit--web-mode-comment-delimiter-regexp ()
   "Return web-mode comment delimiter regex."
@@ -1034,11 +1049,20 @@ If MODE is nil, use ‘major-mode’."
 
 (defun separedit--get-comment-encloser (&optional mode)
   "Return comment ‘(begin-encloser end-encloser)’ for MODE."
-  (let ((pair (separedit--rassoc (or mode major-mode)
-                                separedit-comment-encloser-alist)))
-    (if (functionp (car pair))
-        (funcall (car pair))
-      (car pair))))
+  (let* ((mode (or mode major-mode))
+         (def (or (separedit--rassoc mode separedit-comment-encloser-alist)
+                  (separedit--rassoc (get mode 'derived-mode-parent)
+                                     separedit-comment-encloser-alist)
+                  (separedit--rassoc (separedit--get-real-mode mode)
+                                     separedit-comment-encloser-alist))))
+    (if def
+        (if (functionp (car def))
+            (funcall (car def))
+          (car def))
+      (unless (string-empty-p (separedit--get-mode-comment mode 'comment-end))
+        (list (separedit--get-mode-comment mode 'comment-start-skip)
+              (or (separedit--get-mode-comment mode 'comment-end-skip)
+                  (separedit--get-mode-comment mode 'comment-end)))))))
 
 (defun separedit--get-web-mode-comment-encloser ()
   "Return web-mode comment encloser."
