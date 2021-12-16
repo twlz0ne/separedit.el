@@ -443,7 +443,7 @@ Each element should be in one of the following forms:
                           typescript-mode))
     (separedit--get-web-mode-comment-encloser . web-mode)
     (("{-" "-}")       . haskell-mode)
-    (("{" "}")         . pascal-mode)
+    (("\\(?:(\\*+\\|{\\**\\)" "\\(?:\\*+)\\|\\**}\\)") . pascal-mode)
     (("(\\*" "\\*)")   . (applescript-mode fsharp-mode ocaml-mode))
     (("#|" "|#")       . (lisp-mode racket-mode scheme-mode))
     (("<!--" "-->")    . (html-mode xml-mode))
