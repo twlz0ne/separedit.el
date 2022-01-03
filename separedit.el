@@ -708,6 +708,10 @@ Each item may be one of the following forms:
 (defun separedit--point-at-string (&optional pos)
   "Determine if point POS at string or not."
   (or (nth 3 (syntax-ppss pos))
+      (and (<= 29 emacs-major-version)
+           (derived-mode-p 'python-mode)
+           (memq (face-at-point) '(font-lock-string-face))
+           (memq (get-char-property (1- (point)) 'face) '(font-lock-string-face)))
       (and (derived-mode-p 'perl-mode)
            (memq (face-at-point) '(perl-heredoc))
            (not (or (separedit--string-quotes pos)
