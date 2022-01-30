@@ -318,32 +318,6 @@
 ;;        #'eval-last-sexp))))
 ;; ```
 
-;;; Change Log:
-
-;;  0.3.0  2020/04/20  * Drop support for Emacs 24
-;;                     * Migrate ti Github Actions
-;;                     * New features
-;;                         + Add support for following comment styles:
-;;                             doxygen / javadoc / gnu
-;;                         + Add support for following code blocks:
-;;                             - unicode box-drawing blocks
-;;                             - org-mode blocks
-;;                         + Add support for following places:
-;;                             - active region
-;;                             - minibuffer
-;;                             - help & helpful
-;;                         + Add support for following major modes:
-;;                             nix-mode / gfm-mode / rustic-mode /
-;;                             typescript-mode / fennel-mode /
-;;                             text-mode and it's derivatives
-;;                     * Improves
-;;                         + Edit the ;;;###autoload block as elisp
-;;                         + Region detection of interpolated string of Nix
-;;                         + Saving changes without exiting edit buffer
-;;                     * Bunch of bug fixes
-;;  0.2.0  2020/02/25  Renamed to separedit
-;;  0.1.0  2019/04/06  Initial version.
-
 ;;; Code:
 
 (require 'cl-lib)
