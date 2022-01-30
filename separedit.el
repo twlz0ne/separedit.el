@@ -4,7 +4,7 @@
 
 ;; Author: Gong Qijian <gongqijian@gmail.com>
 ;; Created: 2019/04/06
-;; Version: 0.3.0
+;; Version: 0.3.24
 ;; Package-Requires: ((emacs "25.1") (dash "2.18") (edit-indirect "0.1.5"))
 ;; URL: https://github.com/twlz0ne/separedit.el
 ;; Keywords: tools languages docs
@@ -1464,11 +1464,17 @@ Block info example:
       (while (pcase-let ((`(,depth ,start . ,_) (syntax-ppss)))
                (if (or (and (zerop depth) (not start))
                        (looking-back "^Value:\\(\n\\|\s\\)" 1))
-                   (throw 'break (bounds-of-thing-at-point 'sexp))
+                   (throw 'break
+                     (if (separedit--point-at-string)
+                         (let ((region (separedit--string-region)))
+                           (list (cons (car region) (cadr region)) 'stringp))
+                       (list (bounds-of-thing-at-point 'sexp) nil)))
                  (goto-char start)))))))
 
 (defun separedit-help-variable-edit-info ()
-  "Return help varible edit info (symbol value-bound type local-buffer) at point."
+  "Return help varible edit info at point.
+
+Each element is in the form of (SYMBOL VALUE-BOUND STRINGP TYPE LOCAL-BUFFER)."
   (unless (eq major-mode 'help-mode)
     (user-error "Not in help buffer"))
   (let* ((symbol (separedit-described-symbol))
@@ -1481,7 +1487,7 @@ Block info example:
                           "^Local in buffer \\([^;]+\\); global value is[\s]?"
                           nil t 1)
                      (match-string-no-properties 1))))
-              (goto-char (car bound))
+              (goto-char (caar bound))
               (backward-char)
               (list (cond
                      ((or (looking-back "^Value:[\s]?" 1)
@@ -1493,7 +1499,7 @@ Block info example:
                       'global))
                     buffer?)))))
     (when (and symbol bound (car type-buffer))
-      `(,symbol ,bound ,@type-buffer))))
+      `(,symbol ,@bound ,@type-buffer))))
 
 (defun separedit-helpful-variable-edit-info ()
   "Return helpful variable edit info (symbol value-bound type local-buffer) at point."
@@ -1503,14 +1509,14 @@ Block info example:
          (bound (separedit-described-value-bound))
          (type-buffer
           (save-excursion
-            (goto-char (car bound))
+            (goto-char (caar bound))
             (forward-line -1)
             (cond ((looking-at "^Value$") (list 'global nil))
                   ((looking-at "^Value in #<buffer \\(.*\\)>$")
                    (list 'local (match-string-no-properties 1)))
                   ((looking-at "^Original Value$") (list 'global nil))))))
     (when (and symbol bound (car type-buffer))
-      `(,symbol ,bound ,@type-buffer))))
+      `(,symbol ,@bound ,@type-buffer))))
 
 ;;; separedit-mode
 
@@ -1939,11 +1945,19 @@ If you just want to check `major-mode', use `derived-mode-p'."
                      (`help-mode (separedit-help-variable-edit-info))
                      (`helpful-mode (separedit-helpful-variable-edit-info))))
              (region (nth 1 info))
+             (strp (and (nth 2 info) t))
              (edit-indirect-after-creation-hook #'separedit--buffer-creation-setup)
              (point-info (separedit--point-info (car region) (cdr region)))
              (edit-indirect-guess-mode-function
               `(lambda (_bufer _beg _end)
+                 (when ,strp
+                   (separedit--remove-escape ,strp))
                  (emacs-lisp-mode)
+                 (set (make-local-variable 'edit-indirect-before-commit-hook)
+                      (append '((lambda ()
+                                  (when ,strp
+                                    (separedit--restore-escape ,strp))))
+                              edit-indirect-before-commit-hook))
                  (separedit--restore-point ,@point-info)
                  (setq-local separedit--inhibit-read-only t)
                  (setq-local separedit--help-variable-edit-info ',info))))

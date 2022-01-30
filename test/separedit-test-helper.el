@@ -132,7 +132,8 @@ EXPECTED is of the form (symbol value type local-buffer)"
                    (buffer-substring-no-properties
                     (car (nth 1 edit-info)) (cdr (nth 1 edit-info)))
                    (nth 2 edit-info)
-                   (nth 3 edit-info)))))))
+                   (nth 3 edit-info)
+                   (nth 4 edit-info)))))))
 
 (define-derived-mode helpful-mode special-mode "Dummy Mode" "For Test")
 
@@ -152,7 +153,8 @@ EXPECTED is of the form (symbol value type local-buffer)"
                    (buffer-substring-no-properties
                     (car (nth 1 edit-info)) (cdr (nth 1 edit-info)))
                    (nth 2 edit-info)
-                   (nth 3 edit-info)))))))
+                   (nth 3 edit-info)
+                   (nth 4 edit-info)))))))
 
 (defun separedit-test--execute-block-edit (init-mode key-sequnce init-data expected-data &optional region-regexps)
   (let ((buf (generate-new-buffer "*init*")))

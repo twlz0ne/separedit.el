@@ -945,7 +945,7 @@ functions displays the tooltip, it should return non-nil and the
 rest are not called.
 
 [back]"
-   '(tooltip-hook "(tooltip-help<|>-tips)" global nil))
+   '(tooltip-hook "(tooltip-help<|>-tips)" nil global nil))
   (--assert-help-value
    "company-backends1 is a variable defined in ‘company.el’.
 Its value is shown below.
@@ -966,7 +966,7 @@ Local in buffer *.py; global value is
 (company-cmake company-capf company-files company-oddmuse company-dabbrev)
 
 [back]"
-   '(company-backends1 "(company-lsp company-capf<|>)" local "*.py"))
+   '(company-backends1 "(company-lsp company-capf<|>)" nil local "*.py"))
   (--assert-help-value
    "company-backends2 is a variable defined in ‘company.el’.
 Its value is shown below.
@@ -987,7 +987,7 @@ Local in buffer *.py; global value is
 (company-cmake company-capf company-files company-oddmuse company-dabbrev)
 
 [back]"
-   '(company-backends2 "(company-cmake company-capf<|> company-files company-oddmuse company-dabbrev)" global "*.py"))
+   '(company-backends2 "(company-cmake company-capf<|> company-files company-oddmuse company-dabbrev)" nil global "*.py"))
   (--assert-help-value
    "company-backends3 is a variable defined in ‘company.el’.
 Its value is shown below.
@@ -1008,7 +1008,25 @@ Local in buffer *.py; global value is
 (company-cmake company-capf<|> company-files company-oddmuse company-dabbrev)
 
 [back]"
-   '(company-backends3 "(company-cmake company-capf<|> company-files company-oddmuse company-dabbrev)" global "*.py")))
+   '(company-backends3 "(company-cmake company-capf<|> company-files company-oddmuse company-dabbrev)" nil global "*.py"))
+  (--assert-help-value
+   "color-rg-search-ignore-rules is a variable defined in ‘color-rg.el’.
+
+Its value is \"-g '!#*'<|> -g '!node_modules' -g '!dist'\"
+Original value was 
+\"-g '!node_modules' -g '!dist'\"
+
+When ‘color-rg-search-no-ignore-file’ is non-nil, color-rg will search any file.
+Include file match gitignore rule.
+
+Default rule is search any file but except ‘node_modules’ and ‘dist’ directory,
+you can customize ignore rules with your like.
+
+  You can customize this variable.
+
+[back]"
+   '(color-rg-search-ignore-rules "-g '!#*'<|> -g '!node_modules' -g '!dist'"
+     stringp global nil)))
 
 (ert-deftest separedit-test-helpful-value-edit-info ()
   (--assert-helpful-value
@@ -1026,7 +1044,7 @@ Documentation
 Functions to call to display tooltips.
 
 ..."
-   '(tooltip-hook "(tooltip-help<|>-tips)" global nil))
+   '(tooltip-hook "(tooltip-help<|>-tips)" nil global nil))
   (--assert-helpful-value
    "company-backends1 is a variable defined in company.el.
 
@@ -1042,7 +1060,7 @@ Documentation
 The list of active backends (completion engines).
 
 ..."
-   '(company-backends1 "(company-lsp company-capf<|>)" local "*.py"))
+   '(company-backends1 "(company-lsp company-capf<|>)" nil local "*.py"))
   (--assert-helpful-value
    "company-backends2 is a variable defined in company.el.
 
@@ -1058,7 +1076,7 @@ Documentation
 The list of active backends (completion engines).
 
 ..."
-   '(company-backends2 "(company-cmake company-capf<|> company-files company-oddmuse company-dabbrev)" global nil)))
+   '(company-backends2 "(company-cmake company-capf<|> company-files company-oddmuse company-dabbrev)" nil global nil)))
 
 (ert-deftest separedit-test-heredoc-region ()
   (let ((heredocs
@@ -1706,8 +1724,8 @@ comment3
     (should (eq 'tar-mode
                 (cdr (assoc "\\.txz\\'" (car (read-from-string
                                               (buffer-substring-no-properties
-                                               (car bound)
-                                               (cdr bound))))))))))
+                                               (caar bound)
+                                               (cdar bound))))))))))
 
 (ert-deftest separedit-test-gnu-style-comment ()
   (let ((init-str (--join\n "/* comment 1"
