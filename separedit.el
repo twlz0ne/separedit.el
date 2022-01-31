@@ -4,7 +4,7 @@
 
 ;; Author: Gong Qijian <gongqijian@gmail.com>
 ;; Created: 2019/04/06
-;; Version: 0.3.24
+;; Version: 0.3.25
 ;; Package-Requires: ((emacs "25.1") (dash "2.18") (edit-indirect "0.1.5"))
 ;; URL: https://github.com/twlz0ne/separedit.el
 ;; Keywords: tools languages docs
@@ -390,7 +390,7 @@ Taken from `markdown-code-lang-modes'."
                           racket-mode
                           scheme-mode
                           fennel-mode))
-    (("#+")            . (nix-mode python-mode ruby-mode)))
+    (("#+")            . (conf-mode nix-mode python-mode ruby-mode yaml-mode)))
   "Alist of comment delimiter regexp.
 
 Each element should be in one of the following forms:
@@ -1323,8 +1323,8 @@ Block info example:
          (comment-or-string-region
           ;; string
           (if (separedit--point-at-comment)
-              (when (or (derived-mode-p 'prog-mode)
-                        (memq major-mode '(gfm-mode markdown-mode org-mode)))
+              (when (or (derived-mode-p 'prog-mode 'conf-mode)
+                        (memq major-mode '(yaml-mode gfm-mode markdown-mode org-mode)))
                 (condition-case nil (separedit--comment-region) (user-error nil)))
             (let ((region (condition-case nil (separedit--string-region) (user-error nil))))
               ;; comment
