@@ -4,7 +4,7 @@
 
 ;; Author: Gong Qijian <gongqijian@gmail.com>
 ;; Created: 2019/04/06
-;; Version: 0.3.25
+;; Version: 0.3.26
 ;; Package-Requires: ((emacs "25.1") (dash "2.18") (edit-indirect "0.1.5"))
 ;; URL: https://github.com/twlz0ne/separedit.el
 ;; Keywords: tools languages docs
@@ -859,10 +859,19 @@ If there is no comment delimiter regex for MODE, return `comment-start-skip'."
                                              (point)))
                                  'face)))
     (when face
-      (let ((comment-faces (separedit--comment-faces)))
-        (if (consp face)
-            (cl-intersection face comment-faces)
-          (memq face comment-faces))))))
+      (or (let ((comment-faces (separedit--comment-faces)))
+            (if (consp face)
+                (cl-intersection face comment-faces)
+              (memq face comment-faces)))
+          (when (and (bound-and-true-p whitespace-mode)
+                     (string-prefix-p "whitespace-"
+                                      (symbol-name 'whitespace-space)))
+            (save-excursion
+              (let ((state (syntax-ppss)))
+                (and (nth 4 state)
+                     (parse-partial-sexp (point) (point-max)
+                                         nil nil state 'syntax-table)
+                     t))))))))
 
 (defun separedit--comment-beginning (&optional pos)
   "Look at the first line of comment from point POS.
