@@ -4,7 +4,7 @@
 
 ;; Author: Gong Qijian <gongqijian@gmail.com>
 ;; Created: 2019/04/06
-;; Version: 0.3.27
+;; Version: 0.3.28
 ;; Package-Requires: ((emacs "25.1") (dash "2.18") (edit-indirect "0.1.5"))
 ;; URL: https://github.com/twlz0ne/separedit.el
 ;; Keywords: tools languages docs
@@ -1926,13 +1926,27 @@ If you just want to check `major-mode', use `derived-mode-p'."
 (defun separedit-dwim-described-variable ()
   "Edit value of variable at poin in help/helpful buffer."
   (interactive)
-  (-if-let (info (pcase major-mode
-                   (`help-mode (separedit-help-variable-edit-info))
-                   (`helpful-mode (separedit-helpful-variable-edit-info))))
-      (let* ((region (nth 1 info))
-             (strp (and (nth 2 info) t))
+  (-if-let* ((info (pcase major-mode
+                     (`help-mode (separedit-help-variable-edit-info))
+                     (`helpful-mode (separedit-helpful-variable-edit-info))))
+             (region (nth 1 info))
+             (point-info
+              (if (and (or print-level print-length)
+                       (save-excursion
+                         (goto-char (cdr region))
+                         (looking-back "\\.\\{3\\}\\([)]+\\)?" nil)))
+                  (progn
+                    (when (yes-or-no-p
+                           "Can't edit the value if it is not printed completely.
+\nTemporarily turn off the printing limitation and try agian? ")
+                      (let (print-level print-length)
+                        (pcase major-mode
+                          (`help-mode (revert-buffer t t t))
+                          (`helpful-mode (helpful-update)))))
+                    (signal 'user-error nil))
+                (separedit--point-info (car region) (cdr region)))))
+      (let* ((strp (and (nth 2 info) t))
              (edit-indirect-after-creation-hook #'separedit--buffer-creation-setup)
-             (point-info (separedit--point-info (car region) (cdr region)))
              (edit-indirect-guess-mode-function
               `(lambda (_bufer _beg _end)
                  (when ,strp
