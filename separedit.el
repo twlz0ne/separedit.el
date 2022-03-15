@@ -4,7 +4,7 @@
 
 ;; Author: Gong Qijian <gongqijian@gmail.com>
 ;; Created: 2019/04/06
-;; Version: 0.3.29
+;; Version: 0.3.30
 ;; Package-Requires: ((emacs "25.1") (dash "2.18") (edit-indirect "0.1.5"))
 ;; URL: https://github.com/twlz0ne/separedit.el
 ;; Keywords: tools languages docs
@@ -1446,7 +1446,7 @@ Block info example:
   (save-excursion
     (catch 'break
       (while (pcase-let ((`(,depth ,start . ,_) (syntax-ppss)))
-               (if (or (and (zerop depth) (not start))
+               (if (or (and (<= depth 0) (not start))
                        (looking-back "^Value:\\(\n\\|\s\\)" 1))
                    (throw 'break
                      (if (separedit--point-at-string)
