@@ -4,7 +4,7 @@
 
 ;; Author: Gong Qijian <gongqijian@gmail.com>
 ;; Created: 2019/04/06
-;; Version: 0.3.28
+;; Version: 0.3.29
 ;; Package-Requires: ((emacs "25.1") (dash "2.18") (edit-indirect "0.1.5"))
 ;; URL: https://github.com/twlz0ne/separedit.el
 ;; Keywords: tools languages docs
@@ -668,6 +668,7 @@ Return nil if reached the end of the buffer."
     (separedit-double-quote-string-mode . t)
     (separedit-single-quote-string-mode . ("'"))
     (sh-mode         . ("'" "\""))
+    (fish-mode       . ("'" "\""))
     (t               . ("\"")))
   "Alist of string quotes.
 
