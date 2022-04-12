@@ -4,7 +4,7 @@
 
 ;; Author: Gong Qijian <gongqijian@gmail.com>
 ;; Created: 2019/04/06
-;; Version: 0.3.30
+;; Version: 0.3.31
 ;; Package-Requires: ((emacs "25.1") (dash "2.18") (edit-indirect "0.1.5"))
 ;; URL: https://github.com/twlz0ne/separedit.el
 ;; Keywords: tools languages docs
@@ -185,6 +185,12 @@
 
 ;; Don't get stuck in minibuffer, press <kbd>C-c '</kbd> to open a edit buffer.
 
+;; ### Edit in vterm
+
+;; Make sure the the vterm [Directory tracking and Prompt tracking](https://github.com/akermu/emacs-libvterm#directory-tracking-and-prompt-tracking) is set correctolly.
+
+;; Then put the cursor after prompt, press <kbd>C-c '</kbd> to start a new edit, or <kbd>C-p C-c '</kbd> to edit previous command.
+
 ;; ## Customization
 
 ;; ### Change key bindings in edit buffer
@@ -307,7 +313,7 @@
 ;;         (separedit-inhibit-edit-window-p t))
 ;;     (with-current-buffer (separedit)
 ;;       (unwind-protect (call-interactively #'eval-last-sexp)
-;;         (edit-indirect-abort)))))
+;;         (separedit-abort)))))
 
 ;; (define-key emacs-lisp-mode-map (kbd "C-x C-e")
 ;;   (lambda ()
@@ -520,6 +526,11 @@ Example of a string block with indentation offset:
   :group 'separedit
   :type 'hook)
 
+(defcustom separedit-before-abort-hook nil
+  "Functions called before abort edit."
+  :group 'separedit
+  :type 'hook)
+
 (defvar separedit-inhibit-edit-window-p nil
   "Non-nil for open the edit buffer in background.
 
@@ -531,7 +542,10 @@ For example:
            (progn
              ;; DO SOMETHING
              )
-         (edit-indirect-abort))))")
+         (separedit-abort))))")
+
+(defvar separedit-replace-match-function nil
+  "Function to instead of `replace-match' when commit changes.")
 
 (defvar separedit-heredoc-endwith-trailing-newline-modes
   '(sh-mode perl-mode ruby-mode racket-mode)
@@ -1531,6 +1545,13 @@ It will override by the key that `separedit' binding in source buffer.")
   "Return t if in edit buffer."
   (string-prefix-p "*edit-indirect " (buffer-name)))
 
+(defun separedit--commit ()
+  "Commit chnages."
+  (cl-letf (((symbol-function 'replace-match)
+             (symbol-function (or separedit-replace-match-function
+                                  'replace-match))))
+    (edit-indirect--commit)))
+
 (defun separedit--apply-changes ()
   "Apply changes to source buffer."
   (let ((inhibit-read-only separedit--inhibit-read-only))
@@ -1548,8 +1569,8 @@ It will override by the key that `separedit' binding in source buffer.")
            (t (message "Unknown variable scope: %s" scp)))
           ;; Make sure `edit-indirect--overlay' not be destroyed.
           (when (overlay-buffer edit-indirect--overlay)
-            (edit-indirect--commit)))
-      (edit-indirect--commit))))
+            (separedit--commit)))
+      (separedit--commit))))
 
 (defun separedit-save ()
   "Save changes but without exiting edit buffer."
@@ -1574,6 +1595,12 @@ It will override by the key that `separedit' binding in source buffer.")
             (with-current-buffer source-buffer
               (save-buffer))
           (message "Updated %S" source-buffer))))))
+
+(defun separedit-abort ()
+  "Abort edit."
+  (interactive)
+  (run-hooks 'separedit-before-abort-hook)
+  (edit-indirect-abort))
 
 (defun separedit-commit ()
   "Commit changes."
@@ -1608,7 +1635,7 @@ It will override by the key that `separedit' binding in source buffer.")
         (define-key km (separedit--entry-key) entry-cmd)
         (define-key km separedit-commit-key #'separedit-commit)
         (define-key km separedit-save-key #'separedit-save)
-        (define-key km separedit-abort-key #'edit-indirect-abort)
+        (define-key km separedit-abort-key #'separedit-abort)
         (make-local-variable 'minor-mode-overriding-map-alist)
         (push `(edit-indirect--overlay . ,km) minor-mode-overriding-map-alist)
         (when separedit-continue-fill-column
@@ -1621,7 +1648,7 @@ It will override by the key that `separedit' binding in source buffer.")
                               'identity
                               (-non-nil
                                (list "\\[separedit-commit]: Finish"
-                                     "\\[edit-indirect-abort]: Abort"
+                                     "\\[separedit-abort]: Abort"
                                      (format "\\[%s]: Enter" entry-cmd)))
                               ", "))))
         (run-hooks 'separedit-buffer-creation-hook)
@@ -1964,6 +1991,53 @@ If you just want to check `major-mode', use `derived-mode-p'."
         (edit-indirect-region (car region) (cdr region) 'display-buffer))
     (user-error "Not at variable value")))
 
+;;; vterm
+
+(declare-function vterm-delete-region "vterm")
+(declare-function vterm-insert "vterm")
+(declare-function vterm-copy-mode "vterm")
+(declare-function vterm--get-prompt-point "vterm")
+
+(defun separedit--vterm-replace-match (newtext &optional _ _ _ _)
+  "Insert NEWTEXT to vterm.
+
+This function is used to instead of ‘replace-match’."
+  (let ((inhibit-read-only t))
+    (when (< (match-beginning 0) (match-end 0))
+      (vterm-send "C-a")
+      (vterm-send "C-k"))
+    (run-with-idle-timer 0 nil #'vterm-insert newtext)))
+
+(defun separedit--vterm-exit-copy-mode ()
+  (when edit-indirect--overlay
+    (with-current-buffer (overlay-buffer edit-indirect--overlay)
+      (vterm-copy-mode -1))))
+
+;;;###autoload
+(defun separedit-dwim-vterm ()
+  "Edit content after vterm prompt."
+  (interactive)
+  (let* ((edit-indirect-after-creation-hook #'separedit--buffer-creation-setup)
+         (start-point (vterm--get-prompt-point))
+         (end-point (save-excursion
+                      (goto-char (point-max))
+                      (re-search-backward "[^\s\t\r\n]" nil t 1)
+                      (max start-point (1+ (point)))))
+         (edit-indirect-guess-mode-function
+          (lambda (_buffer _beg _end)
+            (setq-local separedit--inhibit-read-only t)
+            (setq-local edit-indirect--inhibit-read-only t)
+            (setq-local separedit-replace-match-function
+                        'separedit--vterm-replace-match)
+            (setq-local separedit-before-abort-hook
+                        (append '(separedit--vterm-exit-copy-mode)
+                                separedit-before-abort-hook))
+            (setq-local edit-indirect-before-commit-hook
+                        (append '(separedit--vterm-exit-copy-mode)
+                                edit-indirect-before-commit-hook)))))
+    (vterm-copy-mode 1)
+    (edit-indirect-region start-point end-point 'display-buffer)))
+
 ;;;###autoload
 (defun separedit-dwim-default (&optional block)
   "Edit comment or docstring or code BLOCK in them.
@@ -2068,6 +2142,8 @@ but users can also manually select it by pressing `C-u \\[separedit]'."
   (cond
    ((memq major-mode '(help-mode helpful-mode))
     (separedit-dwim-described-variable))
+   ((memq major-mode '(vterm-mode))
+    (separedit-dwim-vterm))
    (t (separedit-dwim-default
        (or block
            ;; minibuffer
