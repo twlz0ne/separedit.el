@@ -4,7 +4,7 @@
 
 ;; Author: Gong Qijian <gongqijian@gmail.com>
 ;; Created: 2019/04/06
-;; Version: 0.3.31
+;; Version: 0.3.32
 ;; Package-Requires: ((emacs "25.1") (dash "2.18") (edit-indirect "0.1.5"))
 ;; URL: https://github.com/twlz0ne/separedit.el
 ;; Keywords: tools languages docs
@@ -547,6 +547,9 @@ For example:
 (defvar separedit-replace-match-function nil
   "Function to instead of `replace-match' when commit changes.")
 
+(defvar separedit-shebang-regexp "#!\\(?:/usr\\)?/bin/"
+  "Regexp to match shebang.")
+
 (defvar separedit-heredoc-endwith-trailing-newline-modes
   '(sh-mode perl-mode ruby-mode racket-mode)
   "List of mode that the heredoc end with a trailing newline.
@@ -878,9 +881,12 @@ If there is no comment delimiter regex for MODE, return `comment-start-skip'."
             (if (consp face)
                 (cl-intersection face comment-faces)
               (memq face comment-faces)))
-          (when (and (bound-and-true-p whitespace-mode)
-                     (string-prefix-p "whitespace-"
-                                      (symbol-name 'whitespace-space)))
+          (when (or (and (bound-and-true-p whitespace-mode)
+                         (string-prefix-p "whitespace-"
+                                          (symbol-name 'whitespace-space)))
+                    (and (derived-mode-p 'sh-mode)
+                         ;; Last word of shebang has different face
+                         (= (point-min) (point-at-bol))))
             (save-excursion
               (let ((state (syntax-ppss)))
                 (and (nth 4 state)
@@ -911,6 +917,8 @@ Example:
     (when (and (not point-at-comment-p)
                point-at-newline-p)
       (forward-char 1))
+    (when (and (bobp) (looking-at-p separedit-shebang-regexp))
+      (forward-line 1))
     (point)))
 
 (defun separedit--comment-end (&optional pos)
