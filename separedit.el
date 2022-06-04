@@ -4,7 +4,7 @@
 
 ;; Author: Gong Qijian <gongqijian@gmail.com>
 ;; Created: 2019/04/06
-;; Version: 0.3.33
+;; Version: 0.3.34
 ;; Package-Requires: ((emacs "25.1") (dash "2.18") (edit-indirect "0.1.5"))
 ;; URL: https://github.com/twlz0ne/separedit.el
 ;; Keywords: tools languages docs
@@ -700,10 +700,11 @@ Each item may be one of the following forms:
 (defun separedit--point-at-string (&optional pos)
   "Determine if point POS at string or not."
   (or (nth 3 (syntax-ppss pos))
-      (and (<= 29 emacs-major-version)
-           (derived-mode-p 'python-mode)
-           (memq (face-at-point) '(font-lock-string-face))
-           (memq (get-char-property (1- (point)) 'face) '(font-lock-string-face)))
+      (and (derived-mode-p 'python-mode)
+           (memq (face-at-point) '(font-lock-string-face font-lock-doc-face))
+           (unless (bobp)
+             (memq (get-char-property (1- (point)) 'face)
+                   '(font-lock-string-face font-lock-doc-face))))
       (and (derived-mode-p 'perl-mode)
            (memq (face-at-point) '(perl-heredoc))
            (not (or (separedit--string-quotes pos)

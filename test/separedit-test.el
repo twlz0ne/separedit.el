@@ -1502,13 +1502,13 @@ Usage:
   (let ((separedit-preserve-string-indentation t)
         (separedit-string-indent-offset-alist '((python-mode . 2)))
         (init-str (--join\n "    '''"
-                            "      String block 11"
-                            "      String block 11<|>"
-                            "      String block 11"
+                            "      String block 14"
+                            "      String block 14<|>"
+                            "      String block 14"
                             "    '''"))
-        (edit-str (--join\n "  String block 11"
-                            "  String block 11<|>"
-                            "  String block 11")))
+        (edit-str (--join\n "  String block 14"
+                            "  String block 14<|>"
+                            "  String block 14")))
     (--with-callback 'python-mode init-str ""        (lambda () (should (--bufs= edit-str))))
     (--with-callback 'python-mode init-str "C-c C-c" (lambda () (should (--bufs= init-str))))))
 
