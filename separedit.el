@@ -4,7 +4,7 @@
 
 ;; Author: Gong Qijian <gongqijian@gmail.com>
 ;; Created: 2019/04/06
-;; Version: 0.3.34
+;; Version: 0.3.35
 ;; Package-Requires: ((emacs "25.1") (dash "2.18") (edit-indirect "0.1.5"))
 ;; URL: https://github.com/twlz0ne/separedit.el
 ;; Keywords: tools languages docs
@@ -873,10 +873,11 @@ If there is no comment delimiter regex for MODE, return `comment-start-skip'."
 
 (defun separedit--point-at-comment (&optional point)
   "Return non-nil (face or t) if POINT at comment."
-  (let ((face (get-text-property (or point (if (and (eobp) (not (bolp)))
-                                               (1- (point))
-                                             (point)))
-                                 'face)))
+  (let ((face (unless (separedit--point-at-string)
+                (get-text-property (or point (if (and (eobp) (not (bolp)))
+                                                 (1- (point))
+                                               (point)))
+                                   'face))))
     (when face
       (or (let ((comment-faces (separedit--comment-faces)))
             (cl-loop for f in (if (consp face) (reverse face) (list face))
@@ -1355,13 +1356,13 @@ Block info example:
          (strp nil)
          (straight-block nil)
          (comment-or-string-region
-          ;; string
+          ;; comment
           (if (separedit--point-at-comment)
               (when (or (derived-mode-p 'prog-mode 'conf-mode)
                         (memq major-mode '(yaml-mode gfm-mode markdown-mode org-mode)))
                 (condition-case nil (separedit--comment-region) (user-error nil)))
             (let ((region (condition-case nil (separedit--string-region) (user-error nil))))
-              ;; comment
+              ;; string
               (if region
                   (prog1 region
                     (setq strp (separedit--string-quotes
