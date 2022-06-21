@@ -4,7 +4,7 @@
 
 ;; Author: Gong Qijian <gongqijian@gmail.com>
 ;; Created: 2019/04/06
-;; Version: 0.3.35
+;; Version: 0.3.36
 ;; Package-Requires: ((emacs "25.1") (dash "2.18") (edit-indirect "0.1.5"))
 ;; URL: https://github.com/twlz0ne/separedit.el
 ;; Keywords: tools languages docs
@@ -880,22 +880,18 @@ If there is no comment delimiter regex for MODE, return `comment-start-skip'."
                                    'face))))
     (when face
       (or (let ((comment-faces (separedit--comment-faces)))
-            (cl-loop for f in (if (consp face) (reverse face) (list face))
+            (cl-loop for f in (if (consp face)
+                                  (when (face-list-p face) (reverse face))
+                                (list face))
                      when (or (memq f comment-faces)
                               (memq (face-attribute f :inherit) comment-faces))
                      return f))
-          (when (or (and (bound-and-true-p whitespace-mode)
-                         (string-prefix-p "whitespace-"
-                                          (symbol-name 'whitespace-space)))
-                    (and (derived-mode-p 'sh-mode)
-                         ;; Last word of shebang has different face
-                         (= (point-min) (point-at-bol))))
-            (save-excursion
-              (let ((state (syntax-ppss)))
-                (and (nth 4 state)
-                     (parse-partial-sexp (point) (point-max)
-                                         nil nil state 'syntax-table)
-                     t))))))))
+          (save-excursion
+            (let ((state (syntax-ppss)))
+              (and (nth 4 state)
+                   (parse-partial-sexp (point) (point-max)
+                                       nil nil state 'syntax-table)
+                   t)))))))
 
 (defun separedit--comment-beginning (&optional pos)
   "Look at the first line of comment from point POS.
