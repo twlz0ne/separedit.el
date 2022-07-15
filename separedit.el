@@ -5,7 +5,7 @@
 ;; Author: Gong Qijian <gongqijian@gmail.com>
 ;; Created: 2019/04/06
 ;; Version: 0.3.36
-;; Last-Updated: 2022-07-15 22:44:42 +0800
+;; Last-Updated: 2022-07-16 07:22:48 +0800
 ;;           by: Gong Qijian
 ;; Package-Requires: ((emacs "25.1") (dash "2.18") (edit-indirect "0.1.5"))
 ;; URL: https://github.com/twlz0ne/separedit.el
@@ -860,12 +860,9 @@ If there is no comment delimiter regex for MODE, return `comment-start-skip'."
 (defun separedit--point-at-comment-exclusive-one-line ()
   "Determine if comment exclusive one line and return the comment face."
   (save-excursion
-    (save-restriction
-      (narrow-to-region (point-at-bol) (point-at-eol))
-      (goto-char (point-min))
-      (and (re-search-forward "[^\s\t]" nil t 1)
-           (and (ignore-errors (forward-char 1) t)
-                (separedit--point-at-comment))))))
+    (goto-char (point-at-bol))
+    (and (re-search-forward "[^\s\t]" (point-at-eol) t 1)
+         (separedit--point-at-comment))))
 
 (defun separedit--comment-faces ()
   "Return comment faces of current mode."
