@@ -5,6 +5,8 @@
 ;; Author: Gong Qijian <gongqijian@gmail.com>
 ;; Created: 2019/04/06
 ;; Version: 0.3.36
+;; Last-Updated: 2022-07-15 22:44:42 +0800
+;;           by: Gong Qijian
 ;; Package-Requires: ((emacs "25.1") (dash "2.18") (edit-indirect "0.1.5"))
 ;; URL: https://github.com/twlz0ne/separedit.el
 ;; Keywords: tools languages docs
@@ -1489,18 +1491,18 @@ Each element is in the form of (SYMBOL VALUE-BOUND STRINGP SCOPE LOCAL-BUFFER)."
             (goto-char (point-min))
             (let ((buffer?
                    (when (re-search-forward
-                          "^Local in buffer \\([^;]+\\); global value is[\s]?"
+                          "^Local in buffer \\([^;]+\\); global value is[\s\n]?"
                           nil t 1)
                      (match-string-no-properties 1))))
               (goto-char (caar bound))
               (backward-char)
               (list (cond
-                     ((or (looking-back "^Value:[\s]?" 1)
-                          (looking-back "^Its value is[\s]?" 1)
-                          (looking-back (format "^%s’s value is[\s]?" symbol) 1))
+                     ((or (looking-back "^Value:[\s\n]?" 1)
+                          (looking-back "^Its value is[\s\n]?" 1)
+                          (looking-back (format "^%s’s value is[\s\n]?" symbol) 1))
                       (if buffer? 'local 'global))
                      ((or (looking-back "^Original value was[\s]?" 1)
-                          (looking-back "^Local in buffer \\([^;]+\\); global value is[\s]?" 1))
+                          (looking-back "^Local in buffer \\([^;]+\\); global value is[\s\n]?" 1))
                       'global))
                     buffer?)))))
     (when (and symbol bound (car scope-buffer))
