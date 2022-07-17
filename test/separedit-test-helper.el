@@ -56,6 +56,91 @@
     (funcall 'jit-lock-fontify-now
              (or beg (point-min)) (or end (point-max)))))
 
+(defconst python-rx-constituents@26.1
+  (list
+   `(block-start          . ,(rx symbol-start
+                                 (or "def" "class" "if" "elif" "else" "try"
+                                     "except" "finally" "for" "while" "with")
+                                 symbol-end))
+   `(decorator            . ,(rx line-start (* space) ?@ (any letter ?_)
+                                 (* (any word ?_))))
+   `(defun                . ,(rx symbol-start (or "def" "class") symbol-end))
+   `(symbol-name          . ,(rx (any letter ?_) (* (any word ?_))))
+   `(open-paren           . ,(rx (or "{" "[" "(")))
+   `(close-paren          . ,(rx (or "}" "]" ")")))
+   `(simple-operator      . ,(rx (any ?+ ?- ?/ ?& ?^ ?~ ?| ?* ?< ?> ?= ?%)))
+   `(not-simple-operator  . ,(rx
+                              (not
+                               (any ?+ ?- ?/ ?& ?^ ?~ ?| ?* ?< ?> ?= ?%))))
+   `(operator             . ,(rx (or "+" "-" "/" "&" "^" "~" "|" "*" "<" ">"
+                                     "=" "%" "**" "//" "<<" ">>" "<=" "!="
+                                     "==" ">=" "is" "not")))
+   `(assignment-operator  . ,(rx (or "=" "+=" "-=" "*=" "/=" "//=" "%=" "**="
+                                     ">>=" "<<=" "&=" "^=" "|="))))
+  "Additional Python specific sexps for `python-rx'")
+
+(defun python-info-docstring-p@26.1 (&optional syntax-ppss)
+  "Return non-nil if point is in a docstring.
+When optional argument SYNTAX-PPSS is given, use that instead of
+point's current `syntax-ppss'."
+  ;;; https://www.python.org/dev/peps/pep-0257/#what-is-a-docstring
+  (save-excursion
+    (when (and syntax-ppss (python-syntax-context 'string syntax-ppss))
+      (goto-char (nth 8 syntax-ppss)))
+    (python-nav-beginning-of-statement)
+    (let ((counter 1)
+          (indentation (current-indentation))
+          (backward-sexp-point)
+          (re (concat "[uU]?[rR]?"
+                      (python-rx string-delimiter))))
+      (when (and
+             (not (python-info-assignment-statement-p))
+             (looking-at-p re)
+             ;; Allow up to two consecutive docstrings only.
+             (>=
+                 2
+               (let (last-backward-sexp-point)
+                 (while (save-excursion
+                          (python-nav-backward-sexp)
+                          (setq backward-sexp-point (point))
+                          (and (= indentation (current-indentation))
+                               ;; Make sure we're always moving point.
+                               ;; If we get stuck in the same position
+                               ;; on consecutive loop iterations,
+                               ;; bail out.
+                               (prog1 (not (eql last-backward-sexp-point
+                                                backward-sexp-point))
+                                 (setq last-backward-sexp-point
+                                       backward-sexp-point))
+                               (looking-at-p
+                                (concat "[uU]?[rR]?"
+                                        (python-rx string-delimiter)))))
+                   ;; Previous sexp was a string, restore point.
+                   (goto-char backward-sexp-point)
+                   (cl-incf counter))
+                 counter)))
+        (python-util-forward-comment -1)
+        (python-nav-beginning-of-statement)
+        (cond ((bobp))
+              ((python-info-assignment-statement-p) t)
+              ((python-info-looking-at-beginning-of-defun))
+              (t nil))))))
+
+;; Font-lock-ensure in python-mode makes Emacs 25.1 frozen:
+;;
+;; ┌───sh
+;; │ emacs-25.1 --batch --eval "(with-temp-buffer
+;; │                              (python-mode)
+;; │                              (insert \"    '''dosctring'''\")
+;; │                              (font-lock-mode 1)
+;; │                              (font-lock-ensure))"
+;; └───
+;;
+;; @ref https://emacs-china.org/t/face-text-property-batch/9006/6
+(when (= 25.1 (string-to-number emacs-version))
+  (setq python-rx-constituents python-rx-constituents@26.1)
+  (advice-add 'python-info-docstring-p :override 'python-info-docstring-p@26.1))
+
 ;;;
 
 (setq python-indent-guess-indent-offset nil)
@@ -105,10 +190,8 @@ REGION-REGEXPS  regexp for detection block in source buffer"
     (funcall init-mode)
     ;; Force enable face / text property / syntax highlighting
     (let ((noninteractive nil))
-      (font-lock-mode 1)
-      (unless (and (= 25.1 (string-to-number emacs-version))
-                   (memq init-mode '(python-mode)))
-        (font-lock-ensure)))
+      (font-lock-mode 1))
+    (font-lock-ensure)
     (goto-char (point-min))
     (re-search-forward "<|>")
     (separedit (when region-regexps

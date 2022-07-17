@@ -1888,6 +1888,51 @@ to span multiple lines.
     (--with-callback 'c-mode init-str ""        (lambda () (should (--bufs= edit-str))))
     (--with-callback 'c-mode init-str "C-c C-c" (lambda () (should (--bufs= init-str))))))
 
+(ert-deftest separedit-test-indented-comment-issue33 ()
+  (let ((separedit-remove-trailing-spaces-in-comment t)
+        (init-str "\
+        # comment1-begin<|>
+        #
+        # comment1-end")
+        (edit-str "\
+comment1-begin<|>
+
+comment1-end"))
+    (--with-callback 'ruby-mode init-str ""        (lambda () (should (--bufs= edit-str))))
+    (--with-callback 'ruby-mode init-str "C-c C-c" (lambda () (should (--bufs= init-str)))))
+
+  (let ((separedit-remove-trailing-spaces-in-comment t)
+        (init-str "\
+        # comment2-begin<|>
+        #")
+        (edit-str "\
+comment2-begin<|>
+"))
+    (--with-callback 'ruby-mode init-str ""        (lambda () (should (--bufs= edit-str))))
+    (--with-callback 'ruby-mode init-str "C-c C-c" (lambda () (should (--bufs= init-str)))))
+
+  (let ((separedit-remove-trailing-spaces-in-comment t)
+        (init-str "\
+        # comment3-begin
+        #
+        # comment3-end<|>")
+        (edit-str "\
+comment3-begin
+
+comment3-end<|>"))
+    (--with-callback 'ruby-mode init-str ""        (lambda () (should (--bufs= edit-str))))
+    (--with-callback 'ruby-mode init-str "C-c C-c" (lambda () (should (--bufs= init-str)))))
+
+  (let ((separedit-remove-trailing-spaces-in-comment t)
+        (init-str "\
+        #
+        # comment4-end<|>")
+        (edit-str "\
+
+comment4-end<|>"))
+    (--with-callback 'ruby-mode init-str ""        (lambda () (should (--bufs= edit-str))))
+    (--with-callback 'ruby-mode init-str "C-c C-c" (lambda () (should (--bufs= init-str))))))
+
 (ert-deftest separedit-test-local-fill-column ()
   (let ((dir-local-fill-column (+ fill-column 10))
         (buf-local-fill-column (+ fill-column 20))
