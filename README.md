@@ -182,7 +182,7 @@ Don't get stuck in minibuffer, press <kbd>C-c '</kbd> to open a edit buffer.
 
 ### Edit in vterm
 
-Make sure the the vterm [Directory tracking and Prompt tracking](https://github.com/akermu/emacs-libvterm#directory-tracking-and-prompt-tracking) is set correctolly.
+Make sure the the vterm [Directory tracking and Prompt tracking](https://github.com/akermu/emacs-libvterm#directory-tracking-and-prompt-tracking) is set correctly.
 
 Then put the cursor after prompt, press <kbd>C-c '</kbd> to start a new edit, or <kbd>C-p C-c '</kbd> to edit previous command.
 
