@@ -5,7 +5,7 @@
 ;; Author: Gong Qijian <gongqijian@gmail.com>
 ;; Created: 2019/04/06
 ;; Version: 0.3.36
-;; Last-Updated: 2022-08-11 23:44:15 +0800
+;; Last-Updated: 2022-08-12 00:18:19 +0800
 ;;           by: Gong Qijian
 ;; Package-Requires: ((emacs "25.1") (dash "2.18") (edit-indirect "0.1.5"))
 ;; URL: https://github.com/twlz0ne/separedit.el
@@ -189,7 +189,7 @@
 
 ;; ### Edit in vterm
 
-;; Make sure the the vterm [Directory tracking and Prompt tracking](https://github.com/akermu/emacs-libvterm#directory-tracking-and-prompt-tracking) is set correctolly.
+;; Make sure the the vterm [Directory tracking and Prompt tracking](https://github.com/akermu/emacs-libvterm#directory-tracking-and-prompt-tracking) is set correctly.
 
 ;; Then put the cursor after prompt, press <kbd>C-c '</kbd> to start a new edit, or <kbd>C-p C-c '</kbd> to edit previous command.
 
@@ -1230,12 +1230,12 @@ LANG is a string, and the returned major mode is a symbol."
       (match-string-no-properties 1))))
 
 (cl-defgeneric separedit--indent-of-string-block-0
-    (quotes beg end str-start beg-at-newline end-at-newline)
-  "Function called by `separedit--indent-of-string-block' in final clause of cond."
+    (_quotes _beg _end _str-start _beg-at-newline _end-at-newline)
+  "Called by `separedit--indent-of-string-block' in final clause of cond."
   nil)
 
 (cl-defmethod separedit--indent-of-string-block-0
-  (quotes beg end str-start beg-at-newline end-at-newline
+  (quotes _beg _end _str-start _beg-at-newline _end-at-newline
    &context (major-mode python-mode))
   (when (memq (face-at-point) '(font-lock-doc-face))
     (cons (- (current-column) (length quotes)) nil)))
