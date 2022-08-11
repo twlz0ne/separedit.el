@@ -1551,13 +1551,36 @@ Usage:
   (let ((separedit-preserve-string-indentation t)
         (separedit-string-indent-offset-alist '((python-mode . 2)))
         (init-str (--join\n "    str = '''"
-                            "      String block 21"
-                            "      String block 21<|>"
-                            "      String block 21"
+                            "      String block 24"
+                            "      String block 24<|>"
+                            "      String block 24"
                             "    '''"))
-        (edit-str (--join\n "String block 21"
-                            "String block 21<|>"
-                            "String block 21")))
+        (edit-str (--join\n "String block 24"
+                            "String block 24<|>"
+                            "String block 24")))
+    (--with-callback 'python-mode init-str ""        (lambda () (should (--bufs= edit-str))))
+    (--with-callback 'python-mode init-str "C-c C-c" (lambda () (should (--bufs= init-str)))))
+
+  (let ((separedit-preserve-string-indentation t)
+        (init-str (--join\n "def foo():"
+                            "   \"\"\"A multi-line<|>"
+                            "   docstring."
+                            "   \"\"\""
+                            ))
+        (edit-str (--join\n "A multi-line<|>"
+                            "docstring.")))
+    (--with-callback 'python-mode init-str ""        (lambda () (should (--bufs= edit-str))))
+    (--with-callback 'python-mode init-str "C-c C-c" (lambda () (should (--bufs= init-str)))))
+
+  (let ((separedit-preserve-string-indentation t)
+        (init-str (--join\n "def bar():"
+                            "   \"\"\""
+                            "   A multi-line<|>"
+                            "   docstring."
+                            "   \"\"\""
+                            ))
+        (edit-str (--join\n "A multi-line<|>"
+                            "docstring.")))
     (--with-callback 'python-mode init-str ""        (lambda () (should (--bufs= edit-str))))
     (--with-callback 'python-mode init-str "C-c C-c" (lambda () (should (--bufs= init-str))))))
 

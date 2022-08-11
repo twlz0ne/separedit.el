@@ -5,7 +5,7 @@
 ;; Author: Gong Qijian <gongqijian@gmail.com>
 ;; Created: 2019/04/06
 ;; Version: 0.3.36
-;; Last-Updated: 2022-07-16 07:22:48 +0800
+;; Last-Updated: 2022-08-11 23:44:15 +0800
 ;;           by: Gong Qijian
 ;; Package-Requires: ((emacs "25.1") (dash "2.18") (edit-indirect "0.1.5"))
 ;; URL: https://github.com/twlz0ne/separedit.el
@@ -1229,6 +1229,17 @@ LANG is a string, and the returned major mode is a symbol."
     (when (looking-back regexp (line-beginning-position))
       (match-string-no-properties 1))))
 
+(cl-defgeneric separedit--indent-of-string-block-0
+    (quotes beg end str-start beg-at-newline end-at-newline)
+  "Function called by `separedit--indent-of-string-block' in final clause of cond."
+  nil)
+
+(cl-defmethod separedit--indent-of-string-block-0
+  (quotes beg end str-start beg-at-newline end-at-newline
+   &context (major-mode python-mode))
+  (when (memq (face-at-point) '(font-lock-doc-face))
+    (cons (- (current-column) (length quotes)) nil)))
+
 (defun separedit--indent-of-string-block (quotes beg end)
   "Return the indent info of string block between BEN and END quoted by QUOTES.
 Return value is in the form of (indent-length indent-line1)."
@@ -1272,12 +1283,14 @@ Return value is in the form of (indent-length indent-line1)."
                      0))
               t))
             ((not (string= str-start ""))
-             ;; For situations like:
-             ;;
-             ;;   emacs --batch --eval "(progn
-             ;;                           ...)"
-             ;;
-             (cons (current-column) nil))))))
+             (or (separedit--indent-of-string-block-0
+                  quotes beg end str-start beg-at-newline end-at-newline)
+                 ;; For situations like:
+                 ;;
+                 ;;   emacs --batch --eval "(progn
+                 ;;                           ...)"
+                 ;;
+                 (cons (current-column) nil)))))))
 
 (defun separedit--restore-point (line rcolumn)
   "Restore point to LINE and RCOLUMN."
