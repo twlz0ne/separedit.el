@@ -336,7 +336,6 @@
 
 (declare-function org-edit-special "org")
 (declare-function markdown-edit-code-block "markdown-mode")
-(declare-function gfm-edit-code-block "gfm-mode")
 
 (defcustom separedit-default-mode 'fundamental-mode
   "Default mode for editing comment or docstring file."
@@ -1641,7 +1640,7 @@ It will override by the key that `separedit' binding in source buffer.")
   (-if-let (entry-cmd
             (pcase major-mode
               (`markdown-mode #'markdown-edit-code-block)
-              (`gfm-mode #'gfm-edit-code-block)
+              (`gfm-mode #'markdown-edit-code-block)
               (`org-mode #'org-edit-special)
               (_ (when (derived-mode-p 'separedit-single-quote-string-mode
                                        'separedit-double-quote-string-mode
