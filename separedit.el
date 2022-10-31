@@ -5,7 +5,7 @@
 ;; Author: Gong Qijian <gongqijian@gmail.com>
 ;; Created: 2019/04/06
 ;; Version: 0.3.36
-;; Last-Updated: 2022-08-12 00:18:19 +0800
+;; Last-Updated: 2022-10-31 10:24:34 +0800
 ;;           by: Gong Qijian
 ;; Package-Requires: ((emacs "25.1") (dash "2.18") (edit-indirect "0.1.5"))
 ;; URL: https://github.com/twlz0ne/separedit.el
@@ -1483,14 +1483,14 @@ Block info example:
                    (throw 'break
                      (if (separedit--point-at-string)
                          (let ((region (separedit--string-region)))
-                           (list (cons (car region) (cadr region)) 'stringp))
+                           (list (cons (car region) (cadr region)) "\""))
                        (list (bounds-of-thing-at-point 'sexp) nil)))
                  (goto-char start)))))))
 
 (defun separedit-help-variable-edit-info ()
   "Return help varible edit info at point.
 
-Each element is in the form of (SYMBOL VALUE-BOUND STRINGP SCOPE LOCAL-BUFFER)."
+Each element is in the form of (SYMBOL VALUE-BOUND QUOTE-CHAR SCOPE LOCAL-BUFFER)."
   (unless (eq major-mode 'help-mode)
     (user-error "Not in help buffer"))
   (let* ((symbol (separedit-described-symbol))
@@ -1578,7 +1578,7 @@ It will override by the key that `separedit' binding in source buffer.")
         (let* ((sym (nth 0 separedit--help-variable-edit-info))
                (scp (nth 3 separedit--help-variable-edit-info))
                (buf (nth 4 separedit--help-variable-edit-info))
-               (val (if (eq 'stringp (nth 2 separedit--help-variable-edit-info))
+               (val (if (nth 2 separedit--help-variable-edit-info)
                         (substring-no-properties (buffer-string)) 
                       (list 'quote (car (read-from-string (buffer-string)))))))
           (cond
@@ -1991,17 +1991,17 @@ If you just want to check `major-mode', use `derived-mode-p'."
                           (`helpful-mode (helpful-update)))))
                     (signal 'user-error nil))
                 (separedit--point-info (car region) (cdr region)))))
-      (let* ((strp (and (nth 2 info) t))
+      (let* ((qstr (nth 2 info))
              (edit-indirect-after-creation-hook #'separedit--buffer-creation-setup)
              (edit-indirect-guess-mode-function
               `(lambda (_bufer _beg _end)
-                 (when ,strp
-                   (separedit--remove-escape ,strp))
+                 (when ,qstr
+                   (separedit--remove-escape ,qstr))
                  (emacs-lisp-mode)
                  (set (make-local-variable 'edit-indirect-before-commit-hook)
                       (append '((lambda ()
-                                  (when ,strp
-                                    (separedit--restore-escape ,strp))))
+                                  (when ,qstr
+                                    (separedit--restore-escape ,qstr))))
                               edit-indirect-before-commit-hook))
                  (separedit--restore-point ,@point-info)
                  (setq-local separedit--inhibit-read-only t)

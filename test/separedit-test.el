@@ -1026,7 +1026,7 @@ you can customize ignore rules with your like.
 
 [back]"
    '(color-rg-search-ignore-rules "-g '!#*'<|> -g '!node_modules' -g '!dist'"
-     stringp global nil)))
+     "\"" global nil)))
 
 (ert-deftest separedit-test-helpful-value-edit-info ()
   (--assert-helpful-value
