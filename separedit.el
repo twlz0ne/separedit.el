@@ -5,7 +5,7 @@
 ;; Author: Gong Qijian <gongqijian@gmail.com>
 ;; Created: 2019/04/06
 ;; Version: 0.3.36
-;; Last-Updated: 2022-10-31 10:24:34 +0800
+;; Last-Updated: 2022-11-02 10:31:25 +0800
 ;;           by: Gong Qijian
 ;; Package-Requires: ((emacs "25.1") (dash "2.18") (edit-indirect "0.1.5"))
 ;; URL: https://github.com/twlz0ne/separedit.el
@@ -1459,6 +1459,10 @@ Block info example:
 
 ;;; Help/helpful mode variables / funcstions
 
+(defvar separedit-described-global-value-prompt-regexp
+  "^Local in buffer \\([^;]+\\); global value is[\s\n]?"
+  "Regexp to match the prompt of global value.")
+
 (defvar separedit--inhibit-read-only nil)
 
 (defvar separedit--help-variable-edit-info nil)
@@ -1481,10 +1485,19 @@ Block info example:
                (if (or (and (<= depth 0) (not start))
                        (looking-back "^Value:\\(\n\\|\s\\)" 1))
                    (throw 'break
-                     (if (separedit--point-at-string)
-                         (let ((region (separedit--string-region)))
-                           (list (cons (car region) (cadr region)) "\""))
-                       (list (bounds-of-thing-at-point 'sexp) nil)))
+                     (cond
+                      ((separedit--point-at-string)
+                       (let ((region (separedit--string-region)))
+                         (list (cons (car region) (cadr region)) "\"")))
+                      ((and (separedit--point-at-comment)
+                            (re-search-backward
+                             separedit-described-global-value-prompt-regexp nil t))
+                       (goto-char (match-end 0))
+                       (let ((bound (bounds-of-thing-at-point 'sexp)))
+                         (if (equal (char-after (car bound)) ?\")
+                             (list (cons (1+ (car bound)) (1- (cdr bound))) "\"")
+                           (list bound nil))))
+                      (t (list (bounds-of-thing-at-point 'sexp) nil))))
                  (goto-char start)))))))
 
 (defun separedit-help-variable-edit-info ()
@@ -1500,7 +1513,7 @@ Each element is in the form of (SYMBOL VALUE-BOUND QUOTE-CHAR SCOPE LOCAL-BUFFER
             (goto-char (point-min))
             (let ((buffer?
                    (when (re-search-forward
-                          "^Local in buffer \\([^;]+\\); global value is[\s\n]?"
+                          separedit-described-global-value-prompt-regexp
                           nil t 1)
                      (match-string-no-properties 1))))
               (goto-char (caar bound))
@@ -1510,8 +1523,9 @@ Each element is in the form of (SYMBOL VALUE-BOUND QUOTE-CHAR SCOPE LOCAL-BUFFER
                           (looking-back "^Its value is[\s\n]?" 1)
                           (looking-back (format "^%s’s value is[\s\n]?" symbol) 1))
                       (if buffer? 'local 'global))
-                     ((or (looking-back "^Original value was[\s]?" 1)
-                          (looking-back "^Local in buffer \\([^;]+\\); global value is[\s\n]?" 1))
+                     ((looking-back "^Original value was[\s]?" 1)
+                      'original)
+                     ((looking-back separedit-described-global-value-prompt-regexp 1)
                       'global))
                     buffer?)))))
     (when (and symbol bound (car scope-buffer))
@@ -1527,10 +1541,12 @@ Each element is in the form of (SYMBOL VALUE-BOUND QUOTE-CHAR SCOPE LOCAL-BUFFER
           (save-excursion
             (goto-char (caar bound))
             (forward-line -1)
-            (cond ((looking-at "^Value$") (list 'global nil))
+            (cond ((or (looking-at "^Value$")
+                       (looking-at "^Global value$"))
+                   (list 'global nil))
                   ((looking-at "^Value in #<buffer \\(.*\\)>$")
                    (list 'local (match-string-no-properties 1)))
-                  ((looking-at "^Original Value$") (list 'global nil))))))
+                  ((looking-at "^Original Value$") (list 'original nil))))))
     (when (and symbol bound (car type-buffer))
       `(,symbol ,@bound ,@type-buffer))))
 
@@ -1583,7 +1599,9 @@ It will override by the key that `separedit' binding in source buffer.")
                       (list 'quote (car (read-from-string (buffer-string)))))))
           (cond
            ((and (eq scp 'local) buf) (with-current-buffer buf (eval `(setq-local ,sym ,val))))
-           ((and (eq scp 'global) (not buf)) (eval `(setq-default ,sym ,val)))
+           ((and (eq scp 'global)) (eval `(setq-default ,sym ,val)))
+           ((and (eq scp 'original))
+            (eval `(put ',sym 'standard-value (list (list 'quote ,val)))))
            (t (message "Unknown variable scope: %s" scp)))
           ;; Make sure `edit-indirect--overlay' not be destroyed.
           (when (overlay-buffer edit-indirect--overlay)

@@ -987,7 +987,7 @@ Local in buffer *.py; global value is
 (company-cmake company-capf company-files company-oddmuse company-dabbrev)
 
 [back]"
-   '(company-backends2 "(company-cmake company-capf<|> company-files company-oddmuse company-dabbrev)" nil global "*.py"))
+   '(company-backends2 "(company-cmake company-capf<|> company-files company-oddmuse company-dabbrev)" nil original "*.py"))
   (--assert-help-value
    "company-backends3 is a variable defined in ‘company.el’.
 Its value is shown below.
@@ -1076,7 +1076,7 @@ Documentation
 The list of active backends (completion engines).
 
 ..."
-   '(company-backends2 "(company-cmake company-capf<|> company-files company-oddmuse company-dabbrev)" nil global nil)))
+   '(company-backends2 "(company-cmake company-capf<|> company-files company-oddmuse company-dabbrev)" nil original nil)))
 
 (ert-deftest separedit-test-heredoc-region ()
   (let ((heredocs
