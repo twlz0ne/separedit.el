@@ -21,7 +21,7 @@
              ;; Mar 6, 2021, 8:46 PM GMT+8
              :git "https://github.com/emacs-php/php-mode"
              :ref "bb846a7fbd92631a213b8209886f576f2530b9cb"
-             :files (:defaults "lisp/*.el"))
+             :files ("lisp/*.el"))
  (depends-on "racket-mode")
  (depends-on "s")
  (depends-on "tuareg"
