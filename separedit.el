@@ -5,7 +5,7 @@
 ;; Author: Gong Qijian <gongqijian@gmail.com>
 ;; Created: 2019/04/06
 ;; Version: 0.3.36
-;; Last-Updated: 2022-11-02 10:31:25 +0800
+;; Last-Updated: 2022-11-14 20:13:55 +0800
 ;;           by: Gong Qijian
 ;; Package-Requires: ((emacs "25.1") (dash "2.18") (edit-indirect "0.1.5"))
 ;; URL: https://github.com/twlz0ne/separedit.el
@@ -2156,10 +2156,11 @@ but users can also manually select it by pressing `C-u \\[separedit]'."
                            (set (make-local-variable 'separedit--code-block-p) ,codep)
                            (set (make-local-variable 'edit-indirect-before-commit-hook)
                                 (append '((lambda ()
-                                            (separedit--restore-string-indent)
-                                            (funcall ',delimiter-restore-fn)
-                                            (when ,strp
-                                              (separedit--restore-escape ,strp))))
+                                            (let (jit-lock-after-change-extend-region-functions)
+                                              (separedit--restore-string-indent)
+                                              (funcall ',delimiter-restore-fn)
+                                              (when ,strp
+                                                (separedit--restore-escape ,strp)))))
                                         edit-indirect-before-commit-hook))
                            (separedit--restore-point ,@point-info))))
           (edit-indirect-region beg end (unless separedit-inhibit-edit-window-p
