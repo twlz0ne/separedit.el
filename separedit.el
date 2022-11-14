@@ -949,7 +949,7 @@ Example:
                          nil)))))
     (when (and point-at-newline-p
                (not point-at-comment-p)
-               (not (> (point) (line-beginning-position))))
+               (bolp))
       (backward-char 1))
     (point)))
 
@@ -1411,8 +1411,8 @@ Block info example:
               (save-excursion
                 (goto-char (car comment-or-string-region))
                 ;; Not at "/*|"
-                (unless (= (point) (point-at-eol))
-                  (if (= (point) (point-at-bol))
+                (unless (eolp)
+                  (if (bolp)
                       ;; At "| * comment"
                       (save-excursion
                         (when (re-search-forward "[^\s\t]" nil t)
@@ -1703,7 +1703,7 @@ MAX-WIDTH       maximum width that can be removed"
     (save-excursion
       (goto-char (point-max))
       (catch 'break
-        (while (and (< (point-min) (point)) (re-search-backward regexp nil t))
+        (while (and (not (bobp)) (re-search-backward regexp nil t))
           (setq match-len (length (match-string 0)))
           (setq replace-str
                 (if (and max-width (> match-len max-width))
