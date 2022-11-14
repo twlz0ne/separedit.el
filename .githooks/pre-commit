@@ -1,0 +1,15 @@
+#!/bin/sh
+# Contents of .git/hooks/pre-commit
+# Replace `Last-Updated` timestamp with current time
+
+case $(uname) in
+    Darwin) alias sed='gsed';;
+esac
+
+git diff --cached --name-status | egrep -i "^(A|M).*\.el$" | while read a b; do
+  cat $b | sed "/^;; Last-Updated:.*/{
+:n;N;/;;[ \t]*[Bb]y:.*/!bn
+};s/\(^;; Last-Updated:\).*\(\n;;[ \t]*[Bb]y:\).*$/\1 $(date +'%F %T %z')\2 $(git config --get user.name)/" > tmp
+  mv tmp $b
+  git add $b
+done
