@@ -4,9 +4,9 @@
 
 ;; Author: Gong Qijian <gongqijian@gmail.com>
 ;; Created: 2019/04/06
-;; Version: 0.3.36
-;; Last-Updated: 2022-11-15 00:05:25 +0800
-;;           by: dalu
+;; Version: 0.3.37
+;; Last-Updated: 2022-11-17 14:42:59 +0800
+;;           by: Gong Qijian
 ;; Package-Requires: ((emacs "25.1") (dash "2.18") (edit-indirect "0.1.5"))
 ;; URL: https://github.com/twlz0ne/separedit.el
 ;; Keywords: tools languages docs
