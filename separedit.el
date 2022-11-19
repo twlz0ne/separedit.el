@@ -5,7 +5,7 @@
 ;; Author: Gong Qijian <gongqijian@gmail.com>
 ;; Created: 2019/04/06
 ;; Version: 0.3.37
-;; Last-Updated: 2022-11-17 14:42:59 +0800
+;; Last-Updated: 2022-11-19 13:28:01 +0800
 ;;           by: Gong Qijian
 ;; Package-Requires: ((emacs "25.1") (dash "2.18") (edit-indirect "0.1.5"))
 ;; URL: https://github.com/twlz0ne/separedit.el
@@ -2052,6 +2052,7 @@ If you just want to check `major-mode', use `derived-mode-p'."
 
 ;;; vterm
 
+(defvar vterm-shell)
 (declare-function vterm-delete-region "vterm")
 (declare-function vterm-insert "vterm")
 (declare-function vterm-copy-mode "vterm")
@@ -2077,6 +2078,10 @@ This function is used to instead of ‘replace-match’."
   "Edit content after vterm prompt."
   (interactive)
   (let* ((edit-indirect-after-creation-hook #'separedit--buffer-creation-setup)
+         (lang-mode
+          (let ((sh (file-name-nondirectory vterm-shell)))
+            (cond ((member sh '("bash" "zsh" "ksh" "csh")) 'sh-mode)
+                  ((member sh '("fish")) 'fish-mode))))
          (start-point (vterm--get-prompt-point))
          (end-point (save-excursion
                       (goto-char (point-max))
@@ -2084,6 +2089,8 @@ This function is used to instead of ‘replace-match’."
                       (max start-point (1+ (point)))))
          (edit-indirect-guess-mode-function
           (lambda (_buffer _beg _end)
+            (when lang-mode
+              (funcall lang-mode))
             (setq-local separedit--inhibit-read-only t)
             (setq-local edit-indirect--inhibit-read-only t)
             (setq-local separedit-replace-match-function
