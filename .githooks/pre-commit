@@ -2,6 +2,12 @@
 # Contents of .git/hooks/pre-commit
 # Replace `Last-Updated` timestamp with current time
 
+echo INHIBIT_GIT_HOOKS: $INHIBIT_GIT_HOOKS
+
+test -n "$INHIBIT_GIT_HOOKS" && exit 0
+
+echo 'Execute pre-commit hoos...'
+
 case $(uname) in
     Darwin) alias sed='gsed';;
 esac
