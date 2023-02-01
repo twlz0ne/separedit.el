@@ -5,7 +5,7 @@
 ;; Author: Gong Qijian <gongqijian@gmail.com>
 ;; Created: 2019/04/06
 ;; Version: 0.3.37
-;; Last-Updated: 2022-11-19 13:28:01 +0800
+;; Last-Updated: 2023-02-01 15:52:15 +0800
 ;;           by: Gong Qijian
 ;; Package-Requires: ((emacs "25.1") (dash "2.18") (edit-indirect "0.1.5"))
 ;; URL: https://github.com/twlz0ne/separedit.el
@@ -388,6 +388,27 @@ code blocks with no language specified."
     ("sqlite"           . sql-mode))
   "Alist mapping languages to their major mode.
 Taken from `markdown-code-lang-modes'."
+  :group 'separedit
+  :type 'alist)
+
+(defcustom separedit-treesit-major-mode-alist
+  '((c-mode             . c-ts-mode)
+    (c++-mode           . c++-ts-mode)
+    (cmake-mode         . cmake-ts-mode)
+    (conf-toml-mode     . toml-ts-mode)
+    (csharp-mode        . csharp-ts-mode)
+    (css-mode           . css-ts-mode)
+    (dockerfile-mode    . dockerfile-ts-mode)
+    (go-mode            . go-ts-mode)
+    (java-mode          . java-ts-mode)
+    (json-mode          . json-ts-mode)
+    (js-json-mode       . json-ts-mode)
+    (js-mode            . js-ts-mode)
+    (python-mode        . python-ts-mode)
+    (rust-mode          . rust-ts-mode)
+    (sh-mode            . bash-ts-mode)
+    (typescript-mode    . typescript-ts-mode))
+  "Alist maping major modes to corresponding treesit modes."
   :group 'separedit
   :type 'alist)
 
@@ -1080,7 +1101,9 @@ If MODE is nil, use ‘major-mode’."
 
 (defun separedit--get-comment-encloser (&optional mode)
   "Return comment ‘(begin-encloser end-encloser)’ for MODE."
-  (let* ((mode (or mode major-mode))
+  (let* ((mode (let ((m (or mode major-mode)))
+                 (or (car (rassq m separedit-treesit-major-mode-alist))
+                     m)))
          (def (or (separedit--rassoc mode separedit-comment-encloser-alist)
                   (separedit--rassoc (get mode 'derived-mode-parent)
                                      separedit-comment-encloser-alist)
