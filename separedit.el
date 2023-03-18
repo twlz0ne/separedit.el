@@ -5,7 +5,7 @@
 ;; Author: Gong Qijian <gongqijian@gmail.com>
 ;; Created: 2019/04/06
 ;; Version: 0.3.37
-;; Last-Updated: 2023-02-01 15:52:15 +0800
+;; Last-Updated: 2023-03-18 16:34:10 +0800
 ;;           by: Gong Qijian
 ;; Package-Requires: ((emacs "25.1") (dash "2.18") (edit-indirect "0.1.5"))
 ;; URL: https://github.com/twlz0ne/separedit.el
@@ -1994,8 +1994,8 @@ If you just want to check `major-mode', use `derived-mode-p'."
                                        separedit-single-quote-string-mode
                                        separedit-double-quote-string-mode)))))))
                (complete-with-action action obarray string pred))))
-   #'commandp t nil 'separedit--mode-history (or (car separedit--mode-history)
-                                                 (format "%s" major-mode))))
+   #'commandp nil nil 'separedit--mode-history (or (car separedit--mode-history)
+                                                   (format "%s" major-mode))))
 
 (defvar separedit-mode-map (make-sparse-keymap) "Keymap used in comment edit buffer.")
 
