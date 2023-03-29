@@ -5,7 +5,7 @@
 ;; Author: Gong Qijian <gongqijian@gmail.com>
 ;; Created: 2019/04/06
 ;; Version: 0.3.37
-;; Last-Updated: 2023-03-18 16:34:10 +0800
+;; Last-Updated: 2023-03-29 23:56:53 +0800
 ;;           by: Gong Qijian
 ;; Package-Requires: ((emacs "25.1") (dash "2.18") (edit-indirect "0.1.5"))
 ;; URL: https://github.com/twlz0ne/separedit.el
@@ -745,7 +745,7 @@ Each item may be one of the following forms:
 (defun separedit--point-at-string (&optional pos)
   "Determine if point POS at string or not."
   (or (nth 3 (syntax-ppss pos))
-      (and (derived-mode-p 'python-mode)
+      (and (derived-mode-p 'python-mode 'python-ts-mode)
            (memq (face-at-point) '(font-lock-string-face font-lock-doc-face))
            (unless (bobp)
              (memq (get-char-property (1- (point)) 'face)
@@ -1263,7 +1263,10 @@ LANG is a string, and the returned major mode is a symbol."
 
 (defun separedit-get-mode-quotes (mode)
   "Return a list of quote string for MODE."
-  (let ((aval (assoc-default mode separedit-string-quotes-alist)))
+  (let ((aval (assoc-default
+               (or (car (rassq mode separedit-treesit-major-mode-alist))
+                   mode)
+               separedit-string-quotes-alist)))
     (cond ((symbolp aval) (assoc-default (or aval t) separedit-string-quotes-alist))
           (t aval))))
 
