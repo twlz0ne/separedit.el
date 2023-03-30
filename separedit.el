@@ -5,7 +5,7 @@
 ;; Author: Gong Qijian <gongqijian@gmail.com>
 ;; Created: 2019/04/06
 ;; Version: 0.3.37
-;; Last-Updated: 2023-03-29 23:56:53 +0800
+;; Last-Updated: 2023-03-30 13:18:16 +0800
 ;;           by: Gong Qijian
 ;; Package-Requires: ((emacs "25.1") (dash "2.18") (edit-indirect "0.1.5"))
 ;; URL: https://github.com/twlz0ne/separedit.el
@@ -2237,24 +2237,24 @@ but users can also manually select it by pressing `C-u \\[separedit]'."
     (separedit-dwim-described-variable))
    ((memq major-mode '(vterm-mode))
     (separedit-dwim-vterm))
-   (t (separedit-dwim-default
-       (or block
-           ;; minibuffer
-           (when (and (minibufferp (current-buffer))
-                      (not (separedit--point-at-string)))
-             (list :beginning (+ (point-min) (length (minibuffer-prompt)))
-                   :end       (point-max)
-                   :lang-mode 'emacs-lisp-mode))
-           ;; region
-           (when (region-active-p)
-             (list :beginning (region-beginning)
-                   :end (if (and (= ?\n (char-before (region-end)))
-                                 (not (= ?\n (char-after (region-end)))))
-                            (1- (region-end))
-                          (region-end))
-                   :lang-mode (if (called-interactively-p 'any)
-                                  (intern (separedit--select-mode))
-                                separedit-default-mode))))))))
+   (t (let ((current-prefix-arg (if (region-active-p) '(4) current-prefix-arg)))
+        (separedit-dwim-default
+         (or block
+             ;; minibuffer
+             (when (and (minibufferp (current-buffer))
+                        (not (separedit--point-at-string)))
+               (list :beginning (+ (point-min) (length (minibuffer-prompt)))
+                     :end       (point-max)
+                     :lang-mode 'emacs-lisp-mode))
+             ;; region
+             (when (region-active-p)
+               (let ((block (separedit--block-info)))
+                 (plist-put
+                  (plist-put block :beginning (region-beginning))
+                  :end (if (and (= ?\n (char-before (region-end)))
+                                (not (= ?\n (char-after (region-end)))))
+                           (1- (region-end))
+                         (region-end)))))))))))
 
 ;;;###autoload
 (defalias 'separedit 'separedit-dwim)
