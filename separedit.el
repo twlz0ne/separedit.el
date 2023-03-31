@@ -5,7 +5,7 @@
 ;; Author: Gong Qijian <gongqijian@gmail.com>
 ;; Created: 2019/04/06
 ;; Version: 0.3.37
-;; Last-Updated: 2023-03-30 13:18:16 +0800
+;; Last-Updated: 2023-03-31 19:48:20 +0800
 ;;           by: Gong Qijian
 ;; Package-Requires: ((emacs "25.1") (dash "2.18") (edit-indirect "0.1.5"))
 ;; URL: https://github.com/twlz0ne/separedit.el
@@ -357,6 +357,9 @@
 (require 'calc-misc)
 (require 'subr-x)
 
+(unless (boundp 'major-mode-remap-alist)
+  (defvar major-mode-remap-alist nil))
+
 (declare-function org-edit-special "org")
 (declare-function markdown-edit-code-block "markdown-mode")
 
@@ -388,27 +391,6 @@ code blocks with no language specified."
     ("sqlite"           . sql-mode))
   "Alist mapping languages to their major mode.
 Taken from `markdown-code-lang-modes'."
-  :group 'separedit
-  :type 'alist)
-
-(defcustom separedit-treesit-major-mode-alist
-  '((c-mode             . c-ts-mode)
-    (c++-mode           . c++-ts-mode)
-    (cmake-mode         . cmake-ts-mode)
-    (conf-toml-mode     . toml-ts-mode)
-    (csharp-mode        . csharp-ts-mode)
-    (css-mode           . css-ts-mode)
-    (dockerfile-mode    . dockerfile-ts-mode)
-    (go-mode            . go-ts-mode)
-    (java-mode          . java-ts-mode)
-    (json-mode          . json-ts-mode)
-    (js-json-mode       . json-ts-mode)
-    (js-mode            . js-ts-mode)
-    (python-mode        . python-ts-mode)
-    (rust-mode          . rust-ts-mode)
-    (sh-mode            . bash-ts-mode)
-    (typescript-mode    . typescript-ts-mode))
-  "Alist maping major modes to corresponding treesit modes."
   :group 'separedit
   :type 'alist)
 
@@ -872,6 +854,8 @@ If there is no comment delimiter regex for MODE, return `comment-start-skip'."
          (def (or (separedit--rassoc mode separedit-comment-delimiter-alist)
                   (separedit--rassoc (get mode 'derived-mode-parent)
                                      separedit-comment-delimiter-alist)
+                  (separedit--rassoc (car (rassq mode major-mode-remap-alist))
+                                     separedit-comment-delimiter-alist)
                   (separedit--rassoc (separedit--get-real-mode mode)
                                      separedit-comment-delimiter-alist))))
     (pcase (car def)
@@ -1101,11 +1085,11 @@ If MODE is nil, use ‘major-mode’."
 
 (defun separedit--get-comment-encloser (&optional mode)
   "Return comment ‘(begin-encloser end-encloser)’ for MODE."
-  (let* ((mode (let ((m (or mode major-mode)))
-                 (or (car (rassq m separedit-treesit-major-mode-alist))
-                     m)))
+  (let* ((mode (or mode major-mode))
          (def (or (separedit--rassoc mode separedit-comment-encloser-alist)
                   (separedit--rassoc (get mode 'derived-mode-parent)
+                                     separedit-comment-encloser-alist)
+                  (separedit--rassoc (car (rassq mode major-mode-remap-alist))
                                      separedit-comment-encloser-alist)
                   (separedit--rassoc (separedit--get-real-mode mode)
                                      separedit-comment-encloser-alist))))
@@ -1263,10 +1247,9 @@ LANG is a string, and the returned major mode is a symbol."
 
 (defun separedit-get-mode-quotes (mode)
   "Return a list of quote string for MODE."
-  (let ((aval (assoc-default
-               (or (car (rassq mode separedit-treesit-major-mode-alist))
-                   mode)
-               separedit-string-quotes-alist)))
+  (let ((aval (or (assoc-default mode separedit-string-quotes-alist)
+                  (assoc-default (car (rassq mode major-mode-remap-alist))
+                                 separedit-string-quotes-alist))))
     (cond ((symbolp aval) (assoc-default (or aval t) separedit-string-quotes-alist))
           (t aval))))
 
