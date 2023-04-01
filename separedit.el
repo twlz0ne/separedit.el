@@ -5,7 +5,7 @@
 ;; Author: Gong Qijian <gongqijian@gmail.com>
 ;; Created: 2019/04/06
 ;; Version: 0.3.37
-;; Last-Updated: 2023-04-01 11:04:35 +0800
+;; Last-Updated: 2023-04-01 19:44:25 +0800
 ;;           by: Gong Qijian
 ;; Package-Requires: ((emacs "25.1") (dash "2.18") (edit-indirect "0.1.5"))
 ;; URL: https://github.com/twlz0ne/separedit.el
@@ -423,7 +423,8 @@ Taken from `markdown-code-lang-modes'."
                           racket-mode
                           scheme-mode
                           fennel-mode))
-    (("#+")            . (conf-mode nix-mode python-mode ruby-mode yaml-mode)))
+    (("#+")            . ( conf-mode elixr-mode nix-mode python-mode ruby-mode
+                           yaml-mode)))
   "Alist of comment delimiter regexp.
 
 Each element should be in one of the following forms:
@@ -704,6 +705,7 @@ Return nil if reached the end of the buffer."
 
 (defcustom separedit-string-quotes-alist
   '((python-mode     . ("\"\"\"" "'''" "\"" "'"))
+    (elixir-mode     . ("\"\"\"" "\"" "'"))
     (js-mode         . ("\"" "'" "`"))
     (lua-mode        . ("\"" "'" (or (seq "[" (zero-or-more "=") "[")
                                      (seq "]" (zero-or-more "=") "]"))))
@@ -732,6 +734,21 @@ Each item may be one of the following forms:
            (unless (bobp)
              (memq (get-char-property (1- (point)) 'face)
                    '(font-lock-string-face font-lock-doc-face))))
+      (and (derived-mode-p 'elixir-ts-mode)
+           (if (region-active-p)
+               ;; Seems the `elisir-ts-mode' will refresh whole region when
+               ;; moving point:
+               ;; (list (face-at-point) (progn (backward-char) (face-at-point)))
+               ;; => (font-lock-doc-face region)
+               ;; => (font-lock-doc-face font-lock-doc-face) ;; expected
+               ;; Version          : 1.2
+               ;; Package-Version: 20230321.1458
+               ;; Package-Commit: 0d4ef4794655a2a3c5324e07eef46dc4766ad65d
+               (memq (face-at-point) '(font-lock-doc-face region))
+             (memq (face-at-point) '(font-lock-doc-face)))
+           (not (or (looking-back "^\s+\"\\{3\\}")               ;; end of doc
+                    (and (looking-back "@\\(?:module\\)?doc\s+") ;; beg of doc
+                         (looking-at "\"\\{3\\}$")))))
       (and (derived-mode-p 'perl-mode)
            (memq (face-at-point) '(perl-heredoc))
            (not (or (separedit--string-quotes pos)
