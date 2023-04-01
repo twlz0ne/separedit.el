@@ -5,7 +5,7 @@
 ;; Author: Gong Qijian <gongqijian@gmail.com>
 ;; Created: 2019/04/06
 ;; Version: 0.3.37
-;; Last-Updated: 2023-03-31 19:48:20 +0800
+;; Last-Updated: 2023-04-01 11:04:35 +0800
 ;;           by: Gong Qijian
 ;; Package-Requires: ((emacs "25.1") (dash "2.18") (edit-indirect "0.1.5"))
 ;; URL: https://github.com/twlz0ne/separedit.el
@@ -900,7 +900,7 @@ If there is no comment delimiter regex for MODE, return `comment-start-skip'."
 (defun separedit--point-at-comment (&optional point)
   "Return non-nil (face or t) if POINT at comment."
   (let ((face (unless (separedit--point-at-string)
-                (get-text-property (or point (if (and (eobp) (not (bolp)))
+                (get-text-property (or point (if (and (eolp) (not (bolp)))
                                                  (1- (point))
                                                (point)))
                                    'face))))
@@ -1429,7 +1429,24 @@ Block info example:
               (goto-char (car comment-or-string-region))
               (when (and (bolp) (not (bobp)))
                 (backward-char))
-              (separedit-looking-back-heredoc-language))))
+              (let ((eof-mark (separedit-looking-back-heredoc-language)))
+                ;; Exclude the eof-mark from `comment-or-string-region',
+                ;; for example in 27.2 or older:
+                ;;
+                ;;     print <<'EOF';
+                ;;     PERL|
+                ;;     EOF
+                ;;
+                ;; Expected region (15 22), but actual (15 26).
+                (when eof-mark
+                  (save-excursion
+                    (goto-char (cadr comment-or-string-region))
+                    (when (re-search-backward
+                           eof-mark (car comment-or-string-region) t)
+                      (setq comment-or-string-region
+                            (list (car comment-or-string-region)
+                                  (1- (point)))))))
+                eof-mark))))
          (heredoc-mode (if heredoc-lang (separedit-get-lang-mode heredoc-lang)))
          (indent-line1 nil)
          (string-indent

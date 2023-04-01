@@ -1103,7 +1103,21 @@ The list of active backends (completion engines).
               ',(nth 0 heredoc) ,(nth 2 heredoc)
               (let ((region (if (and (<= emacs-major-version 27)
                                      (derived-mode-p 'perl-mode))
-                                (separedit--comment-region)
+                                (when-let ((region (separedit--comment-region)))
+                                  (save-excursion
+                                    (goto-char (car region))
+                                    (when (and (bolp) (not (bobp)))
+                                      (backward-char))
+                                    (let ((eof-mark (separedit-looking-back-heredoc-language)))
+                                      (when eof-mark
+                                        (save-excursion
+                                          (goto-char (cadr region))
+                                          (when (re-search-backward
+                                                 eof-mark (car region) t)
+                                            (setq region
+                                                  (list (car region)
+                                                        (1- (point)))))))
+                                      region)))
                               (separedit--string-region))))
                 (should (equal ,(nth 1 heredoc)
                                (buffer-substring-no-properties
