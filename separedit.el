@@ -5,7 +5,7 @@
 ;; Author: Gong Qijian <gongqijian@gmail.com>
 ;; Created: 2019/04/06
 ;; Version: 0.3.37
-;; Last-Updated: 2023-04-01 19:44:25 +0800
+;; Last-Updated: 2023-04-03 20:42:04 +0800
 ;;           by: Gong Qijian
 ;; Package-Requires: ((emacs "25.1") (dash "2.18") (edit-indirect "0.1.5"))
 ;; URL: https://github.com/twlz0ne/separedit.el
@@ -357,9 +357,6 @@
 (require 'calc-misc)
 (require 'subr-x)
 
-(unless (boundp 'major-mode-remap-alist)
-  (defvar major-mode-remap-alist nil))
-
 (declare-function org-edit-special "org")
 (declare-function markdown-edit-code-block "markdown-mode")
 
@@ -399,6 +396,25 @@ Taken from `markdown-code-lang-modes'."
   "A list of modes not support docstring."
   :group 'separedit
   :type 'list)
+
+(defcustom separedit-major-mode-remap-alist
+  '((c-mode             . c-ts-mode)
+    (c++-mode           . c++-ts-mode)
+    (csharp-mode        . csharp-ts-mode)
+    (css-mode           . css-ts-mode)
+    (elixir-mode        . elixir-ts-mode)
+    (go-mode            . go-ts-mode)
+    (java-mode          . java-ts-mode)
+    (js-mode            . js-ts-mode)
+    (lua-mode           . lua-ts-mode)
+    (python-mode        . python-ts-mode)
+    (ruby-mode          . ruby-ts-mode)
+    (rust-mode          . rust-ts-mode)
+    (sh-mode            . bash-ts-mode)
+    (typescript-mode    . typescript-ts-mode))
+  "Alist to override `major-mode-remap-alist` in separedit."
+  :group 'separedit
+  :type 'alist)
 
 (defcustom separedit-comment-delimiter-alist
   '((("//+!\\(?:<\\)?" "//+\\(?:<\\)?" "\\*+") . (c-mode
@@ -688,6 +704,17 @@ Return nil if reached the end of the buffer."
              (symbol-function mode))
         mode)))
 
+(defun separedit--assoc-fallback (mode alist assocfn)
+  "Call associate function ASSOCFN on MODE and ALIST."
+  (or (funcall assocfn mode alist)
+      (funcall assocfn (separedit--get-real-mode mode) alist)
+      (funcall assocfn (get mode 'derived-mode-parent) alist)
+      (funcall assocfn
+               (or (car (rassq mode separedit-major-mode-remap-alist))
+                   (and (boundp 'major-mode-remap-alist)
+                        (car (rassq mode major-mode-remap-alist))))
+               alist)))
+
 (defun separedit--get-mode-comment (mode symbol)
   "Get comment of MODE by SYMBOL."
   (or (get mode symbol)
@@ -868,13 +895,8 @@ for example:
 If MODE is nil, it defaults to `major-mode'.
 If there is no comment delimiter regex for MODE, return `comment-start-skip'."
   (let* ((mode (or mode major-mode))
-         (def (or (separedit--rassoc mode separedit-comment-delimiter-alist)
-                  (separedit--rassoc (get mode 'derived-mode-parent)
-                                     separedit-comment-delimiter-alist)
-                  (separedit--rassoc (car (rassq mode major-mode-remap-alist))
-                                     separedit-comment-delimiter-alist)
-                  (separedit--rassoc (separedit--get-real-mode mode)
-                                     separedit-comment-delimiter-alist))))
+         (def (separedit--assoc-fallback
+               mode separedit-comment-delimiter-alist 'separedit--rassoc)))
     (pcase (car def)
       ((and fn (pred functionp)) (funcall fn))
       ((and strs (pred consp)) (concat "^[\s\t]*\\(?:"
@@ -1103,13 +1125,8 @@ If MODE is nil, use ‘major-mode’."
 (defun separedit--get-comment-encloser (&optional mode)
   "Return comment ‘(begin-encloser end-encloser)’ for MODE."
   (let* ((mode (or mode major-mode))
-         (def (or (separedit--rassoc mode separedit-comment-encloser-alist)
-                  (separedit--rassoc (get mode 'derived-mode-parent)
-                                     separedit-comment-encloser-alist)
-                  (separedit--rassoc (car (rassq mode major-mode-remap-alist))
-                                     separedit-comment-encloser-alist)
-                  (separedit--rassoc (separedit--get-real-mode mode)
-                                     separedit-comment-encloser-alist))))
+         (def (separedit--assoc-fallback
+               mode separedit-comment-encloser-alist 'separedit--rassoc)))
     (if def
         (if (functionp (car def))
             (funcall (car def))
@@ -1264,9 +1281,8 @@ LANG is a string, and the returned major mode is a symbol."
 
 (defun separedit-get-mode-quotes (mode)
   "Return a list of quote string for MODE."
-  (let ((aval (or (assoc-default mode separedit-string-quotes-alist)
-                  (assoc-default (car (rassq mode major-mode-remap-alist))
-                                 separedit-string-quotes-alist))))
+  (let ((aval (separedit--assoc-fallback
+               mode separedit-string-quotes-alist 'assoc-default)))
     (cond ((symbolp aval) (assoc-default (or aval t) separedit-string-quotes-alist))
           (t aval))))
 
