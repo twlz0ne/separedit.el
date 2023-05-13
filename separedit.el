@@ -5,7 +5,7 @@
 ;; Author: Gong Qijian <gongqijian@gmail.com>
 ;; Created: 2019/04/06
 ;; Version: 0.3.37
-;; Last-Updated: 2023-04-03 20:42:04 +0800
+;; Last-Updated: 2023-05-13 10:33:45 +0800
 ;;           by: Gong Qijian
 ;; Package-Requires: ((emacs "25.1") (dash "2.18") (edit-indirect "0.1.5"))
 ;; URL: https://github.com/twlz0ne/separedit.el
@@ -2273,21 +2273,22 @@ but users can also manually select it by pressing `C-u \\[separedit]'."
    (t (let ((current-prefix-arg (if (region-active-p) '(4) current-prefix-arg)))
         (separedit-dwim-default
          (or block
-             ;; minibuffer
-             (when (and (minibufferp (current-buffer))
-                        (not (separedit--point-at-string)))
-               (list :beginning (+ (point-min) (length (minibuffer-prompt)))
-                     :end       (point-max)
-                     :lang-mode 'emacs-lisp-mode))
-             ;; region
-             (when (region-active-p)
-               (let ((block (separedit--block-info)))
-                 (plist-put
-                  (plist-put block :beginning (region-beginning))
-                  :end (if (and (= ?\n (char-before (region-end)))
-                                (not (= ?\n (char-after (region-end)))))
-                           (1- (region-end))
-                         (region-end)))))))))))
+             (let ((strp (separedit--point-at-string)))
+               (or
+                ;; minibuffer
+                (when (and (minibufferp (current-buffer)) (not strp))
+                  (list :beginning (+ (point-min) (length (minibuffer-prompt)))
+                        :end       (point-max)
+                        :lang-mode 'emacs-lisp-mode))
+                ;; region
+                (when (region-active-p)
+                  (let ((block (if strp (separedit--block-info))))
+                    (plist-put
+                     (plist-put block :beginning (region-beginning))
+                     :end (if (and (= ?\n (char-before (region-end)))
+                                   (not (= ?\n (char-after (region-end)))))
+                              (1- (region-end))
+                            (region-end)))))))))))))
 
 ;;;###autoload
 (defalias 'separedit 'separedit-dwim)
