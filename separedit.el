@@ -5,7 +5,7 @@
 ;; Author: Gong Qijian <gongqijian@gmail.com>
 ;; Created: 2019/04/06
 ;; Version: 0.3.37
-;; Last-Updated: 2023-05-13 10:33:45 +0800
+;; Last-Updated: 2023-06-25 22:21:30 +0800
 ;;           by: Gong Qijian
 ;; Package-Requires: ((emacs "25.1") (dash "2.18") (edit-indirect "0.1.5"))
 ;; URL: https://github.com/twlz0ne/separedit.el
@@ -360,6 +360,10 @@
 (declare-function org-edit-special "org")
 (declare-function markdown-edit-code-block "markdown-mode")
 
+(define-error 'separedit-error nil)
+(define-error 'separedit-not-edit-block-error
+              "Not inside a edit block" 'separedit-error)
+
 (defcustom separedit-default-mode 'fundamental-mode
   "Default mode for editing comment or docstring file."
   :group 'separedit
@@ -522,6 +526,7 @@ Each element of it is in the form of:
      :body        REGEX ;; to match the each body line of block
      :footer      REGEX ;; to match the footer    line of block
      :straight    BOOL  ;; block not in string and comment (optional)
+     :reindent    BOOL  ;; reindent after changes commited (optional)
      :delimiter-remove-fn FN ;; function to remove delimiter (optional)
      :delimiter-restore-fn FN ;; function to restore delimiter (optional)
      :keep-footer BOOL  ;; display the footer in edit buffer (optional)
@@ -632,6 +637,8 @@ marker of heredoc before point.")
 (defvar separedit--indent-line1 nil "Whether to indent the 1st editing line of comment.")
 
 (defvar separedit--code-block-p nil "Wheter or not editing a code block.")
+
+(defvar-local separedit--reindent-p nil "Reindent after changes committed.")
 
 (defvar separedit-debug-p nil)
 
@@ -1183,7 +1190,8 @@ If BLOCK-REGEXP-PLISTS non-nil, use it instead of `separedit-block-regexp-plists
           (or block-regexp-plists
               (--filter
                (let ((modes (plist-get it :modes)))
-                 (when (or (not modes) (apply #'derived-mode-p modes))
+                 (when (and (or (not modes) (apply #'derived-mode-p modes))
+                            (not (plist-get it :nonregexp)))
                    it))
                separedit-block-regexp-plists)))
          (regexp-group
@@ -1378,7 +1386,109 @@ Return value is in the form of (indent-length indent-line1)."
                  (current-column))
                (current-column))))))
 
-(defun separedit--block-info ()
+(defun separedit--up-string-forward ()
+  "Move forward out of one level of string."
+  (let (pos)
+    (catch 'break
+      (save-excursion
+        (let ((string-start (nth 8 (syntax-ppss))))
+          (when string-start
+            (goto-char string-start)
+            (forward-sexp)
+            (setq pos (point))))))
+    (when pos (goto-char pos))))
+
+(defun separedit--up-string-backward ()
+  "Move backward out of one level of string."
+  (let ((string-start (nth 8 (syntax-ppss))))
+    (when string-start
+      (goto-char string-start))))
+
+(defun separedit--beginning-of-string ()
+  "Move point to the beginning of string."
+  (if (separedit--point-at-string)
+      (separedit--up-string-backward)
+    (let (pos)
+      (save-excursion
+        (backward-sexp)
+        (when (separedit--point-at-string (1+ (point)))
+          (setq pos (1- (point)))))
+      (when pos
+        (goto-char pos)
+        pos))))
+
+(defun separedit--end-of-string ()
+  "Move point to the end of string."
+  (if (separedit--point-at-string)
+      (separedit--up-string-forward)
+    (let (pos)
+      (save-excursion
+        (forward-sexp)
+        (when (separedit--point-at-string (1- (point)))
+          (setq pos (1+ (point)))))
+      (when pos
+        (goto-char pos)
+        pos))))
+
+(defun separedit--multi-line-string-block (&optional form-check-fn point-check-fn)
+  "Return infomation of a multi-line string block.
+
+FORM-CHECK-FN can be nil or a function to do some check before continue, e.g.:
+
+  (lambda (_innermost-bounds)
+    \"Return t if current is a (str ...) form.\"
+    ;; The point is already moved to the beginning of the innermost form.
+    (looking-at \"(str\\_>\"))
+
+POINT-CHECK-FN can be nil or a function to some check when point at a non-string
+object, e.g.:
+
+  (lambda ()
+    \"Return t if point at the `str' word of the (str ...) form.\"
+    ;; The point is already moved to the original place where the \\[separedit]
+    ;; was executed.
+    (lambda () (eq (sexp-at-point) 'str)))"
+  (let ((innermost-start (nth 1 (syntax-ppss)))
+        (start-point (point))
+        bounds beg end)
+    (save-excursion
+      (goto-char innermost-start)
+      (setq bounds (bounds-of-thing-at-point 'sexp))
+      (when (if form-check-fn (funcall form-check-fn bounds) t)
+        (save-restriction
+          (narrow-to-region (car bounds) (cdr bounds))
+          ;; Beginning of first string
+          (goto-char start-point)
+          (while (ignore-error 'scan-error (separedit--beginning-of-string))
+            (setq beg (point)))
+          (unless beg ;; Consider the point is in front of strings
+            (when (or (separedit--end-of-string)
+                      (when (if point-check-fn (funcall point-check-fn) t)
+                        (forward-sexp)
+                        (separedit--end-of-string)))
+              (setq beg (separedit--beginning-of-string))
+              (setq start-point beg)))
+          ;; End of last string
+          (goto-char start-point)
+          (while (ignore-error 'scan-error (separedit--end-of-string))
+            (setq end (point)))
+          (unless end ;; Consider the point is behind strings
+            (when (separedit--beginning-of-string)
+              (setq end (separedit--end-of-string))))
+          (when (and beg end)
+            (cons (1+ beg) (1- end))))))))
+
+(defun separedit--nonregexp-block-info ()
+  "Return nonregexp block info."
+  (catch 'break
+    (dolist (it separedit-block-regexp-plists)
+      (when-let* ((fn (plist-get it :nonregexp))
+                  (bounds (funcall fn)))
+        (throw 'break (list :beginning (car bounds)
+                            :end (cdr bounds)
+                            :regexps it))))))
+
+(cl-defgeneric separedit--block-info ()
   "Return block info at point.
 
 Block info example:
@@ -1445,17 +1555,20 @@ Block info example:
                 (let ((block-regexps
                        (--filter
                         (let ((modes (plist-get it :modes)))
-                          (when (and modes (apply #'derived-mode-p modes))
+                          (when (and modes
+                                     (apply #'derived-mode-p modes)
+                                     (not (plist-get it :nonregexp)))
                             it))
                         separedit-block-regexp-plists)))
                   (when block-regexps
                     (setq straight-block
                           (separedit--code-block-end
-                           (save-excursion ;; correct detection of header (e.g.
-                             (end-of-line) ;; c/c++ macro) when the point on it.
-                             (separedit--code-block-beginning nil block-regexps))))))
+                           (save-excursion ;; correct detection of header (
+                             (end-of-line) ;; e.g. c/c++ macro) under point.
+                             (separedit--code-block-beginning
+                              nil block-regexps))))))
                 (unless straight-block
-                  (user-error "Not inside a edit block"))))))
+                  (signal 'separedit-not-edit-block-error nil))))))
          (heredoc-lang
           (when comment-or-string-region
             (save-excursion
@@ -1538,6 +1651,14 @@ Block info example:
                 :string-quotes (if heredoc-lang "" strp)
                 :indent-line1 indent-line1
                 :indent-length indent-length))))))
+
+
+(cl-defmethod separedit--block-info :around ()
+  "Return unregular block info."
+  (condition-case _
+      (cl-call-next-method)
+    (separedit-not-edit-block-error
+     (separedit--nonregexp-block-info))))
 
 ;;; Help/helpful mode variables / funcstions
 
@@ -1724,6 +1845,7 @@ It will override by the key that `separedit' binding in source buffer.")
   "Commit changes."
   (interactive)
   (let ((point-info (separedit--point-info)) ;; Still at edit buffer
+        (reindentp separedit--reindent-p)
         (mark-beg (overlay-start edit-indirect--overlay))
         (mark-end (overlay-end edit-indirect--overlay)))
     (separedit--apply-changes)
@@ -1733,6 +1855,8 @@ It will override by the key that `separedit' binding in source buffer.")
        (save-restriction
          (narrow-to-region mark-beg (min mark-end (point-max)))
          (apply #'separedit--restore-point point-info)
+         (when (and reindentp (buffer-modified-p))
+           (indent-region mark-beg mark-end))
          (point))))))
 
 (defun separedit--buffer-creation-setup ()
@@ -1863,6 +1987,28 @@ MAX-WIDTH       maximum width that can be removed"
       (insert " \\")
       (forward-line))
     (c-indent-region (point-min) (point-max))))
+
+(defun separedit--remove-multi-line-string-block-delimiter (_ &optional _)
+  "Remove delimiter of multi line block when entering edit buffer."
+  (let ((inhibit-read-only t))
+    (save-excursion
+      (goto-char (point-max))
+      (while (re-search-backward "\"[\s\t]*\n[\s\t]*\"" nil t)
+        (replace-match "\n" nil nil nil 0)
+        (goto-char (1- (line-beginning-position))))))
+  (separedit--remove-escape "\""))
+
+(defun separedit--restore-multi-line-string-block-delimiter (&optional _)
+  "Restore delimiter of multi line block when returning from edit buffer."
+  (separedit--restore-escape "\"")
+  (save-excursion
+    (goto-char (point-min))
+    (while (progn
+             (goto-char (line-end-position))
+             (not (eobp)))
+      (insert "\"")
+      (forward-line)
+      (insert "\""))))
 
 (defun separedit--remove-string-indent (indent-length)
   "Remove INDENT-LENGTH length of indentation from string.
@@ -2177,6 +2323,7 @@ but users can also manually select it by pressing `C-u \\[separedit]'."
          (lang-mode (plist-get block :lang-mode))
          (strp (plist-get block :string-quotes))
          (straightp (plist-get (plist-get block :regexps) :straight))
+         (reindentp (plist-get (plist-get block :regexps) :reindent))
          (commentp (and (not strp) (not straightp)))
          (codep (and lang-mode t))
          (indent-length (plist-get block :indent-length))
@@ -2251,6 +2398,7 @@ but users can also manually select it by pressing `C-u \\[separedit]'."
                                               (when ,strp
                                                 (separedit--restore-escape ,strp)))))
                                         edit-indirect-before-commit-hook))
+                           (setq separedit--reindent-p ,reindentp)
                            (separedit--restore-point ,@point-info))))
           (edit-indirect-region beg end (unless separedit-inhibit-edit-window-p
                                           'display-buffer)))
