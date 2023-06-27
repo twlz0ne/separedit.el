@@ -2021,13 +2021,17 @@ MAX-WIDTH       maximum width that can be removed"
 
 (defun separedit--remove-multi-line-string-block-delimiter (_ &optional _)
   "Remove delimiter of multi line block when entering edit buffer."
-  (let ((inhibit-read-only t))
+  (let ((inhibit-read-only t)
+        line-delimiter)
     (save-excursion
-      (goto-char (point-max))
-      (while (re-search-backward "\"[\s\t]*\n[\s\t]*\"" nil t)
+      (goto-char (point-min))
+      (while (re-search-forward "\"[\s\t]*\n?[\s\t]*\"" nil t)
+        (unless line-delimiter
+          (setq line-delimiter (match-string 0)))
         (replace-match "\n" nil nil nil 0)
-        (goto-char (1- (line-beginning-position))))))
-  (separedit--remove-escape "\""))
+        (goto-char (1- (line-beginning-position)))))
+    (separedit--remove-escape "\"")
+    line-delimiter))
 
 (defun separedit--restore-multi-line-string-block-delimiter (&optional _)
   "Restore delimiter of multi line block when returning from edit buffer."
@@ -2037,9 +2041,8 @@ MAX-WIDTH       maximum width that can be removed"
     (while (progn
              (goto-char (line-end-position))
              (not (eobp)))
-      (insert "\"")
-      (forward-line)
-      (insert "\""))))
+      (delete-char 1)
+      (insert separedit--line-delimiter))))
 
 (defun separedit--remove-string-indent (indent-length)
   "Remove INDENT-LENGTH length of indentation from string.
