@@ -5,7 +5,7 @@
 ;; Author: Gong Qijian <gongqijian@gmail.com>
 ;; Created: 2019/04/06
 ;; Version: 0.3.37
-;; Last-Updated: 2023-06-25 22:21:30 +0800
+;; Last-Updated: 2023-06-27 19:11:38 +0800
 ;;           by: Gong Qijian
 ;; Package-Requires: ((emacs "25.1") (dash "2.18") (edit-indirect "0.1.5"))
 ;; URL: https://github.com/twlz0ne/separedit.el
@@ -517,7 +517,18 @@ Each element should be in one of the following forms:
      :delimiter-restore-fn separedit--restore-c/c++-macro-delimiter
      :straight t
      :keep-header t
-     :keep-footer t))
+     :keep-footer t)
+
+    (:nonregexp
+     (lambda ()
+       (separedit--multi-line-string-block
+        (lambda (_) (looking-at "(str\\_>"))
+        (lambda () (eq (sexp-at-point) 'str))))
+     :modes (clojure-mode)
+     :delimiter-remove-fn separedit--remove-multi-line-string-block-delimiter
+     :delimiter-restore-fn separedit--restore-multi-line-string-block-delimiter
+     :reindent t
+     :straight t))
   "Lists of regexp to match code block.
 
 Each element of it is in the form of:
@@ -1659,6 +1670,26 @@ Block info example:
       (cl-call-next-method)
     (separedit-not-edit-block-error
      (separedit--nonregexp-block-info))))
+
+(cl-defmethod separedit--block-info (&context (major-mode clojure-mode))
+  "Expand block info when point at string of (str) form for clojure.
+
+For example:
+
+     (str \"foo\"   same as   (str \"foo\"
+          \"bar|\"  ------>     |  \"bar\"
+          \"quux\")                \"quux\")"
+  (let ((block-info (cl-call-next-method))
+        (strform-block (save-restriction
+                           (widen)
+                           (when (separedit--point-at-string)
+                             (separedit--nonregexp-block-info)))))
+    (when strform-block
+      ;; String quotes at the beginning and end of block have been execlude
+      (setq block-info (plist-put block-info :string-quotes nil))
+      (cl-loop for (key val) on strform-block by #'cddr
+               do (setq block-info (plist-put block-info key val))))
+    block-info))
 
 ;;; Help/helpful mode variables / funcstions
 
