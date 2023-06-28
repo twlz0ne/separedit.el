@@ -521,12 +521,12 @@ Each element should be in one of the following forms:
 
     (:nonregexp
      (lambda ()
-       (separedit--multi-line-string-block
+       (separedit--multi-string-block
         (lambda (_) (looking-at "(str\\_>"))
         (lambda () (eq (sexp-at-point) 'str))))
      :modes (clojure-mode)
-     :delimiter-remove-fn separedit--remove-multi-line-string-block-delimiter
-     :delimiter-restore-fn separedit--restore-multi-line-string-block-delimiter
+     :delimiter-remove-fn separedit--remove-multi-string-block-delimiter
+     :delimiter-restore-fn separedit--restore-multi-string-block-delimiter
      :reindent t
      :straight t))
   "Lists of regexp to match code block.
@@ -1441,8 +1441,8 @@ Return value is in the form of (indent-length indent-line1)."
         (goto-char pos)
         pos))))
 
-(defun separedit--multi-line-string-block (&optional form-check-fn point-check-fn)
-  "Return infomation of a multi-line string block.
+(defun separedit--multi-string-block (&optional form-check-fn point-check-fn)
+  "Return infomation of a multi-string (not multi-line string) block.
 
 FORM-CHECK-FN can be nil or a function to do some check before continue, e.g.:
 
@@ -2019,8 +2019,8 @@ MAX-WIDTH       maximum width that can be removed"
       (forward-line))
     (c-indent-region (point-min) (point-max))))
 
-(defun separedit--remove-multi-line-string-block-delimiter (_ &optional _)
-  "Remove delimiter of multi line block when entering edit buffer."
+(defun separedit--remove-multi-string-block-delimiter (_ &optional _)
+  "Remove delimiter of multi-string block when entering edit buffer."
   (let ((inhibit-read-only t)
         line-delimiter)
     (save-excursion
@@ -2033,8 +2033,8 @@ MAX-WIDTH       maximum width that can be removed"
     (separedit--remove-escape "\"")
     line-delimiter))
 
-(defun separedit--restore-multi-line-string-block-delimiter (&optional _)
-  "Restore delimiter of multi line block when returning from edit buffer."
+(defun separedit--restore-multi-string-block-delimiter (&optional _)
+  "Restore delimiter of multi-string block when returning from edit buffer."
   (separedit--restore-escape "\"")
   (save-excursion
     (goto-char (point-min))
