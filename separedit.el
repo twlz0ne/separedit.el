@@ -5,7 +5,7 @@
 ;; Author: Gong Qijian <gongqijian@gmail.com>
 ;; Created: 2019/04/06
 ;; Version: 0.3.37
-;; Last-Updated: 2023-06-27 19:11:38 +0800
+;; Last-Updated: 2023-06-28 10:56:09 +0800
 ;;           by: Gong Qijian
 ;; Package-Requires: ((emacs "25.1") (dash "2.18") (edit-indirect "0.1.5"))
 ;; URL: https://github.com/twlz0ne/separedit.el
@@ -519,11 +519,23 @@ Each element should be in one of the following forms:
      :keep-header t
      :keep-footer t)
 
+    (:nonregexp separedit--multi-string-block
+     :modes (c-mode c++-mode)
+     :delimiter-remove-fn separedit--remove-multi-string-block-delimiter
+     :delimiter-restore-fn separedit--restore-multi-string-block-delimiter
+     :reindent t
+     :straight t)
+    
     (:nonregexp
      (lambda ()
        (separedit--multi-string-block
-        (lambda (_) (looking-at "(str\\_>"))
-        (lambda () (eq (sexp-at-point) 'str))))
+        (lambda ()
+          (let ((innermost-start (nth 1 (syntax-ppss))))
+            (save-excursion
+              (goto-char innermost-start)
+              (or (looking-at "(str\\_>")
+                  (and (looking-at "\\[")
+                       (looking-back "{:description[\s\t\n]+"))))))))
      :modes (clojure-mode)
      :delimiter-remove-fn separedit--remove-multi-string-block-delimiter
      :delimiter-restore-fn separedit--restore-multi-string-block-delimiter
@@ -537,7 +549,7 @@ Each element of it is in the form of:
      :body        REGEX ;; to match the each body line of block
      :footer      REGEX ;; to match the footer    line of block
      :straight    BOOL  ;; block not in string and comment (optional)
-     :reindent    BOOL  ;; reindent after changes commited (optional)
+     :reindent    BOOL/FN  ;; reindent after changes commited (optional)
      :delimiter-remove-fn FN ;; function to remove delimiter (optional)
      :delimiter-restore-fn FN ;; function to restore delimiter (optional)
      :keep-footer BOOL  ;; display the footer in edit buffer (optional)
@@ -1459,41 +1471,36 @@ object, e.g.:
     ;; The point is already moved to the original place where the \\[separedit]
     ;; was executed.
     (lambda () (eq (sexp-at-point) 'str)))"
-  (let ((innermost-start (nth 1 (syntax-ppss)))
-        (start-point (point))
-        bounds beg end)
+  (let ((start-point (point)) beg end)
     (save-excursion
-      (goto-char innermost-start)
-      (setq bounds (bounds-of-thing-at-point 'sexp))
-      (when (if form-check-fn (funcall form-check-fn bounds) t)
-        (save-restriction
-          (narrow-to-region (car bounds) (cdr bounds))
-          ;; Beginning of first string
-          (goto-char start-point)
-          (while (ignore-error 'scan-error (separedit--beginning-of-string))
-            (setq beg (point)))
-          (unless beg ;; Consider the point is in front of strings
-            (when (or (separedit--end-of-string)
-                      (when (if point-check-fn (funcall point-check-fn) t)
-                        (forward-sexp)
-                        (separedit--end-of-string)))
-              (setq beg (separedit--beginning-of-string))
-              (setq start-point beg)))
-          ;; End of last string
-          (goto-char start-point)
-          (while (ignore-error 'scan-error (separedit--end-of-string))
-            (setq end (point)))
-          (unless end ;; Consider the point is behind strings
-            (when (separedit--beginning-of-string)
-              (setq end (separedit--end-of-string))))
-          (when (and beg end)
-            (cons (1+ beg) (1- end))))))))
+      (when (if form-check-fn (funcall form-check-fn) t)
+        ;; Beginning of first string
+        (goto-char start-point)
+        (while (ignore-error 'scan-error (separedit--beginning-of-string))
+          (setq beg (point)))
+        (unless beg ;; Consider the point is in front of strings
+          (when (or (separedit--end-of-string)
+                    (when (if point-check-fn (funcall point-check-fn) t)
+                      (forward-sexp)
+                      (separedit--end-of-string)))
+            (setq beg (separedit--beginning-of-string))
+            (setq start-point beg)))
+        ;; End of last string
+        (goto-char start-point)
+        (while (ignore-error 'scan-error (separedit--end-of-string))
+          (setq end (point)))
+        (unless end ;; Consider the point is behind strings
+          (when (separedit--beginning-of-string)
+            (setq end (separedit--end-of-string))))
+        (when (and beg end)
+          (cons (1+ beg) (1- end)))))))
 
 (defun separedit--nonregexp-block-info ()
   "Return nonregexp block info."
   (catch 'break
     (dolist (it separedit-block-regexp-plists)
       (when-let* ((fn (plist-get it :nonregexp))
+                  (_modep (apply #'derived-mode-p (plist-get it :modes)))
                   (bounds (funcall fn)))
         (throw 'break (list :beginning (car bounds)
                             :end (cdr bounds)
@@ -1875,10 +1882,10 @@ It will override by the key that `separedit' binding in source buffer.")
 (defun separedit-commit ()
   "Commit changes."
   (interactive)
-  (let ((point-info (separedit--point-info)) ;; Still at edit buffer
-        (reindentp separedit--reindent-p)
-        (mark-beg (overlay-start edit-indirect--overlay))
-        (mark-end (overlay-end edit-indirect--overlay)))
+  (let* ((point-info (separedit--point-info)) ;; Still at edit buffer
+         (reindent separedit--reindent-p)
+         (mark-beg (overlay-start edit-indirect--overlay))
+         (mark-end (overlay-end edit-indirect--overlay)))
     (separedit--apply-changes)
     (edit-indirect--clean-up) ;; Returned to source buffer
     (goto-char
@@ -1886,8 +1893,9 @@ It will override by the key that `separedit' binding in source buffer.")
        (save-restriction
          (narrow-to-region mark-beg (min mark-end (point-max)))
          (apply #'separedit--restore-point point-info)
-         (when (and reindentp (buffer-modified-p))
-           (indent-region mark-beg mark-end))
+         (when (and reindent (buffer-modified-p))
+           (funcall (if (functionp reindent) reindent 'indent-region)
+                    mark-beg mark-end))
          (point))))))
 
 (defun separedit--buffer-creation-setup ()
@@ -2036,13 +2044,16 @@ MAX-WIDTH       maximum width that can be removed"
 (defun separedit--restore-multi-string-block-delimiter (&optional _)
   "Restore delimiter of multi-string block when returning from edit buffer."
   (separedit--restore-escape "\"")
-  (save-excursion
-    (goto-char (point-min))
-    (while (progn
-             (goto-char (line-end-position))
-             (not (eobp)))
-      (delete-char 1)
-      (insert separedit--line-delimiter))))
+  (let ((delm (or separedit--line-delimiter
+                  ;; Default value for situation like ["foo"|]
+                  "\" \"")))
+    (save-excursion
+      (goto-char (point-min))
+      (while (progn
+               (goto-char (line-end-position))
+               (not (eobp)))
+        (delete-char 1)
+        (insert delm)))))
 
 (defun separedit--remove-string-indent (indent-length)
   "Remove INDENT-LENGTH length of indentation from string.
