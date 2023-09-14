@@ -520,7 +520,7 @@ Each element should be in one of the following forms:
      :keep-footer t)
 
     (:nonregexp separedit--multi-string-block
-     :modes (c-mode c++-mode)
+     :modes (c-mode c++-mode lisp-data-mode)
      :delimiter-remove-fn separedit--remove-multi-string-block-delimiter
      :delimiter-restore-fn separedit--restore-multi-string-block-delimiter
      :reindent t
