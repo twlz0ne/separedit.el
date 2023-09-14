@@ -5,7 +5,7 @@
 ;; Author: Gong Qijian <gongqijian@gmail.com>
 ;; Created: 2019/04/06
 ;; Version: 0.3.37
-;; Last-Updated: 2023-06-28 10:56:09 +0800
+;; Last-Updated: 2023-09-14 17:57:03 +0800
 ;;           by: Gong Qijian
 ;; Package-Requires: ((emacs "25.1") (dash "2.18") (edit-indirect "0.1.5"))
 ;; URL: https://github.com/twlz0ne/separedit.el
@@ -1319,8 +1319,9 @@ LANG is a string, and the returned major mode is a symbol."
 
 (defun separedit-looking-back-heredoc-language (&optional mode)
   "Return languge name in heredoc start marker before point."
-  (let* ((mode (or mode major-mode))
-         (regexp (cdr (assoc mode separedit-heredoc-language-regexp-alist))))
+  (let ((regexp
+         (separedit--assoc-fallback
+          'sh-mode separedit-heredoc-language-regexp-alist 'assoc-default)))
     (when (looking-back regexp (line-beginning-position))
       (match-string-no-properties 1))))
 
@@ -1374,7 +1375,9 @@ Return value is in the form of (indent-length indent-line1)."
              (goto-char end)
              (cons
               (+ (current-column)
-                 (or (cdr (assoc major-mode separedit-string-indent-offset-alist))
+                 (or (separedit--assoc-fallback
+                      major-mode separedit-string-indent-offset-alist
+                      'assoc-default)
                      0))
               t))
             ((not (string= str-start ""))
