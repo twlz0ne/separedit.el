@@ -1727,7 +1727,7 @@ It will override by the key that `separedit' binding in source buffer.")
         (mark-beg (overlay-start edit-indirect--overlay))
         (mark-end (overlay-end edit-indirect--overlay)))
     (separedit--apply-changes)
-    (edit-indirect--clean-up) ;; Returned to source buffer
+    (edit-indirect--abort t) ;; Returned to source buffer
     (goto-char
      (save-excursion
        (save-restriction
