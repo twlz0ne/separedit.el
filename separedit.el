@@ -5,9 +5,9 @@
 ;; Author: Gong Qijian <gongqijian@gmail.com>
 ;; Created: 2019/04/06
 ;; Version: 0.3.37
-;; Last-Updated: 2023-05-13 10:33:45 +0800
-;;           by: Gong Qijian
-;; Package-Requires: ((emacs "25.1") (dash "2.18") (edit-indirect "0.1.5"))
+;; Last-Updated: 2024-01-18 10:54:45 -0500
+;;           by: Zhitao Gong
+;; Package-Requires: ((emacs "25.1") (dash "2.18") (edit-indirect "0.1.11"))
 ;; URL: https://github.com/twlz0ne/separedit.el
 ;; Keywords: tools languages docs
 
@@ -1677,7 +1677,7 @@ It will override by the key that `separedit' binding in source buffer.")
                (scp (nth 3 separedit--help-variable-edit-info))
                (buf (nth 4 separedit--help-variable-edit-info))
                (val (if (nth 2 separedit--help-variable-edit-info)
-                        (substring-no-properties (buffer-string)) 
+                        (substring-no-properties (buffer-string))
                       (list 'quote (car (read-from-string (buffer-string)))))))
           (cond
            ((and (eq scp 'local) buf) (with-current-buffer buf (eval `(setq-local ,sym ,val))))
@@ -1699,15 +1699,15 @@ It will override by the key that `separedit' binding in source buffer.")
            ;; Clone a buffer to protect the folding of text in edit buffer.
            (clone-buffer (concat (buffer-name) " <clone>")))
           (function-backup
-           ;; Temprary disable the ‘edit-indirect--clean-up’ (but who calls
+           ;; Temprary disable the ‘edit-indirect--abort’ (but who calls
            ;; this function after the clone buffer is killed?)
-           (symbol-function 'edit-indirect--clean-up)))
+           (symbol-function 'edit-indirect--abort)))
       (unwind-protect
           (with-current-buffer edit-buffer-clone
-            (fset 'edit-indirect--clean-up (lambda ()))
+            (fset 'edit-indirect--abort #'ignore)
             (separedit--apply-changes))
         (kill-buffer edit-buffer-clone)
-        (fset 'edit-indirect--clean-up function-backup)
+        (fset 'edit-indirect--abort function-backup)
         (if (and separedit-write-file-when-execute-save
                  (buffer-file-name source-buffer))
             (with-current-buffer source-buffer
@@ -1727,7 +1727,7 @@ It will override by the key that `separedit' binding in source buffer.")
         (mark-beg (overlay-start edit-indirect--overlay))
         (mark-end (overlay-end edit-indirect--overlay)))
     (separedit--apply-changes)
-    (edit-indirect--clean-up) ;; Returned to source buffer
+    (edit-indirect--abort t) ;; Returned to source buffer
     (goto-char
      (save-excursion
        (save-restriction
@@ -1844,7 +1844,7 @@ MAX-WIDTH       maximum width that can be removed"
 (defun separedit--remove-c/c++-macro-delimiter (_ &optional _)
   "Remove c/c++ macro delimiter of each line when etering edit buffer."
   (let ((inhibit-read-only t)
-        ;; Regexp from `separedit-block-regexp-plists' is not working as 
+        ;; Regexp from `separedit-block-regexp-plists' is not working as
         ;; expected when search backward, use the following instead:
         (regexp "\\(?:[^\s\t]\\|^[\s\t]\\)\\([\s\t]*\\\\[\s\t]*\\)"))
     (save-excursion
