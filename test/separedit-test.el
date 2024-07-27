@@ -2061,6 +2061,9 @@ comment4-end<|>"))
     (--with-callback 'js-mode init-str "C-c C-c" (lambda () (--bufs= init-str)))))
 
 (ert-deftest separedit-test-heredoc-edit ()
+  ;; For php-mode-2021 on Emacs 31+
+  (unless (boundp 'flymake-allowed-file-name-masks)
+    (require 'flymake-proc))
   (let ((heredocs
          `((sh-mode     "# SH<|>"     ,(concat "cat <<EOF\n"
                                                "# SH<|>\n"
