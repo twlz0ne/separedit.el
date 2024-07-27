@@ -5,8 +5,8 @@
 ;; Author: Gong Qijian <gongqijian@gmail.com>
 ;; Created: 2019/04/06
 ;; Version: 0.3.37
-;; Last-Updated: 2024-01-18 10:54:45 -0500
-;;           by: Zhitao Gong
+;; Last-Updated: 2024-07-27 16:14:34 +0800
+;;           by: Gong Qijian
 ;; Package-Requires: ((emacs "25.1") (dash "2.18") (edit-indirect "0.1.11"))
 ;; URL: https://github.com/twlz0ne/separedit.el
 ;; Keywords: tools languages docs
@@ -407,6 +407,7 @@ Taken from `markdown-code-lang-modes'."
     (java-mode          . java-ts-mode)
     (js-mode            . js-ts-mode)
     (lua-mode           . lua-ts-mode)
+    (nix-mode           . nix-ts-mode)
     (python-mode        . python-ts-mode)
     (ruby-mode          . ruby-ts-mode)
     (rust-mode          . rust-ts-mode)
@@ -756,7 +757,7 @@ Each item may be one of the following forms:
 (defun separedit--point-at-string (&optional pos)
   "Determine if point POS at string or not."
   (or (nth 3 (syntax-ppss pos))
-      (and (derived-mode-p 'python-mode 'python-ts-mode)
+      (and (derived-mode-p 'nix-ts-mode 'python-mode 'python-ts-mode)
            (memq (face-at-point) '(font-lock-string-face font-lock-doc-face))
            (unless (bobp)
              (memq (get-char-property (1- (point)) 'face)
@@ -1343,7 +1344,8 @@ Return value is in the form of (indent-length indent-line1)."
              (goto-char end)
              (cons
               (+ (current-column)
-                 (or (cdr (assoc major-mode separedit-string-indent-offset-alist))
+                 (or (let ((rmod (car (rassq major-mode separedit-major-mode-remap-alist))))
+                       (cdr (assoc (or rmod major-mode) separedit-string-indent-offset-alist)))
                      0))
               t))
             ((not (string= str-start ""))
