@@ -5,7 +5,7 @@
 ;; Author: Gong Qijian <gongqijian@gmail.com>
 ;; Created: 2019/04/06
 ;; Version: 0.3.37
-;; Last-Updated: 2024-07-27 16:14:34 +0800
+;; Last-Updated: 2024-10-09 15:40:25 +0800
 ;;           by: Gong Qijian
 ;; Package-Requires: ((emacs "25.1") (dash "2.18") (edit-indirect "0.1.11"))
 ;; URL: https://github.com/twlz0ne/separedit.el
@@ -2288,7 +2288,9 @@ but users can also manually select it by pressing `C-u \\[separedit]'."
                     (plist-put
                      (plist-put block :beginning (region-beginning))
                      :end (if (and (= ?\n (char-before (region-end)))
-                                   (not (= ?\n (char-after (region-end)))))
+                                   (if (char-after (region-end))
+                                       (not (= ?\n (char-after (region-end))))
+                                     t))
                               (1- (region-end))
                             (region-end)))))))))))))
 
