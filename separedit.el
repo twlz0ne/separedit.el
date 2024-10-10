@@ -5,7 +5,7 @@
 ;; Author: Gong Qijian <gongqijian@gmail.com>
 ;; Created: 2019/04/06
 ;; Version: 0.3.37
-;; Last-Updated: 2024-10-09 15:40:25 +0800
+;; Last-Updated: 2024-10-10 22:29:07 +0800
 ;;           by: Gong Qijian
 ;; Package-Requires: ((emacs "25.1") (dash "2.18") (edit-indirect "0.1.11"))
 ;; URL: https://github.com/twlz0ne/separedit.el
@@ -1294,6 +1294,24 @@ LANG is a string, and the returned major mode is a symbol."
     (when (looking-back regexp (line-beginning-position))
       (match-string-no-properties 1))))
 
+(cl-defgeneric separedit--indent-of-straight (_beg _end)
+  "Return the base indent of straight block (e.g. Info-mode) betwen BEG and END.")
+
+(cl-defmethod separedit--indent-of-straight (beg end &context (major-mode
+                                                               Info-mode))
+
+  (save-excursion
+    (goto-char beg)
+    (let (indent)
+      (while (< (point) end)
+        (unless (looking-at-p "[ \t]*$")
+          (back-to-indentation)
+          (setq indent (if indent
+                           (min indent (current-column))
+                         (current-column))))
+        (forward-line))
+      indent)))
+
 (cl-defgeneric separedit--indent-of-string-block-0
     (_quotes _beg _end _str-start _beg-at-newline _end-at-newline)
   "Called by `separedit--indent-of-string-block' in final clause of cond."
@@ -2284,7 +2302,13 @@ but users can also manually select it by pressing `C-u \\[separedit]'."
                         :lang-mode 'emacs-lisp-mode))
                 ;; region
                 (when (region-active-p)
-                  (let ((block (if strp (separedit--block-info))))
+                  (let ((block (if strp
+                                   (separedit--block-info)
+                                 (when-let ((indent (separedit--indent-of-straight
+                                                     (region-beginning)
+                                                     (region-end))))
+                                   (list :indent-length indent
+                                         :regexps (list :straight t))))))
                     (plist-put
                      (plist-put block :beginning (region-beginning))
                      :end (if (and (= ?\n (char-before (region-end)))
