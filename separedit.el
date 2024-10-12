@@ -4,8 +4,8 @@
 
 ;; Author: Gong Qijian <gongqijian@gmail.com>
 ;; Created: 2019/04/06
-;; Version: 0.3.37
-;; Last-Updated: 2024-10-10 22:29:07 +0800
+;; Version: 0.3.51
+;; Last-Updated: 2024-10-12 09:24:37 +0800
 ;;           by: Gong Qijian
 ;; Package-Requires: ((emacs "25.1") (dash "2.18") (edit-indirect "0.1.11"))
 ;; URL: https://github.com/twlz0ne/separedit.el
