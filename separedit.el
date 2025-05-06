@@ -1295,7 +1295,8 @@ LANG is a string, and the returned major mode is a symbol."
       (match-string-no-properties 1))))
 
 (cl-defgeneric separedit--indent-of-straight (_beg _end)
-  "Return the base indent of straight block (e.g. Info-mode) betwen BEG and END.")
+  "Return the base indent of straight block (e.g. Info-mode) betwen BEG and END."
+  nil)
 
 (cl-defmethod separedit--indent-of-straight (beg end &context (major-mode
                                                                Info-mode))
